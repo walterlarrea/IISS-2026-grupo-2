@@ -1,2 +1,2 @@
 #!/bin/bash
-mosquitto_sub -h localhost -p 1883 -t "home/sensors/temperature"
+mosquitto_sub -h localhost -p 1884 -t "home/sensors/temperature"
