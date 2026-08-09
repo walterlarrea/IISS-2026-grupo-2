@@ -1,11 +1,10 @@
 package org.example;
-
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class MqttSubscriber {
 
-    private static final MqttSubscriber mqttSubscriber = new MqttSubscriber("tcp://localhost:1884", "JavaSubscriber", "home/sensors/temperature");
+    private static final MqttSubscriber mqttSubscriber = new MqttSubscriber("tcp://localhost:1883", "JavaSubscriber", "home/sensors/temperature");
 
     private MqttSubscriber(String broker, String clientId, String topic) {
         initiateConnection(broker, clientId, topic);
@@ -30,7 +29,7 @@ public class MqttSubscriber {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    System.out.println("Topic: " + topic + "Message: " + new String(message.getPayload()));
+                    System.out.println("Topic: " + topic +" | Message: " + new String(message.getPayload()));
                 }
 
                 @Override

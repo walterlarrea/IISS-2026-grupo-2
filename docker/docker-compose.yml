@@ -5,10 +5,12 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     ports:
-      - '1884:1883'
-      - '9001:9001'
-    # volumes:
-    #   - ./mosquitto/config:/mosquitto/config
-    #   - ./mosquitto/data:/mosquitto/data
-    #   - ./mosquitto/log:/mosquitto/log
-    # command: ['/usr/sbin/mosquitto', '-c', '/mosquitto/config/mosquitto.conf']
+      - "1884:1883"
+      - "9001:9001"
+
+  subscriber:
+    build:
+      context: ..
+      dockerfile: src/subscriber/Dockerfile
+    depends_on:
+      - mosquitto
