@@ -5,14 +5,16 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class MqttSubscriber {
 
-    private static final MqttSubscriber mqttSubscriber = new MqttSubscriber("tcp://localhost:1884", "JavaSubscriber", "home/sensors/temperature");
+    private final String broker;
+    private final String clientId;
 
-    private MqttSubscriber(String broker, String clientId, String topic) {
-        initiateConnection(broker, clientId, topic);
+    public MqttSubscriber(String broker, String clientId) {
+        this.broker = broker;
+        this.clientId = clientId;
     }
 
-    public static MqttSubscriber getInstance() {
-        return mqttSubscriber;
+    public void start(String topic) {
+        initiateConnection(broker, clientId, topic);
     }
 
     private void initiateConnection(String broker, String clientId, String topic) {
@@ -21,7 +23,6 @@ public class MqttSubscriber {
         try {
             MqttClient client = new MqttClient(broker, clientId, new MemoryPersistence());
 
-            // Set callback to handle incoming messages
             client.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
@@ -30,7 +31,7 @@ public class MqttSubscriber {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    System.out.println("Topic: " + topic + "Message: " + new String(message.getPayload()));
+                    System.out.println("Topic: " + topic + " Message: " + new String(message.getPayload()));
                 }
 
                 @Override
@@ -46,7 +47,6 @@ public class MqttSubscriber {
             client.connect(connOpts);
             System.out.println("Connected!");
 
-            // Subscribe to the topic
             client.subscribe(topic, qos);
             System.out.println("Subscribed to topic: " + topic);
 

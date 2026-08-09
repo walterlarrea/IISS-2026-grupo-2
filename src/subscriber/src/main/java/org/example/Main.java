@@ -1,10 +1,11 @@
 package org.example;
 
-
 public class Main {
-    public static void main(String[] args) {
+    static final String mqttTopic = System.getenv().getOrDefault("MQTT_TOPIC", "home/sensors/temperature");
 
-    // Inicia la Factory
-        Factory.initiate();
+    public static void main(String[] args) {
+        Factory factory = Factory.create();
+        SensorProcessor sensorProcessor = new SensorProcessor(mqttTopic, factory.getMqttSubscriber());
+        sensorProcessor.start();
     }
 }
