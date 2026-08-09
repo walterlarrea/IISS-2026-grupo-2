@@ -12,3 +12,16 @@ services:
     #   - ./mosquitto/data:/mosquitto/data
     #   - ./mosquitto/log:/mosquitto/log
     # command: ['/usr/sbin/mosquitto', '-c', '/mosquitto/config/mosquitto.conf']
+
+  subscriber:
+    build:
+      context: ../src/subscriber
+      dockerfile: Dockerfile
+    container_name: subscriber
+    depends_on:
+      - mosquitto
+    environment:
+      MQTT_BROKER_URL: tcp://mosquitto:1884
+      MQTT_CLIENT_ID: JavaSubscriber
+      MQTT_TOPIC: home/sensors/temperature
+    restart: unless-stopped
