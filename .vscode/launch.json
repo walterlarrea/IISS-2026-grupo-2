@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Compose",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "docker compose -f ${workspaceFolder}/docker/docker-compose.yml --env-file ${workspaceFolder}/.env.dev up -d --build"
+    },
+    {
+      "name": "Subscriber (local)",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "org.example.Main",
+      "projectName": "subscriber",
+      "cwd": "${workspaceFolder}/src/subscriber",
+      "envFile": "${workspaceFolder}/.env.local"
+    }
+  ]
+}
