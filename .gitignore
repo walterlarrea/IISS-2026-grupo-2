@@ -1,3 +1,30 @@
+# =========================================================================
+# Maven Build Outputs
+# =========================================================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+build.log
+
+# =========================================================================
+# IntelliJ IDEA Settings
+# =========================================================================
+# Ignore user-specific files and internal caches
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+.idea/dictionaries/
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/caches/
+
+# Ignore compiled output if using IntelliJ's built-in compiler instead of Maven
+out/
+
 # Compiled class file
 *.class
 
