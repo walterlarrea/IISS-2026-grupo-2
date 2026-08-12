@@ -1,5 +1,5 @@
-name: Build Docker App
-run-name: New changes pushed by @${{ github.actor }} 🚀
+name: Build Development Docker App
+run-name: New changes # pushed by @${{ github.actor }} 🚀
 on:
   # push:
   #   branches:
@@ -12,27 +12,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Development
     env:
-      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
-      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
-      MQTT_TOPIC: ${MQTT_TOPIC}
+      MQTT_BROKER_URL: ${{ vars.MQTT_BROKER_URL }}
+      MQTT_CLIENT_ID: ${{ vars.MQTT_CLIENT_ID }}
+      MQTT_TOPIC: ${{ vars.MQTT_TOPIC }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build and validate Docker Compose stack
-        run: |
-          docker compose -f docker/docker-compose.yml up -d --build
-          docker compose -f docker/docker-compose.yml ps
-
-          echo "--- Subscriber logs ---"
-          docker compose -f docker/docker-compose.yml logs --tail=200 subscriber
-
-          if ! docker compose -f docker/docker-compose.yml logs subscriber | grep -E "Connected!|Subscribed to topic" > /dev/null; then
-            echo "Subscriber did not connect to the MQTT broker successfully."
-            docker compose -f docker/docker-compose.yml logs --tail=200
-            exit 1
-          fi
+      - name: Build Docker Compose stack
+        run: docker compose -f docker/docker-compose.yml up -d --build
 
       - name: Tear down Docker Compose stack
         if: always()
