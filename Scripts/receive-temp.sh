@@ -1,2 +1,2 @@
 #!/bin/bash
-mosquitto_sub -h localhost -p 1883 -t "home/sensors/temperature"
+curl -N mqtt://localhost:1883/home/sensors/temperature
