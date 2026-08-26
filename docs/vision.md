@@ -1,8 +1,15 @@
-PARA personas que quieran incorporar soluciones de domótica en su hogar o negocio
-QUE necesiten integrar, monitorear y automatizar distintos dispositivos de su entorno.
-EL spider connector
-ES UN sistema de gestión y automatización
-QUE permite supervisar en tiempo real variables ambientales y gestionar dispositivos desde una única plataforma.
-A DIFERENCIA DE soluciones independientes que requieren diferentes dispositivos y plataformas
-NUESTRO PRODUCTO integra dispositivos IoT de diferentes funciones en una única solución centralizada y
-permite utilizar la información obtenida por los sensores para generar automatizaciones.
+# Visión del Producto — EcoWarm v2
+
+**PARA** hogares y oficinas con calefacción por losa radiante
+
+**QUE** buscan maximizar su confort y optimizar su consumo eléctrico.
+
+**ECOWARM**
+
+**ES** un componente de una solución de domótica para la gestión inteligente de la calefacción
+
+**QUE** permite gestionar sensores y switches para controlar la temperatura de las habitaciones y optimizar el funcionamiento del sistema de calefacción.
+
+**A DIFERENCIA DE** otras soluciones de domótica que automatizan acciones sin considerar el costo del consumo eléctrico
+
+**NUESTRO PRODUCTO** realiza una gestión inteligente del consumo eléctrico, optimizando el funcionamiento de la calefacción de acuerdo con las tarifas disponibles en nuestro mercado.
