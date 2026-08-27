@@ -1,10 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Subscriber Main" type="Application" factoryName="Application">
-    <!-- <envs>
-      <env name="MQTT_BROKER_URL" value="tcp://localhost:1883" />
-      <env name="MQTT_CLIENT_ID" value="JavaLocalSubscriber" />
-      <env name="MQTT_TOPIC" value="home/sensors/temperature" />
-    </envs> -->
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/.env.local" />
     </option>
