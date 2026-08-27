@@ -1,14 +1,18 @@
 package org.example;
 
+import io.avaje.inject.BeanScope;
+
 import java.util.concurrent.CountDownLatch;
 
 public class Main {
-    static void main() throws InterruptedException {
-        IO.println(String.format("Hello and welcome!"));
+    private static EventGenerator eventGenerator;
 
-        for (int i = 1; i <= 5; i++) {
-            IO.println("i = " + i);
-        }
+    public static void main(String[] args) throws InterruptedException {
+        try (BeanScope scope = BeanScope.builder().build()) {
+            EventGenerator eventGenerator = scope.get(EventGenerator.class);
+
+            eventGenerator.generate();
+        } // 3. The scope closes automatically here
 
         new CountDownLatch(1).await();
     }
