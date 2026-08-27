@@ -3,8 +3,15 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class MqttSubscriber {
+    private static final AppConfig appConfig = AppConfig.getInstance();
 
-    private static final MqttSubscriber mqttSubscriber = new MqttSubscriber("tcp://mosquitto:1883", "JavaSubscriber", "home/sensors/temperature");
+    private static final String BROKER_URL = appConfig.getValues().get(appConfig.MQTT_BROKER_URL);
+    private static final String CLIENT_ID = appConfig.getValues().get(appConfig.MQTT_CLIENT_ID);
+    private static final String TOPIC = appConfig.getValues().get(appConfig.MQTT_TOPIC);
+
+    private static final MqttSubscriber mqttSubscriber = new MqttSubscriber(BROKER_URL, CLIENT_ID, TOPIC);
+    // Se puede usar un cliendId aleatorio como este por ejemplo.
+    // private static final MqttSubscriber mqttSubscriber = new MqttSubscriber(BROKER_URL, MqttClient.generateClientId(), TOPIC);
 
     private MqttSubscriber(String broker, String clientId, String topic) {
         initiateConnection(broker, clientId, topic);
