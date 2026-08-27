@@ -1,17 +1,25 @@
 version: '3.8'
 
 services:
+
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     ports:
-      - '1883:1883'
-      - '9001:9001'
-    # volumes:
-    #   - ./mosquitto/config:/mosquitto/config
-    #   - ./mosquitto/data:/mosquitto/data
-    #   - ./mosquitto/log:/mosquitto/log
-    # command: ['/usr/sbin/mosquitto', '-c', '/mosquitto/config/mosquitto.conf']
+      - "1883:1883"
+      - "9001:9001"
+
+  mongodb:
+    image: mongo:8
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+#      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_ROOT_USERNAME}
+#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_DATABASE}
+    volumes:
+      - mongo_data:/data/db
 
   subscriber:
     build:
@@ -19,9 +27,15 @@ services:
       dockerfile: Dockerfile
     container_name: subscriber
     depends_on:
-      - mosquitto
+      mongodb:
+        condition: service_started
+      mosquitto:
+        condition: service_started
     environment:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
       MQTT_TOPIC: ${MQTT_TOPIC}
     restart: unless-stopped
+
+volumes:
+  mongo_data:
