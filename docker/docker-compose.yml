@@ -23,8 +23,9 @@ services:
 
   subscriber:
     build:
-      context: ../src/subscriber
+      context: ../src
       dockerfile: Dockerfile
+      target: subscriber
     container_name: subscriber
     depends_on:
       mongodb:
@@ -35,6 +36,21 @@ services:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
       MQTT_TOPIC: ${MQTT_TOPIC}
+    restart: unless-stopped
+
+  publisher:
+    build:
+      context: ../src
+      dockerfile: Dockerfile
+      target: publisher
+    container_name: publisher
+    depends_on:
+      mongodb:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+    environment:
+      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
     restart: unless-stopped
 
 volumes:
