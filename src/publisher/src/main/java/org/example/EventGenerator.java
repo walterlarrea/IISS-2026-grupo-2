@@ -41,7 +41,7 @@ public class EventGenerator {
     }
 
     public void generate(){
-        ArrayList<String> topics = new ArrayList<String>(List.of("home/sensors/temperature:1", "home/sensors/temperature:2"));
+        ArrayList<String> topics = new ArrayList<String>(List.of("ht-sim-room1/status/temperature:0", "ht-sim-room2/status/temperature:0", "ht-sim-room3/status/temperature:0"));
         int id = 0;
 
         // Una solucion de paralelismo
