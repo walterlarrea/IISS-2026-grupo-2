@@ -7,6 +7,8 @@ import org.example.dto.MessageObject.MessageObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -39,13 +41,16 @@ public class EventGenerator {
     }
 
     public void generate(){
-        EventPublisher publisher = this.publisherFactory.buildPublisher("home/sensors/temperature");
+        ArrayList<String> topics = new ArrayList<String>(List.of("home/sensors/temperature:1", "home/sensors/temperature:2"));
+        int id = 0;
 
         // Una solucion de paralelismo
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (int i = 0; i < 2; i++) {
-                int finalI = i;
-                executor.submit(() -> this.spamEventMessage(publisher, finalI));
+            for (String topic: topics) {
+                EventPublisher publisher = this.publisherFactory.buildPublisher(topic);
+                int finalId = id;
+                executor.submit(() -> this.spamEventMessage(publisher, finalId));
+                id++;
             }
         }catch(Exception e){
             logger.error("Error occur while running publishers");
