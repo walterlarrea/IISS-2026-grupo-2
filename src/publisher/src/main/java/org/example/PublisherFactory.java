@@ -11,11 +11,9 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 @Singleton
 public class PublisherFactory {
     private MqttClient client;
-//    private final AppConfig appConfig;
 
     @Inject
     public PublisherFactory(AppConfig appConfig) {
-//        this.appConfig = appConfig;
         final String mqttUrl = appConfig.getValue(appConfig.MQTT_BROKER_URL);
         final String clientId = "Publisher";// appConfig.getValue(appConfig.MQTT_BROKER_URL);
 
