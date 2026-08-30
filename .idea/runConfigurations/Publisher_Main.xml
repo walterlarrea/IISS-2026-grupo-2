@@ -1,7 +1,16 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Publisher Main" type="Application" factoryName="Application">
+    <envs>
+      <env name="MQTT_BROKER_URL" value="tcp://mosquitto:1883" />
+      <env name="MQTT_CLIENT_ID" value="JavaSubscriberDev" />
+      <env name="MQTT_TOPIC" value="home/sensors/temperature" />
+      <env name="MONGO_DB_DATABASE" value="Sensores" />
+      <env name="MONGO_DB_URI" value="mongodb://mongodb:27017" />
+      <env name="MONGO_DB_COLLECTION_HABITACIONES" value="Habitaciones" />
+      <env name="MONGO_DB_COLLECTION_MEDICIONES" value="Mediciones" />
+    </envs>
     <option name="envFilePaths">
-      <option value="$PROJECT_DIR$/.env.local" />
+      <option value="M" />
     </option>
     <option name="MAIN_CLASS_NAME" value="org.example.Main" />
     <module name="publisher" />
