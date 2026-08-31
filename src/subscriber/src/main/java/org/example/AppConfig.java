@@ -10,7 +10,7 @@ public class AppConfig {
 
   public final String MONGO_DB_URI = "MONGO_DB_URI";
   public final String MONGO_DB_DATABASE = "MONGO_DB_DATABASE";
-
+  public final String MONGO_DB_COLLECTION = "MONGO_DB_COLLECTION";
   private static final AppConfig INSTANCE = new AppConfig();
 
   private final HashMap<String, String> values;
