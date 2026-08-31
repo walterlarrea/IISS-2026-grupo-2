@@ -8,7 +8,7 @@ public class MqttSubscriber {
     private static final String BROKER_URL = appConfig.getValues().get(appConfig.MQTT_BROKER_URL);
     private static final String CLIENT_ID = appConfig.getValues().get(appConfig.MQTT_CLIENT_ID);
     private static final String TOPIC = appConfig.getValues().get(appConfig.MQTT_TOPIC);
-
+    private final MongoTemperatureWriter mongoWriter = new MongoTemperatureWriter();
     private static final MqttSubscriber mqttSubscriber = new MqttSubscriber(BROKER_URL, CLIENT_ID, TOPIC);
     // Se puede usar un cliendId aleatorio como este por ejemplo.
     // private static final MqttSubscriber mqttSubscriber = new MqttSubscriber(BROKER_URL, MqttClient.generateClientId(), TOPIC);
@@ -36,7 +36,15 @@ public class MqttSubscriber {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    System.out.println("Topic: " + topic +" | Message: " + new String(message.getPayload()));
+                    String payload = new String(message.getPayload());
+                    System.out.println("Topic: " + topic + " | Message: " + payload);
+                    try {
+                        mongoWriter.saveTemperature(payload);
+                        System.out.println("Medición guardada en MongoDB");
+                    } catch (Exception e) {
+                        System.err.println("Error guardando medición en MongoDB");
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
