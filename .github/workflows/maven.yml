@@ -1,12 +1,9 @@
 name: Build & Test
 run-name: New changes # pushed by @${{ github.actor }} 🚀
 on:
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -28,13 +25,29 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Build project
+        working-directory: ./src
+        run: mvn -B -DskipTests package
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: Development
+    env:
+      MQTT_BROKER_URL: ${{ vars.MQTT_BROKER_URL }}
+      MQTT_CLIENT_ID: ${{ vars.MQTT_CLIENT_ID }}
+      MQTT_TOPIC: ${{ vars.MQTT_TOPIC }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
       - name: Run unit tests
         working-directory: ./src
         run: mvn -B test
-
-      # - name: Build Docker Compose stack
-      #   run: docker compose -f docker/docker-compose.yml up -d --build
-
-      # - name: Tear down Docker Compose stack
-      #   if: always()
-      #   run: docker compose -f docker/docker-compose.yml down
