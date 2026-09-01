@@ -1,10 +1,10 @@
 package org.example;
+
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -12,7 +12,7 @@ import static org.mockito.Mockito.*;
 public class MongoTemperatureTest {
 
     @Test
-    void guardarTemperaturaMongoTest() {//si se guarda una temperatura correctamente
+    void saveTemperatureMongoTest() {//si se guarda una temperatura correctamente
         MongoCollection<Document> collectionMock = mock(MongoCollection.class);//para crear una colección falsa.
         MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);//para usar un mongoDB "falso", de prueba.
         String json = """
@@ -23,7 +23,7 @@ public class MongoTemperatureTest {
     }
 
     @Test
-    void jsonInvalidoTest() {//json inválido, no se inserta en la BD
+    void invalidJsonTest() {//json inválido, no se inserta en la BD
         MongoCollection<Document> collectionMock = mock(MongoCollection.class);
         MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);
         String jsonInvalido = "{No es json}";

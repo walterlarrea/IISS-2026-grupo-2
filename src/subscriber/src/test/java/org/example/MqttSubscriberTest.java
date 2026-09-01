@@ -1,12 +1,12 @@
 package org.example;
-import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
 
 public class MqttSubscriberTest {
 
     @Test
-    void verificoMensajeTest() {//verifica que llegue y guarde el mensaje
+    void verifyMessageTest() {//verifica que llegue y guarde el mensaje
         MongoTemperatureWriter writerMock = mock(MongoTemperatureWriter.class);
         MqttSubscriber subscriber = new MqttSubscriber(writerMock);
         String mensaje = """
