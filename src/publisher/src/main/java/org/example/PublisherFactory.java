@@ -15,7 +15,8 @@ public class PublisherFactory {
     @Inject
     public PublisherFactory(AppConfig appConfig) {
         final String mqttUrl = appConfig.getValue(appConfig.MQTT_BROKER_URL);
-        final String clientId = "Publisher";// appConfig.getValue(appConfig.MQTT_BROKER_URL);
+        // Genera un ID de client unico
+        final String clientId = MqttClient.generateClientId();
 
         try {
             this.initClient(mqttUrl, clientId);
