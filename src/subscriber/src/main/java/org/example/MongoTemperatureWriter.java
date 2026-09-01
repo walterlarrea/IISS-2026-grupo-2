@@ -10,6 +10,11 @@ public class MongoTemperatureWriter {
     private final MongoCollection<Document> collection;
     private static final AppConfig appConfig = AppConfig.getInstance();
 
+    public MongoTemperatureWriter(MongoCollection<Document> collection) {
+        this.mongoClient = null;
+        this.collection = collection;
+    }
+
     public MongoTemperatureWriter() {
         String uri = appConfig.getValues().get(appConfig.MONGODB_URI);
         String databaseName = appConfig.getValues().get(appConfig.MONGODB_DATABASE);
@@ -25,6 +30,8 @@ public class MongoTemperatureWriter {
     }
 
     public void close() {
-        mongoClient.close();
+        if (mongoClient != null) {
+            mongoClient.close();
+        }
     }
 }
