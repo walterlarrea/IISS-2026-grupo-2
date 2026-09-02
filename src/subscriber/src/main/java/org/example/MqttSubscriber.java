@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 public class MqttSubscriber {
     private static final AppConfig appConfig = AppConfig.getInstance();
-    private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
     private static final String BROKER_URL = appConfig.getValues().get(appConfig.MQTT_BROKER_URL);
     private static final String CLIENT_ID = appConfig.getValues().get(appConfig.MQTT_CLIENT_ID);
     private static final String TOPIC = appConfig.getValues().get(appConfig.MQTT_TOPIC);
@@ -37,9 +36,6 @@ public class MqttSubscriber {
         int qos = 1;
         try {
             MqttClient client = new MqttClient(broker, clientId, new MemoryPersistence());
-            MongoMessageRepository repository = new MongoMessageRepository(
-                    MONGO_DB_URI, MONGO_DB_DATABASE, MONGO_DB_COLLECTION);
-            Runtime.getRuntime().addShutdownHook(new Thread(repository::close));
 
             // Set callback to handle incoming messages
             client.setCallback(new MqttCallback() {
