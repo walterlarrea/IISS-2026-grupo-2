@@ -26,7 +26,7 @@ public class MongoTemperatureTest {
     void invalidJsonTest() {//json inválido, no se inserta en la BD
         MongoCollection<Document> collectionMock = mock(MongoCollection.class);
         MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);
-        String jsonInvalido = "{No es json}";
+        String jsonInvalido = "{Invalid json}";
         assertThrows(Exception.class, () -> {writer.saveTemperature(jsonInvalido);});
         verify(collectionMock, never()).insertOne(any(Document.class));
     }
