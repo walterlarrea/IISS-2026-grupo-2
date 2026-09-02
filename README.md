@@ -5,26 +5,31 @@
 **Estructura del proyecto**
 
 - **scr/** : código fuente del proyecto.
-- **MqttSubscriber.java** : programa escrito en Java para conectar al broker MQTT y recibir los mensajes.
-- **pom.xml** : contiene las dependencias y detalles del proyecto.
+- **Módulos**
+	- **MqttSubscriber.java** : programa escrito en Java para conectar al broker MQTT y recibir los mensajes.
+		- **MongoTemperatureWriter** : programa escrito en Java para guardar mensajes que le llegan al subscriptor en base de datos MongoDB.
+	- **EventPublisher.java** : programa escrito en Java para enviar mensajes hacia el subscriptor que esté escuchando.
+		- **EventGenerator.java** : crea mensajes de los sensores constantemente para enviar al Subscriber.
+- **pom.xml** : contiene las dependencias y detalles del proyecto, contiene tres: para Publisher, para Subscriber y para el padre que abarca a ambos.
 
 
 ## 2. SCRIPTS y CONF
 
 1) docker --help, en consola para ver sus respectivos comandos.
 2) Para ejecutar los scripts .sh en la consola. Ej: **./up.sh** o **bash up.sh** o **sh up.sh**
+3) Para ejecutar el script build. sh, se puede usar: build.sh local (para .env.local) o build.sh dev (para .env.dev). Si no se escribe nada posterior al .sh, tomará a dev por defecto.
 
  **#!/bin/bash --> se tiene que ejecutar usando Bash**
 
 - **up.sh** sirve para levantar Docker compose y crear la imagen antes de iniciar los contenedores.
 - **down.sh** sirve para detener y eliminar los contenedores.
 - **stop.sh** sirve para detener pero sin eliminar los contenedores.
+- **build.sh** sirve para crear la imagen en Docker.
 - **receive-temp.sh** se suscribe a un tópico MQTT y muestra en la consola todos los mensajes que lleguen de dicho tópico.
 - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
-
 ## 3. SUSCRIPTOR JAVA
 
-**Cómo ejecutar el programa en Java**
+**Como ejecutar el programa en Java**
 
 1) Abrir el proyecto desde su IDE.
 2) Asegurarse de que este en JDK-25.
