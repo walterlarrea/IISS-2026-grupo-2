@@ -41,7 +41,7 @@ public class EventGenerator {
     }
 
     public void generate(){
-        ArrayList<String> topics = new ArrayList<String>(List.of("ht-sim-room1/status/temperature:0", "ht-sim-room2/status/temperature:0", "ht-sim-room3/status/temperature:0"));
+        ArrayList<String> topics = new ArrayList<String>(List.of("ht-sim-room0/status/temperature:0", "ht-sim-room1/status/temperature:1"));
         int id = 0;
 
         // Una solucion de paralelismo
@@ -83,12 +83,12 @@ public class EventGenerator {
                 // Envia el mensaje
                 publisher.publish(message);
 
-                int minDelay = this.delayMillis - this.delayDeltaMillis;
-                int maxDelay = this.delayMillis + this.delayDeltaMillis;
+                //int minDelay = this.delayMillis - this.delayDeltaMillis;
+                //int maxDelay = this.delayMillis + this.delayDeltaMillis;
 
                 // Randomiza el delay entre eventos para darle algo de inconsistencia y que no tenga un tiempo preciso
-                int delay = this.random.nextInt(minDelay, maxDelay);
-                TimeUnit.MILLISECONDS.sleep(delay);
+                //int delay = this.random.nextInt(minDelay, maxDelay);
+                TimeUnit.MILLISECONDS.sleep(3000);
             }catch(InterruptedException e){
                 logger.error("InterruptedException");
                 logger.error(String.valueOf(e));

@@ -8,9 +8,11 @@ public class AppConfig {
   public final String MQTT_CLIENT_ID = "MQTT_CLIENT_ID";
   public final String MQTT_TOPIC = "MQTT_TOPIC";
 
-  public final String MONGO_DB_URI = "MONGO_DB_URI";
-  public final String MONGO_DB_DATABASE = "MONGO_DB_DATABASE";
-  public final String MONGO_DB_COLLECTION = "MONGO_DB_COLLECTION";
+  public final String MONGODB_URI = "MONGODB_URI";
+  public final String MONGODB_DATABASE = "MONGODB_DATABASE";
+  public final String MONGODB_COLLECTION_MEDICIONES = "MONGODB_COLLECTION_MEDICIONES";
+  public final String MONGODB_COLLECTION_HABITACIONES = "MONGODB_COLLECTION_HABITACIONES";
+
   private static final AppConfig INSTANCE = new AppConfig();
 
   private final HashMap<String, String> values;
