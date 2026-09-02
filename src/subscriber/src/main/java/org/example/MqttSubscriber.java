@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 public class MqttSubscriber {
     private static final AppConfig appConfig = AppConfig.getInstance();
-
     private static final String BROKER_URL = appConfig.getValues().get(appConfig.MQTT_BROKER_URL);
     private static final String CLIENT_ID = appConfig.getValues().get(appConfig.MQTT_CLIENT_ID);
     private static final String TOPIC = appConfig.getValues().get(appConfig.MQTT_TOPIC);
