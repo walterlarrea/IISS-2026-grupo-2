@@ -19,6 +19,9 @@
 * Cliente MQTT para Java. Es el estándar de la industria, maduro y estable, lo que evita que tengamos que programar la gestión de sockets TCP desde cero o lidiar con reconexiones manuales.
 ### Despliegue y ContenedoresDocker y Docker Compose:
 * Permiten empaquetar la aplicación y sus dependencias en contenedores ligeros. Se descartaron las Máquinas Virtuales por ser demasiado pesadas. Docker Compose nos garantiza que el build sea completamente reproducible sin depender de herramientas instaladas localmente en cada una de nuestras máquinas.
+### Uso de Logs, logger en vez de println
+* System.out.println imprime todo de forma plana sin distinción. Un Logger permite categorizar los mensajes por niveles (DEBUG, INFO, WARN, ERROR), permitiendo silenciar los datos de depuración en producción y capturar solo lo importante.
+* Los logs gestionan de manera segura el acceso simultáneo de múltiples hilos evitando que la información se mezcle o corrompa en la salida. Esta es la principal razón por la que nos beneficia al manejar mensajes de tipo JSON y su persistencia.
 ## Utilidades Adicionales
 ### SLF4J:
 * Fachada para el registro de logs. Estandariza la salida de consola, permitiendo niveles de severidad (INFO, ERROR), lo cual es infinitamente superior a usar simples System.out.println para depurar el sistema entre todos.
