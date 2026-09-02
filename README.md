@@ -61,7 +61,12 @@ Se crearon test para probar tramos del programa y confirmar el funcionamiento de
 - MqttSubscriberConfigTest
 - MongoTemperatureTest
 - PublisherUnitTest
-## 7. JIRA
+
+## 7. MONGO DB
+Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
+- Habitaciones: muestra la id del sensor y el nombre de la habitación.
+- Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y medida de tiempo en Epoch.
+## 8. JIRA
 
 Acá se encuentra la organización y seguimiento del proyecto.
 
