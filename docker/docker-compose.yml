@@ -55,5 +55,21 @@ services:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
     restart: unless-stopped
 
+  rooms-api:
+    build:
+      context: ../src
+      dockerfile: Dockerfile
+      target: rooms-api
+    container_name: rooms-api
+    depends_on:
+      mongodb:
+        condition: service_started
+    environment:
+      MONGO_DB_URI: ${MONGO_DB_URI}
+      MONGO_DB_DATABASE: ${MONGO_DB_DATABASE}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
 volumes:
   mongo_data:
