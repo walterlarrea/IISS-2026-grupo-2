@@ -4,6 +4,7 @@ import org.example.Habitacion;
 import org.example.repository.HabitacionRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -50,5 +51,38 @@ public class HabitacionService {
 
     public Optional<Habitacion> buscarPorIdTermostato(String idTermostato) {
         return repository.findByIdTermostato(idTermostato);
+    }
+
+    public Optional<Habitacion> modificarParcialmente(
+        String id,
+        Map<String, Object> cambios) {
+
+    return repository.findById(id)
+            .map(existente -> {
+
+                if (cambios.containsKey("nombre")) {
+                    existente.setNombre((String) cambios.get("nombre"));
+                }
+
+                if (cambios.containsKey("temperaturaEsperada")) {
+                    existente.setTemperaturaEsperada(
+                            ((Number) cambios.get("temperaturaEsperada")).doubleValue()
+                    );
+                }
+
+                if (cambios.containsKey("idTermostato")) {
+                    existente.setIdTermostato(
+                            (String) cambios.get("idTermostato")
+                    );
+                }
+
+                if (cambios.containsKey("idSwitch")) {
+                    existente.setIdSwitch(
+                            (String) cambios.get("idSwitch")
+                    );
+                }
+
+                return repository.save(existente);
+            });
     }
 }
