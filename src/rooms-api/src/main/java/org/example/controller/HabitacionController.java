@@ -57,7 +57,6 @@ public class HabitacionController {
     if (!service.eliminar(id)) {
         return ResponseEntity.notFound().build();
     }
-
-    return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 }

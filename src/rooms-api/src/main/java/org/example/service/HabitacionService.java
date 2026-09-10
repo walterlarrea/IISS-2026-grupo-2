@@ -47,4 +47,8 @@ public class HabitacionService {
         repository.deleteById(id);
         return true;
     }
+
+    public Optional<Habitacion> buscarPorIdTermostato(String idTermostato) {
+        return repository.findByIdTermostato(idTermostato);
+    }
 }
