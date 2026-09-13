@@ -3,7 +3,6 @@ package org.example.dto.MessageObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.example.EventGenerator;
 import org.example.dto.serializer.CustomSerializer.TwoDecimalSerializer;
 import org.example.dto.serializer.CustomSerializer.ThreeDecimalSerializer;
 import org.slf4j.Logger;
