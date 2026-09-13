@@ -4,7 +4,7 @@
 
 **QUE** buscan maximizar su confort y optimizar su consumo eléctrico.
 
-**ECOWARM**
+**EL ECOWARM**
 
 **ES** un componente de una solución de domótica para la gestión inteligente de la calefacción
 
