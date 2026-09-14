@@ -76,5 +76,18 @@ services:
       - '8080:8080'
     restart: unless-stopped
 
+  switches-api:
+    build:
+      context: ../src
+      dockerfile: Dockerfile
+      target: switches-api
+    container_name: switches-api
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY}
+    ports:
+      - '${SWITCHES_API_PORT:-8090}:${SWITCHES_API_PORT:-8090}'
+    restart: unless-stopped
+
 volumes:
   mongo_data:
