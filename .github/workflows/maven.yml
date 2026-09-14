@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - develop
   workflow_dispatch:
 
 jobs:
@@ -29,6 +30,13 @@ jobs:
         working-directory: ./src
         run: mvn -B -DskipTests package
 
+      - name: Upload compiled Maven targets
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-targets
+          path: src/**/target/**
+          retention-days: 1
+
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -47,6 +55,11 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+
+      - name: Download compiled Maven targets
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-targets
 
       - name: Run unit tests
         working-directory: ./src
