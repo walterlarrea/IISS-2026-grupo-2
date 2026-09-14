@@ -1,5 +1,5 @@
 name: Build & Test
-run-name: New changes # pushed by @${{ github.actor }} 🚀
+run-name: New changes pushed by @${{ github.actor }} 🚀
 on:
   pull_request:
     branches:
