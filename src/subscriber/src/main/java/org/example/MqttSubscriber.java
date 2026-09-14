@@ -3,7 +3,8 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.bson.Document;
+import java.nio.charset.StandardCharsets;
 public class MqttSubscriber {
     private static final AppConfig appConfig = AppConfig.getInstance();
     private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
@@ -14,6 +15,8 @@ public class MqttSubscriber {
     private static final String MONGO_DB_DATABASE = appConfig.getValues().get(appConfig.MONGO_DB_DATABASE);
     private static final String MONGO_DB_COLLECTION = appConfig.getValues()
             .getOrDefault(appConfig.MONGO_DB_COLLECTION, "received_messages");
+    private static final String ROOMS_API_URL = appConfig.getValues().get(appConfig.ROOMS_API_URL);
+    private static final Controlador controlador = new Controlador(ROOMS_API_URL);
 
     private static final MqttSubscriber mqttSubscriber = new MqttSubscriber(BROKER_URL, CLIENT_ID, TOPIC);
     // Se puede usar un cliendId aleatorio como este por ejemplo.
@@ -43,16 +46,39 @@ public class MqttSubscriber {
                     logger.error("Connection lost: {}", cause.getMessage());
                 }
 
-                @Override
-                public void messageArrived(String topic, MqttMessage message) {
-                    try {
-                        repository.save(topic, message);
-                        logger.info("Message saved in MongoDB | Topic: {} | Message: {}",
-                                topic, new String(message.getPayload()));
-                    } catch (RuntimeException exception) {
-                        logger.error("Could not save MQTT message from topic {} in MongoDB", topic, exception);
-                    }
-                }
+    @Override
+    public void messageArrived(String topic, MqttMessage message) {
+        try {
+            repository.save(topic, message);
+
+            String payload =
+                new String(message.getPayload(), StandardCharsets.UTF_8);
+
+            Document json = Document.parse(payload);
+
+            Temperatura temperatura = new Temperatura(
+                json.getInteger("id"),
+                json.getDouble("tC"),
+                json.getDouble("tF"),
+                json.getDouble("ts")
+        );
+
+            Orden orden = controlador.controlar(temperatura);
+
+            logger.info(
+                "Termostato {} -> orden {}",
+                temperatura.id(),
+                orden
+        );
+
+        } catch (RuntimeException exception) {
+            logger.error(
+                "Could not process MQTT message from topic {}",
+                topic,
+                exception
+            );
+        }
+    }
 
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {

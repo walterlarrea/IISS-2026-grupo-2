@@ -71,4 +71,13 @@ public class HabitacionController {
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/termostato/{idTermostato}")
+    public ResponseEntity<Habitacion> buscarPorIdTermostato(
+        @PathVariable("idTermostato") String idTermostato) {
+
+    return service.buscarPorIdTermostato(idTermostato)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+}
 }
