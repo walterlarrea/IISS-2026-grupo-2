@@ -30,7 +30,9 @@ public class MqttSubscriber {
 
     MqttSubscriber(MongoTemperatureWriter mongoWriter) {this.mongoWriter = mongoWriter;}
 
-    void processMessage(String payload) {mongoWriter.saveTemperature(payload);}
+    void processMessage(String payload) {
+        mongoWriter.saveTemperature(payload);
+    }
 
     private void initiateConnection(String broker, String clientId, String topic) {
         int qos = 1;
