@@ -49,6 +49,16 @@ class PublisherUnitTest {
     }
 
     @Test
+    void epochTimeKeepsDecimalNotationAndThreeDecimals() throws Exception {
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(1, 24.65f, 0.0f, 1789351400.123);
+
+        String json = MessageObject.validateJson(temperatura);
+
+        assertTrue(json.contains("\"ts\":1789351400.123"));
+        assertFalse(json.contains("E"));
+    }
+
+    @Test
     void appConfigReadsConfiguredValuesFromInternalMap() throws Exception {
         AppConfig appConfig = new AppConfig();
         Field valuesField = AppConfig.class.getDeclaredField("values");

@@ -37,7 +37,7 @@ Cada publicación tiene este formato:
 - id: identificador del termostato
 - tC: temperatura en °C
 - tF: temperatura en °F (actualmente 0.0)
-- ts: marca de tiempo
+- ts: Epoch Time en segundos, con tres decimales de precisión y formato decimal fijo
 
 ### Configuración
 
