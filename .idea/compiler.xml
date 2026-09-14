@@ -7,21 +7,8 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="subscriber" />
-      </profile>
-      <profile name="Annotation profile for iot_este" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/io/avaje/avaje-inject-generator/12.6/avaje-inject-generator-12.6.jar" />
-          <entry name="$MAVEN_REPOSITORY$/io/avaje/avaje-inject/12.6/avaje-inject-12.6.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar" />
-          <entry name="$MAVEN_REPOSITORY$/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar" />
-          <entry name="$MAVEN_REPOSITORY$/io/avaje/avaje-applog/1.2/avaje-applog-1.2.jar" />
-          <entry name="$MAVEN_REPOSITORY$/io/avaje/avaje-spi-service/2.17/avaje-spi-service-2.17.jar" />
-          <entry name="$MAVEN_REPOSITORY$/io/avaje/avaje-spi-core/2.17/avaje-spi-core-2.17.jar" />
-        </processorPath>
         <module name="publisher" />
+        <module name="rooms-api" />
       </profile>
     </annotationProcessing>
   </component>

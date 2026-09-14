@@ -1,11 +1,10 @@
 package org.example;
 
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import org.example.dto.MessageObject.MessageObject.Temperatura;
 import org.example.dto.MessageObject.MessageObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 
-@Singleton
+@Component
 public class EventGenerator {
     private static final Logger logger = LoggerFactory.getLogger(EventGenerator.class);
 
@@ -29,13 +28,12 @@ public class EventGenerator {
     private final float absoluteMaxTemp = 37.0f;
 
     // Tiempo de espera base entre eventos
-    private final int delayMillis = 500;
+    private final int delayMillis = 3000;
     private final int delayDeltaMillis = 25;
 
     private final Random random = new Random();
     private final PublisherFactory publisherFactory;
 
-    @Inject
     public EventGenerator(PublisherFactory publisherFactory){
         this.publisherFactory = publisherFactory;
     }
@@ -83,12 +81,12 @@ public class EventGenerator {
                 // Envia el mensaje
                 publisher.publish(message);
 
-                //int minDelay = this.delayMillis - this.delayDeltaMillis;
-                //int maxDelay = this.delayMillis + this.delayDeltaMillis;
+                int minDelay = this.delayMillis - this.delayDeltaMillis;
+                int maxDelay = this.delayMillis + this.delayDeltaMillis;
 
                 // Randomiza el delay entre eventos para darle algo de inconsistencia y que no tenga un tiempo preciso
-                //int delay = this.random.nextInt(minDelay, maxDelay);
-                TimeUnit.MILLISECONDS.sleep(3000);
+                int delay = this.random.nextInt(minDelay, maxDelay);
+                TimeUnit.MILLISECONDS.sleep(delay);
             }catch(InterruptedException e){
                 logger.error("InterruptedException");
                 logger.error(String.valueOf(e));

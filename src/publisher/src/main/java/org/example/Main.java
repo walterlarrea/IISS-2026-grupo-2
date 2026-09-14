@@ -1,19 +1,14 @@
 package org.example;
 
-import io.avaje.inject.BeanScope;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.util.concurrent.CountDownLatch;
-
+@SpringBootApplication
 public class Main {
-    private static EventGenerator eventGenerator;
 
     public static void main(String[] args) throws InterruptedException {
-        try (BeanScope scope = BeanScope.builder().build()) {
-            EventGenerator eventGenerator = scope.get(EventGenerator.class);
-
-            eventGenerator.generate();
-        } // 3. The scope closes automatically here
-
-        new CountDownLatch(1).await();
+        EventGenerator eventGenerator = SpringApplication.run(Main.class, args)
+                .getBean(EventGenerator.class);
+        eventGenerator.generate();
     }
 }

@@ -5,17 +5,17 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - '1883:1883'
+      - '9001:9001'
 
   mongodb:
     image: mongo:8
     container_name: mongodb
     ports:
-      - "27017:27017"
+      - '27017:27017'
     environment:
-#      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_ROOT_USERNAME}
-#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_ROOT_PASSWORD}
+      #      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_ROOT_USERNAME}
+      #      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
     volumes:
       - mongo_data:/data/db
@@ -69,11 +69,11 @@ services:
       mosquitto:
         condition: service_started
     environment:
-      MONGO_DB_URI: ${MONGO_DB_URI}
-      MONGO_DB_DATABASE: ${MONGO_DB_DATABASE}
-      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATA_MONGODB_DATABASE: ${MONGODB_DATABASE}
+      SPRING_DATA_MONGODB_URI: ${MONGODB_URI}
     ports:
-      - "8080:8080"
+      - '8080:8080'
     restart: unless-stopped
 
 volumes:

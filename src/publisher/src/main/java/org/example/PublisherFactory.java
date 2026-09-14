@@ -1,18 +1,17 @@
 package org.example;
 
-import io.avaje.inject.PreDestroy;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.springframework.stereotype.Component;
 
-@Singleton
+import jakarta.annotation.PreDestroy;
+
+@Component
 public class PublisherFactory {
     private MqttClient client;
 
-    @Inject
     public PublisherFactory(AppConfig appConfig) {
         final String mqttUrl = appConfig.getValue(appConfig.MQTT_BROKER_URL);
         // Genera un ID de client unico
