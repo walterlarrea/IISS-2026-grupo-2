@@ -7,15 +7,15 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 
 public class CustomSerializer {
-    public static class ThreeDecimalSerializer extends JsonSerializer<Float> {
+    public static class ThreeDecimalSerializer extends JsonSerializer<Double> {
         @Override
-        public void serialize(Float value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Double value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             if (value != null) {
                 // Aplica formato "%.3f" y escribe el resultado como texto
                 String formattedValue = "%.3f".formatted(value);
 
-                // Escribe como número flotante en el JSON
-                gen.writeNumber(Float.parseFloat(formattedValue.replace(',', '.')));
+                // Escribe el número ya formateado para conservar la notación decimal
+                gen.writeNumber(formattedValue.replace(',', '.'));
             } else {
                 gen.writeNull();
             }

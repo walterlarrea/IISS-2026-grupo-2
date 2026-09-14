@@ -21,7 +21,7 @@ public class MessageObject {
             float tF,
 
             @JsonSerialize(using = ThreeDecimalSerializer.class)
-            float ts
+                double ts
     ){}
 
     public static <Type> String validateJson(Type object) throws Exception {

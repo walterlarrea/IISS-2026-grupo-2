@@ -72,7 +72,7 @@ public class EventGenerator {
                 // TODO: Podria forzar tendencias sostenidas de elevacion / reduccion de la temperatura para formar cambios mas amplios
 
                 // Toma el tiempo epoch actual y lo convierte a segundos
-                float epochTime = (java.time.Instant.now().toEpochMilli() / 1000.0f);
+                double epochTime = java.time.Instant.now().toEpochMilli() / 1000.0;
 
                 // Crea el JSON
                 Temperatura temp = new Temperatura(id, lastTemp, 0.0f, epochTime);
