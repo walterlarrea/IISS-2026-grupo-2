@@ -10,6 +10,8 @@ COPY publisher/pom.xml ./publisher/
 
 COPY rooms-api/pom.xml ./rooms-api/
 
+COPY switches-api/pom.xml ./switches-api/
+
 RUN mvn dependency:go-offline -B
 
 COPY . .
@@ -52,5 +54,18 @@ FROM eclipse-temurin:25-jre AS rooms-api
 WORKDIR /app
 
 COPY --from=build_base /workspace/rooms-api/target/rooms-api-1.0-SNAPSHOT.jar /app/app.jar
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+
+# ===============================
+# Switches API
+# ===============================
+
+FROM eclipse-temurin:25-jre AS switches-api
+
+WORKDIR /app
+
+COPY --from=build_base /workspace/switches-api/target/switches-api-1.0-SNAPSHOT.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -29,6 +29,7 @@
         <module>subscriber</module>
         <module>publisher</module>
         <module>rooms-api</module>
+        <module>switches-api</module>
     </modules>
 
 </project>
