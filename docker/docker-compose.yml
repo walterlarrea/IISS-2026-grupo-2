@@ -2,11 +2,13 @@ version: '3.8'
 
 services:
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2.0.22
     container_name: mosquitto
     ports:
       - '1883:1883'
       - '9001:9001'
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
 
   mongodb:
     image: mongo:8
@@ -22,7 +24,7 @@ services:
 
   subscriber:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: subscriber
     container_name: subscriber
@@ -44,7 +46,7 @@ services:
 
   publisher:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: publisher
     container_name: publisher
@@ -59,7 +61,7 @@ services:
 
   rooms-api:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: rooms-api
     container_name: rooms-api
@@ -78,7 +80,7 @@ services:
 
   switches-api:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: switches-api
     container_name: switches-api

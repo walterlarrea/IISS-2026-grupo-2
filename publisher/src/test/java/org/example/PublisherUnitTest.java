@@ -26,7 +26,7 @@ class PublisherUnitTest {
 
     @Test
     void validateJsonSerializesTemperaturaToJson() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(7, 24.0f, 75.5f, 0.123456f);
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(7, 24.0f, 75.5f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
         JsonNode root = mapper.readTree(json);
@@ -34,27 +34,27 @@ class PublisherUnitTest {
         assertEquals(7, root.get("id").asInt());
         assertEquals(24.0, root.get("tC").asDouble(), 0.0001);
         assertEquals(75.5, root.get("tF").asDouble(), 0.0001);
-        assertEquals(0.123, root.get("ts").asDouble(), 0.0001);
+        assertEquals(1789351400L, root.get("ts").asLong());
     }
 
     @Test
-    void customSerializerRoundsValuesToTwoAndThreeDecimals() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(3, 12.345f, 54.321f, 0.987654f);
+    void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(3, 12.345f, 54.321f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
 
         assertTrue(json.contains("\"tC\":12.35"));
         assertTrue(json.contains("\"tF\":54.32"));
-        assertTrue(json.contains("\"ts\":0.988"));
+        assertTrue(json.contains("\"ts\":1789351400"));
     }
 
     @Test
-    void epochTimeKeepsDecimalNotationAndThreeDecimals() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(1, 24.65f, 0.0f, 1789351400.123);
+    void epochTimeIsSerializedAsAnInteger() throws Exception {
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(1, 24.65f, 0.0f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
 
-        assertTrue(json.contains("\"ts\":1789351400.123"));
+        assertTrue(json.contains("\"ts\":1789351400"));
         assertFalse(json.contains("E"));
     }
 

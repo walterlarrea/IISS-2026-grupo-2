@@ -30,14 +30,14 @@ Cada publicación tiene este formato:
 	"id": 0,
 	"tC": 23.84,
 	"tF": 0.0,
-	"ts": 1778712345.123
+	"ts": 1778712345123
 }
 ```
 
 - id: identificador del termostato
 - tC: temperatura en °C
 - tF: temperatura en °F (actualmente 0.0)
-- ts: Epoch Time en segundos, con tres decimales de precisión y formato decimal fijo
+- ts: Epoch Time en milisegundos enteros
 
 ### Configuración
 
