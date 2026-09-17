@@ -18,7 +18,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <finalName>app</finalName>
+        <finalName>publisher-app</finalName>
     </properties>
 
     <dependencies>
@@ -54,7 +54,7 @@
     </dependencies>
 
     <build>
-        <finalName>app</finalName>
+        <finalName>${finalName}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -16,7 +16,7 @@ RUN mvn dependency:go-offline -B
 
 COPY . .
 
-RUN mvn clean package -DskipTests
+RUN mvn clean package
 
 
 # ===============================
@@ -27,7 +27,7 @@ FROM eclipse-temurin:25-jre AS subscriber
 
 WORKDIR /app
 
-COPY --from=build_base /workspace/subscriber/target/subscriber-*.jar /app/app.jar
+COPY --from=build_base /workspace/subscriber/target/subscriber-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
@@ -40,7 +40,7 @@ FROM eclipse-temurin:25-jre AS publisher
 
 WORKDIR /app
 
-COPY --from=build_base /workspace/publisher/target/publisher-*.jar /app/app.jar
+COPY --from=build_base /workspace/publisher/target/publisher-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
@@ -53,7 +53,7 @@ FROM eclipse-temurin:25-jre AS rooms-api
 
 WORKDIR /app
 
-COPY --from=build_base /workspace/rooms-api/target/rooms-api-*.jar /app/app.jar
+COPY --from=build_base /workspace/rooms-api/target/rooms-api-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
@@ -66,6 +66,6 @@ FROM eclipse-temurin:25-jre AS switches-api
 
 WORKDIR /app
 
-COPY --from=build_base /workspace/switches-api/target/switches-api-*.jar /app/app.jar
+COPY --from=build_base /workspace/switches-api/target/switches-api-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

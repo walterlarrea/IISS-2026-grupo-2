@@ -16,6 +16,7 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
+        <finalName>rooms-api-app</finalName>
     </properties>
 
     <dependencies>
@@ -42,6 +43,7 @@
     </dependencies>
 
     <build>
+        <finalName>${finalName}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
