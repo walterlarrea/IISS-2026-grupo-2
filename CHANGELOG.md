@@ -1,5 +1,12 @@
 [//]: # 'Agrega las nuevas entradas al principio e incrementa la versión junto con el módulo; por ejemplo: 0.1.0, 0.1.1, 0.1.2, etc.'
 
+# [2.1.1] 17/09/2026
+
+## Cambiado
+
+- Simplificación del workflow de GitHub Actions a un único job y un único paso Maven con `mvn -B verify` para compilar y ejecutar las pruebas.
+- Incremento de la versión del proyecto a `2.1.1`.
+
 # [2.1.0] 17/09/2026
 
 ## Añadido
