@@ -5,7 +5,7 @@
     </option>
     <option name="MAIN_CLASS_NAME" value="org.example.Main" />
     <module name="publisher" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/publisher" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/publisher" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

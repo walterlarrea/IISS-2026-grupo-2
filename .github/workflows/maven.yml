@@ -27,14 +27,13 @@ jobs:
           cache: maven
 
       - name: Build project
-        working-directory: ./src
         run: mvn -B -DskipTests package
 
       - name: Upload compiled Maven targets
         uses: actions/upload-artifact@v4
         with:
           name: maven-targets
-          path: src/**/target/**
+          path: '**/target/**'
           retention-days: 1
 
   test:
@@ -62,5 +61,4 @@ jobs:
           name: maven-targets
 
       - name: Run unit tests
-        working-directory: ./src
         run: mvn -B test

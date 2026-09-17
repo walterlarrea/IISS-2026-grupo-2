@@ -21,7 +21,7 @@
       "request": "launch",
       "mainClass": "org.example.Main",
       "projectName": "subscriber",
-      "cwd": "${workspaceFolder}/src/subscriber",
+      "cwd": "${workspaceFolder}/subscriber",
       "envFile": "${workspaceFolder}/.env.local"
     }
   ]
