@@ -7,8 +7,7 @@ public class Habitacion {
     private String idTermostato;
     private String idSwitch;
 
-    public Habitacion() {
-    }
+    public Habitacion() {}
 
     public String getId() {
         return id;

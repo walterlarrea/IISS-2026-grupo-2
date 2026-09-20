@@ -1,7 +1,7 @@
-package org.example.service;
+package org.switches.service;
 
-import org.example.Switch;
-import org.example.dto.SwitchResponse;
+import org.switches.Switch;
+import org.switches.dto.SwitchResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;

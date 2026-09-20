@@ -1,4 +1,4 @@
-package org.example;
+package org.switches;
 
 public class Switch {
 

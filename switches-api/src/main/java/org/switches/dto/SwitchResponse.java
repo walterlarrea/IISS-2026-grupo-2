@@ -1,4 +1,4 @@
-package org.example.dto;
+package org.switches.dto;
 
 public record SwitchResponse(String id, boolean encendido) {
 }

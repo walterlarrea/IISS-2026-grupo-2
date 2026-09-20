@@ -1,9 +1,9 @@
-package org.example.controller;
+package org.switches.controller;
 
 import jakarta.validation.Valid;
-import org.example.dto.SwitchRequest;
-import org.example.dto.SwitchResponse;
-import org.example.service.SwitchService;
+import org.switches.dto.SwitchRequest;
+import org.switches.dto.SwitchResponse;
+import org.switches.service.SwitchService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 

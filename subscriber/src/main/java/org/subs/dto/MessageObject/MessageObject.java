@@ -1,9 +1,9 @@
-package org.pub.dto.MessageObject;
+package org.subs.dto.MessageObject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.pub.dto.serializer.CustomSerializer.TwoDecimalSerializer;
+import org.subs.dto.serializer.CustomSerializer.TwoDecimalSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

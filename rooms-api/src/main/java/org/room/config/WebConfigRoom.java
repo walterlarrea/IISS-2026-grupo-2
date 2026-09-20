@@ -1,15 +1,14 @@
-package org.example.config;
+package org.room.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfigRoom implements WebMvcConfigurer {
+    private final ApiKeyRoom apiKeyInterceptor;
 
-    private final ApiKeyInterceptor apiKeyInterceptor;
-
-    public WebConfig(ApiKeyInterceptor apiKeyInterceptor) {
+    public WebConfigRoom(ApiKeyRoom apiKeyInterceptor) {
         this.apiKeyInterceptor = apiKeyInterceptor;
     }
 
