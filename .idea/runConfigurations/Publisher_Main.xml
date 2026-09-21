@@ -3,7 +3,7 @@
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/.env.local" />
     </option>
-    <option name="MAIN_CLASS_NAME" value="org.example.Main" />
+    <option name="MAIN_CLASS_NAME" value="org.pub.Main" />
     <module name="publisher" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/publisher" />
     <method v="2">
