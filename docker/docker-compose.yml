@@ -48,7 +48,10 @@ services:
       ROOMS_API_URL: ${ROOMS_API_URL}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
     ports:
-      - "${SUBSCRIBER_API_PORT}:8080"
+      - '${SUBSCRIBER_API_PORT:-8082}:${SUBSCRIBER_API_PORT:-8082}'
+      # "8082:8082" = el puerto 8082 del contenedor se conecta con el puerto 8082 del ordenador.
+      # "${SUBSCRIBER_API_PORT:-8082}" intenta usar el valor de la variable de entorno
+      # SUBSCRIBER_API_PORT; si no está definida, usa 8082 por defecto.
     restart: unless-stopped
 
   publisher:
@@ -83,7 +86,7 @@ services:
       SPRING_DATA_MONGODB_URI: ${MONGODB_URI}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
     ports:
-      - '${ROOMS_API_PORT:-8080}'
+      - '${ROOMS_API_PORT:-8080}:${ROOMS_API_PORT:-8080}'
     restart: unless-stopped
 
   switches-api:
