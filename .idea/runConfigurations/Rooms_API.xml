@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Rooms API" type="Application" factoryName="Application">
+    <option name="envFilePaths">
+      <option value="$PROJECT_DIR$/.env.local" />
+    </option>
+    <option name="MAIN_CLASS_NAME" value="org.room.RoomsApiApplication" />
+    <module name="rooms-api" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
