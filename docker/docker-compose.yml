@@ -44,6 +44,11 @@ services:
       MONGODB_COLLECTION_MEDICIONES: ${MONGODB_COLLECTION_MEDICIONES}
 
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+
+      ROOMS_API_URL: ${ROOMS_API_URL}
+      ROOMS_API_KEY: ${ROOMS_API_KEY}
+    ports:
+      - "${SUBSCRIBER_API_PORT}:8080"
     restart: unless-stopped
 
   publisher:
@@ -78,7 +83,7 @@ services:
       SPRING_DATA_MONGODB_URI: ${MONGODB_URI}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
     ports:
-      - '${ROOMS_API_PORT:-8080}:${ROOMS_API_PORT:-8081}'
+      - '${ROOMS_API_PORT:-8080}'
     restart: unless-stopped
 
   switches-api:

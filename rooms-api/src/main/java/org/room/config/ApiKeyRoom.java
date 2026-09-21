@@ -11,7 +11,7 @@ public class ApiKeyRoom implements HandlerInterceptor {
     private static final String API_KEY_HEADER = "X-API-KEY";
     private final String expectedApiKey;
 
-    public ApiKeyRoom(@Value("${rooms.api-key}") String expectedApiKey) {
+    public ApiKeyRoom(@Value("${ROOMS_API_KEY}") String expectedApiKey) {
         this.expectedApiKey = expectedApiKey;
     }
 

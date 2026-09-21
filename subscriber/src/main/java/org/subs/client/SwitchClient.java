@@ -1,4 +1,4 @@
-package org.subs.Client;
+package org.subs.client;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;

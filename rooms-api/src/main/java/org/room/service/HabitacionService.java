@@ -29,15 +29,14 @@ public class HabitacionService {
     }
 
     public Optional<Habitacion> modificar(String id, Habitacion habitacion) {
-        return repository.findById(id)
-                .map(existente -> {
+        return repository.findById(id).map(existente -> {
                     existente.setNombre(habitacion.getNombre());
                     existente.setTemperaturaEsperada(habitacion.getTemperaturaEsperada());
                     existente.setIdTermostato(habitacion.getIdTermostato());
                     existente.setIdSwitch(habitacion.getIdSwitch());
 
                     return repository.save(existente);
-                });
+        });
     }
 
     public boolean eliminar(String id) {

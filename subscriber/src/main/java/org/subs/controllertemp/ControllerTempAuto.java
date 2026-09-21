@@ -1,7 +1,7 @@
 package org.subs.controllertemp;
 
-import org.subs.Client.RoomClient;
-import org.subs.Client.SwitchClient;
+import org.subs.client.RoomClient;
+import org.subs.client.SwitchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -53,6 +53,7 @@ public class MqttSubscriber {
                         logger.info("'Medición' saved in MongoDB");
                         MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
                         controllerTempAuto.controlarHab(temp.tC(), String.valueOf(temp.id()));
+                        logger.info("Controller for room id = {}",temp.id());
                     } catch (Exception e) {
                         logger.error("Failed saving 'Medición' in MongoDB");
                         e.printStackTrace();
