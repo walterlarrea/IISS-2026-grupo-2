@@ -1,5 +1,6 @@
 package org.subs.client;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -7,8 +8,8 @@ import org.springframework.web.client.RestClient;
 public class SwitchClient {
     private final RestClient restClient;
 
-    public SwitchClient() {
-        this.restClient = RestClient.builder().baseUrl("http://switches-api:8080").build();
+    public SwitchClient(@Qualifier("switchRestClient") RestClient restClient) {
+        this.restClient = restClient;
     }
 
     public void encender(String idSwitch) {

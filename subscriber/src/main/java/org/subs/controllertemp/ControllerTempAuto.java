@@ -36,10 +36,16 @@ public class ControllerTempAuto {
         if (!activo) {
             return;
         }
-        if (temperaturaActual > temperaturaEsperada) {
-            switchClient.apagar(idSwitch);
-        } else if (temperaturaActual < temperaturaEsperada) {
-            switchClient.encender(idSwitch);
+        try {
+            if (temperaturaActual > temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) > esperada ({}). Apagando switch ID = {}", temperaturaActual, temperaturaEsperada, idSwitch);
+                switchClient.apagar(idSwitch);
+            } else if (temperaturaActual < temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) < esperada ({}). Encendiendo switch ID = {}", temperaturaActual, temperaturaEsperada, idSwitch);
+                switchClient.encender(idSwitch);
+            }
+        } catch (Exception e) {
+            logger.error("Error al accionar el switch ID = {}: {}", idSwitch, e.getMessage());
         }
     }
 
@@ -47,7 +53,15 @@ public class ControllerTempAuto {
         if (!activo) {
             return;
         }
-        Habitacion habitacion = roomClient.obtenerHabPorTermo(idTermo);
-        controlarTemp(temperaturaActual, habitacion.getTemperaturaEsperada(), habitacion.getIdSwitch());
+        try {
+            Habitacion habitacion = roomClient.obtenerHabPorTermo(idTermo);
+            if (habitacion != null && habitacion.getIdSwitch() != null) {
+                controlarTemp(temperaturaActual, habitacion.getTemperaturaEsperada(), habitacion.getIdSwitch());
+            } else {
+                logger.warn("No se encontró habitación o idSwitch para el termostato ID = {}", idTermo);
+            }
+        } catch (Exception e) {
+            logger.error("Error al obtener habitación para el termostato ID = {}: {}", idTermo, e.getMessage());
+        }
     }
 }

@@ -47,6 +47,9 @@ services:
 
       ROOMS_API_URL: ${ROOMS_API_URL}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
+
+      SWITCHES_API_URL: ${SWITCHES_API_URL}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
       - "${SUBSCRIBER_API_PORT}:8080"
     restart: unless-stopped
