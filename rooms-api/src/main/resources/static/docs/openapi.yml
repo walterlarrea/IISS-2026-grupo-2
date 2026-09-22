@@ -59,6 +59,25 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /habitaciones/validar:
+    get:
+      tags: [Habitaciones]
+      summary: Valida todas las habitaciones de la coleccion
+      description: Retorna la lista de habitaciones con idTermostato o uriSwitch invalidos, o con idTermostato o uriSwitch duplicados.
+      operationId: validarHabitaciones
+      responses:
+        '200':
+          description: Lista de habitaciones no conformes o duplicadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /habitaciones/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'

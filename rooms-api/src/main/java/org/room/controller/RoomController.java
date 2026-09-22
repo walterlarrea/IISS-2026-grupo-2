@@ -31,6 +31,11 @@ public class RoomController {
         return service.listar();
     }
 
+    @GetMapping("/validar")
+    public List<Room> validar() {
+        return service.validar();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Room> buscarPorId(@PathVariable("id") String id) {
         return service.buscarPorId(id)
