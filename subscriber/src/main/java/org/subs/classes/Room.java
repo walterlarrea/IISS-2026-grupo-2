@@ -1,4 +1,4 @@
-package org.subs.controllertemp;
+package org.subs.classes;
 
 public class Room {
     private String id;

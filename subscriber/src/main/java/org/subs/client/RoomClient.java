@@ -2,7 +2,7 @@ package org.subs.client;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.subs.controllertemp.Room;
+import org.subs.classes.Room;
 import org.springframework.web.client.RestClient;
 
 @Service

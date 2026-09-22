@@ -49,13 +49,25 @@ public class MqttSubscriber {
                     String payload = new String(message.getPayload());
                     logger.info("Topic: " + topic + " | Message: " + payload);
                     try {
-                        processMessage(payload);
-                        logger.info("'Medición' saved in MongoDB");
                         MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
-                        controllerTempAuto.controlarHab(temp.tC(), String.valueOf(temp.id()));
                         logger.info("Controller for room id = {}",temp.id());
+                        try {
+                            processMessage(payload);
+                            logger.info("'Medición' saved in MongoDB");
+                        } catch (Exception e) {
+                            logger.error("Failed saving 'Medición' in MongoDB");
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            logger.info("Controller for room id = {}",temp.id());
+                            controllerTempAuto.controlarHab(temp.tC(), String.valueOf(temp.id()));
+                        } catch (Exception e) {
+                            logger.error("Failed handling temperature control for room id = {}", temp.id(), e);
+                            e.printStackTrace();
+                        }
                     } catch (Exception e) {
-                        logger.error("Failed saving 'Medición' in MongoDB");
+                        logger.error("Failed parsing 'Medición' from payload: {}", payload, e);
                         e.printStackTrace();
                     }
                 }

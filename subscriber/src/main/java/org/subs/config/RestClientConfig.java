@@ -15,9 +15,7 @@ public class RestClientConfig {
     }
 
     @Bean
-    public RestClient switchRestClient(RestClient.Builder builder,
-                                       @Value("${SWITCHES_API_URL:http://switches-api:8090}") String switchesApiUrl,
-                                       @Value("${SWITCHES_API_KEY:development-key}") String switchesApiKey) {
-        return builder.clone().baseUrl(switchesApiUrl).defaultHeader("X-API-KEY", switchesApiKey).build();
+    public RestClient switchRestClient(RestClient.Builder builder) {
+        return builder.clone().defaultHeader("Accept", "application/json").build();
     }
 }
