@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: Switches API
+  description: Consulta y actualizacion de switches del hogar inteligente.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8090
+    description: switches-api (development)
+tags:
+  - name: Switches
+    description: Consulta y actualizacion de switches
+paths:
+  /switches/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Switches]
+      summary: Obtiene el estado de un switch
+      operationId: obtenerSwitch
+      responses:
+        '200':
+          description: Estado actual del switch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+    post:
+      tags: [Switches]
+      summary: Actualiza el estado de un switch
+      description: El identificador se envia en el cuerpo de la peticion.
+      operationId: actualizarSwitch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchRequest'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador del Switch.
+      schema:
+        type: string
+  schemas:
+    Switch:
+      type: object
+      required: [id, encendido]
+      properties:
+        id:
+          type: string
+        encendido:
+          type: boolean
+    SwitchRequest:
+      type: object
+      required: [encendido]
+      properties:
+        encendido:
+          type: boolean
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+  responses:
+    BadRequest:
+      description: La peticion no tiene un formato valido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
