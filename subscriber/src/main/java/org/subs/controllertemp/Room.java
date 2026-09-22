@@ -1,13 +1,13 @@
 package org.subs.controllertemp;
 
-public class Habitacion {
+public class Room {
     private String id;
     private String nombre;
     private double temperaturaEsperada;
     private String idTermostato;
     private String idSwitch;
 
-    public Habitacion() {}
+    public Room() {}
 
     public String getId() {
         return id;

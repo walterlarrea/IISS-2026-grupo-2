@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("habitaciones")
-public class Habitacion {
+public class Room {
 
     @Id
     private String id;
@@ -13,10 +13,10 @@ public class Habitacion {
     private String idTermostato;
     private String idSwitch;
 
-    public Habitacion() {
+    public Room() {
     }
 
-    public Habitacion(String nombre, double temperaturaEsperada, String idTermostato, String idSwitch) {
+    public Room(String nombre, double temperaturaEsperada, String idTermostato, String idSwitch) {
         this.nombre = nombre;
         this.temperaturaEsperada = temperaturaEsperada;
         this.idTermostato = idTermostato;
