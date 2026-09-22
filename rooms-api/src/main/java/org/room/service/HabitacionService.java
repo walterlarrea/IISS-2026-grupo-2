@@ -33,7 +33,7 @@ public class HabitacionService {
                     existente.setNombre(room.getNombre());
                     existente.setTemperaturaEsperada(room.getTemperaturaEsperada());
                     existente.setIdTermostato(room.getIdTermostato());
-                    existente.setIdSwitch(room.getIdSwitch());
+                    existente.setUriSwitch(room.getUriSwitch());
 
                     return repository.save(existente);
         });
@@ -75,9 +75,9 @@ public class HabitacionService {
                     );
                 }
 
-                if (cambios.containsKey("idSwitch")) {
-                    existente.setIdSwitch(
-                            (String) cambios.get("idSwitch")
+                if (cambios.containsKey("uriSwitch")) {
+                    existente.setUriSwitch(
+                            (String) cambios.get("uriSwitch")
                     );
                 }
 

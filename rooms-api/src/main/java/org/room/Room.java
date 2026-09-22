@@ -11,16 +11,16 @@ public class Room {
     private String nombre;
     private double temperaturaEsperada;
     private String idTermostato;
-    private String idSwitch;
+    private String uriSwitch;
 
     public Room() {
     }
 
-    public Room(String nombre, double temperaturaEsperada, String idTermostato, String idSwitch) {
+    public Room(String nombre, double temperaturaEsperada, String idTermostato, String uriSwitch) {
         this.nombre = nombre;
         this.temperaturaEsperada = temperaturaEsperada;
         this.idTermostato = idTermostato;
-        this.idSwitch = idSwitch;
+        this.uriSwitch = uriSwitch;
     }
 
     public String getId() {
@@ -39,8 +39,8 @@ public class Room {
         return idTermostato;
     }
 
-    public String getIdSwitch() {
-        return idSwitch;
+    public String getUriSwitch() {
+        return uriSwitch;
     }
 
     public void setNombre(String nombre) {
@@ -55,8 +55,8 @@ public class Room {
     this.idTermostato = idTermostato;
     }
 
-    public void setIdSwitch(String idSwitch) {
-    this.idSwitch = idSwitch;
+    public void setUriSwitch(String uriSwitch) {
+    this.uriSwitch = uriSwitch;
     }
     
 }
