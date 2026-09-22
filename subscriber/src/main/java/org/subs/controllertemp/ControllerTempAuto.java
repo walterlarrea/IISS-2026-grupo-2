@@ -47,7 +47,7 @@ public class ControllerTempAuto {
         if (!activo) {
             return;
         }
-        Habitacion habitacion = roomClient.obtenerHabPorTermo(idTermo);
-        controlarTemp(temperaturaActual, habitacion.getTemperaturaEsperada(), habitacion.getIdSwitch());
+        Room room = roomClient.obtenerHabPorTermo(idTermo);
+        controlarTemp(temperaturaActual, room.getTemperaturaEsperada(), room.getIdSwitch());
     }
 }

@@ -1,6 +1,6 @@
 package org.room.controller;
 
-import org.room.Habitacion;
+import org.room.Room;
 import org.room.service.HabitacionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,41 +18,41 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/habitaciones")
-public class HabitacionController {
+public class RoomController {
 
     private final HabitacionService service;
 
-    public HabitacionController(HabitacionService service) {
+    public RoomController(HabitacionService service) {
         this.service = service;
     }
 
     @GetMapping
-    public List<Habitacion> listar() {
+    public List<Room> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Habitacion> buscarPorId(@PathVariable("id") String id) {
+    public ResponseEntity<Room> buscarPorId(@PathVariable("id") String id) {
         return service.buscarPorId(id)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/termostato/{idTermostato}")
-    public ResponseEntity<Habitacion> buscarPorTermostato(@PathVariable("idTermostato") String idTermostato) {
+    public ResponseEntity<Room> buscarPorTermostato(@PathVariable("idTermostato") String idTermostato) {
         return service.buscarPorIdTermostato(idTermostato)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Habitacion crear(@RequestBody Habitacion habitacion) {
-        return service.crear(habitacion);
+    public Room crear(@RequestBody Room room) {
+        return service.crear(room);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Habitacion> modificar(@PathVariable("id") String id, @RequestBody Habitacion habitacion) {
-        return service.modificar(id, habitacion)
+    public ResponseEntity<Room> modificar(@PathVariable("id") String id, @RequestBody Room room) {
+        return service.modificar(id, room)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
@@ -66,7 +66,7 @@ public class HabitacionController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Habitacion> modificarParcialmente(@PathVariable("id") String id, @RequestBody Map<String, Object> cambios) {
+    public ResponseEntity<Room> modificarParcialmente(@PathVariable("id") String id, @RequestBody Map<String, Object> cambios) {
         return service.modificarParcialmente(id, cambios)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
