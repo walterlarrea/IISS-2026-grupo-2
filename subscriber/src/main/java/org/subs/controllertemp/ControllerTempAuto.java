@@ -1,5 +1,6 @@
 package org.subs.controllertemp;
 
+import org.subs.classes.Room;
 import org.subs.client.RoomClient;
 import org.subs.client.SwitchClient;
 import org.slf4j.Logger;
