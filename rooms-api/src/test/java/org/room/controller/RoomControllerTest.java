@@ -3,7 +3,7 @@ package org.room.controller;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.room.Room;
-import org.room.service.HabitacionService;
+import org.room.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +28,7 @@ class RoomControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private HabitacionService service;
+    private RoomService service;
 
     @Test
     @DisplayName("GET /habitaciones/validar devuelve lista de habitaciones no conformes")
