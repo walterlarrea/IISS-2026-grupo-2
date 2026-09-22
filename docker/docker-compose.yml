@@ -47,6 +47,9 @@ services:
 
       ROOMS_API_URL: ${ROOMS_API_URL}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
+
+      SWITCHES_API_URL: ${SWITCHES_API_URL}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
       - '${SUBSCRIBER_API_PORT:-8082}:${SUBSCRIBER_API_PORT:-8082}'
       # "8082:8082" = el puerto 8082 del contenedor se conecta con el puerto 8082 del ordenador.

@@ -36,10 +36,16 @@ public class ControllerTempAuto {
         if (!activo) {
             return;
         }
-        if (temperaturaActual > temperaturaEsperada) {
-            switchClient.apagar(idSwitch);
-        } else if (temperaturaActual < temperaturaEsperada) {
-            switchClient.encender(idSwitch);
+        try {
+            if (temperaturaActual > temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) > esperada ({}). Apagando switch ID = {}", temperaturaActual, temperaturaEsperada, idSwitch);
+                switchClient.apagar(idSwitch);
+            } else if (temperaturaActual < temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) < esperada ({}). Encendiendo switch ID = {}", temperaturaActual, temperaturaEsperada, idSwitch);
+                switchClient.encender(idSwitch);
+            }
+        } catch (Exception e) {
+            logger.error("Error al accionar el switch ID = {}: {}", idSwitch, e.getMessage());
         }
     }
 
