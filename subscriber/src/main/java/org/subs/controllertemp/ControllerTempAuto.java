@@ -53,15 +53,7 @@ public class ControllerTempAuto {
         if (!activo) {
             return;
         }
-        try {
-            Habitacion habitacion = roomClient.obtenerHabPorTermo(idTermo);
-            if (habitacion != null && habitacion.getIdSwitch() != null) {
-                controlarTemp(temperaturaActual, habitacion.getTemperaturaEsperada(), habitacion.getIdSwitch());
-            } else {
-                logger.warn("No se encontró habitación o idSwitch para el termostato ID = {}", idTermo);
-            }
-        } catch (Exception e) {
-            logger.error("Error al obtener habitación para el termostato ID = {}: {}", idTermo, e.getMessage());
-        }
+        Room room = roomClient.obtenerHabPorTermo(idTermo);
+        controlarTemp(temperaturaActual, room.getTemperaturaEsperada(), room.getIdSwitch());
     }
 }

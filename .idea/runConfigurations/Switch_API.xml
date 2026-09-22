@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Switch API" type="Application" factoryName="Application">
+    <option name="envFilePaths">
+      <option value="$PROJECT_DIR$/.env.local" />
+    </option>
+    <option name="MAIN_CLASS_NAME" value="org.switches.SwitchesApiApplication" />
+    <module name="switches-api" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,7 +1,7 @@
 package org.room.service;
 
-import org.room.Habitacion;
-import org.room.repository.HabitacionRepository;
+import org.room.Room;
+import org.room.repository.RoomRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
@@ -10,30 +10,30 @@ import java.util.Optional;
 @Service
 public class HabitacionService {
 
-    private final HabitacionRepository repository;
+    private final RoomRepository repository;
 
-    public HabitacionService(HabitacionRepository repository) {
+    public HabitacionService(RoomRepository repository) {
         this.repository = repository;
     }
 
-    public List<Habitacion> listar() {
+    public List<Room> listar() {
         return repository.findAll();
     }
 
-    public Optional<Habitacion> buscarPorId(String id) {
+    public Optional<Room> buscarPorId(String id) {
         return repository.findById(id);
     }
 
-    public Habitacion crear(Habitacion habitacion) {
-        return repository.save(habitacion);
+    public Room crear(Room room) {
+        return repository.save(room);
     }
 
-    public Optional<Habitacion> modificar(String id, Habitacion habitacion) {
+    public Optional<Room> modificar(String id, Room room) {
         return repository.findById(id).map(existente -> {
-                    existente.setNombre(habitacion.getNombre());
-                    existente.setTemperaturaEsperada(habitacion.getTemperaturaEsperada());
-                    existente.setIdTermostato(habitacion.getIdTermostato());
-                    existente.setIdSwitch(habitacion.getIdSwitch());
+                    existente.setNombre(room.getNombre());
+                    existente.setTemperaturaEsperada(room.getTemperaturaEsperada());
+                    existente.setIdTermostato(room.getIdTermostato());
+                    existente.setIdSwitch(room.getIdSwitch());
 
                     return repository.save(existente);
         });
@@ -48,11 +48,11 @@ public class HabitacionService {
         return true;
     }
 
-    public Optional<Habitacion> buscarPorIdTermostato(String idTermostato) {
+    public Optional<Room> buscarPorIdTermostato(String idTermostato) {
         return repository.findByIdTermostato(idTermostato);
     }
 
-    public Optional<Habitacion> modificarParcialmente(
+    public Optional<Room> modificarParcialmente(
         String id,
         Map<String, Object> cambios) {
 
