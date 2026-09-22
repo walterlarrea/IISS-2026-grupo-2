@@ -13,12 +13,12 @@ public class SwitchClient {
     }
 
     public void encender(String idSwitch) {
-        restClient.post().uri("/switches").body(new SwitchRequest(idSwitch, true)).retrieve().toBodilessEntity();
+        restClient.post().uri("/switches/{id}", idSwitch).body(new SwitchRequest(true)).retrieve().toBodilessEntity();
     }
 
     public void apagar(String idSwitch) {
-        restClient.post().uri("/switches").body(new SwitchRequest(idSwitch, false)).retrieve().toBodilessEntity();
+        restClient.post().uri("/switches/{id}", idSwitch).body(new SwitchRequest(false)).retrieve().toBodilessEntity();
     }
 
-    private record SwitchRequest(String id, boolean encendido) {}
+    private record SwitchRequest(boolean encendido) {}
 }
