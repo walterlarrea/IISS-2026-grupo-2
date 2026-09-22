@@ -16,13 +16,13 @@ public class SwitchClient {
         this.restClient = restClient;
     }
 
-    public void encender(String idSwitch) throws URISyntaxException {
-        URI uri = new URI(idSwitch);
+    public void encender(String uriSwitch) throws URISyntaxException {
+        URI uri = new URI(uriSwitch);
         restClient.post().uri(uri).body(new SwitchRequest(true)).retrieve().body(Switch.class);
     }
 
-    public void apagar(String idSwitch) throws URISyntaxException {
-        URI uri = new URI(idSwitch);
+    public void apagar(String uriSwitch) throws URISyntaxException {
+        URI uri = new URI(uriSwitch);
         restClient.post().uri(uri).body(new SwitchRequest(false)).retrieve().body(Switch.class);
     }
 

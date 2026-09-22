@@ -1,14 +1,22 @@
 openapi: 3.0.3
 info:
-  title: Rooms API
-  description: Gestión de habitaciones del hogar inteligente.
+  title: IISS Smart Home APIs
+  description: Contrato conjunto de rooms-api y switches-api.
   version: 1.0.0
 servers:
   - url: http://localhost:8080
     description: rooms-api (development)
+  - url: http://localhost:8081
+    description: rooms-api (local)
+  - url: http://localhost:8090
+    description: switches-api (development)
+  - url: http://localhost:8091
+    description: switches-api (local)
 tags:
   - name: Habitaciones
     description: Gestion de habitaciones
+  - name: Switches
+    description: Consulta y actualizacion de switches
 paths:
   /habitaciones:
     get:
@@ -161,6 +169,48 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /switches/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Switches]
+      summary: Obtiene el estado de un switch
+      operationId: obtenerSwitch
+      responses:
+        '200':
+          description: Estado actual del switch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Switches]
+      summary: Actualiza el estado de un switch
+      description: El identificador se envia en el cuerpo de la peticion.
+      operationId: actualizarSwitch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchRequest'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     ApiKey:
@@ -203,6 +253,23 @@ components:
           type: string
         uriSwitch:
           type: string
+    Switch:
+      type: object
+      required: [id, encendido]
+      properties:
+        id:
+          type: string
+        encendido:
+          type: boolean
+    SwitchRequest:
+      type: object
+      required: [id, encendido]
+      properties:
+        id:
+          type: string
+          minLength: 1
+        encendido:
+          type: boolean
     Error:
       type: object
       required: [error]
@@ -222,5 +289,6 @@ components:
       description: La cabecera X-API-KEY no es valida.
     NotFound:
       description: Recurso no encontrado.
+
 security:
   - ApiKey: []
