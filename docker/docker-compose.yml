@@ -1,29 +1,30 @@
 version: '3.8'
 
 services:
-
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2.0.22
     container_name: mosquitto
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - '1883:1883'
+      - '9001:9001'
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
 
   mongodb:
     image: mongo:8
     container_name: mongodb
     ports:
-      - "27017:27017"
+      - '27017:27017'
     environment:
-#      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_ROOT_USERNAME}
-#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_ROOT_PASSWORD}
+      #      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_ROOT_USERNAME}
+      #      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
     volumes:
       - mongo_data:/data/db
 
   subscriber:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: subscriber
     container_name: subscriber
@@ -41,11 +42,24 @@ services:
       MONGODB_URI: ${MONGODB_URI}
       MONGODB_COLLECTION_HABITACIONES: ${MONGODB_COLLECTION_HABITACIONES}
       MONGODB_COLLECTION_MEDICIONES: ${MONGODB_COLLECTION_MEDICIONES}
+
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+
+      ROOMS_API_URL: ${ROOMS_API_URL}
+      ROOMS_API_KEY: ${ROOMS_API_KEY}
+
+      SWITCHES_API_URL: ${SWITCHES_API_URL}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY}
+    ports:
+      - '${SUBSCRIBER_API_PORT:-8082}:${SUBSCRIBER_API_PORT:-8082}'
+      # "8082:8082" = el puerto 8082 del contenedor se conecta con el puerto 8082 del ordenador.
+      # "${SUBSCRIBER_API_PORT:-8082}" intenta usar el valor de la variable de entorno
+      # SUBSCRIBER_API_PORT; si no está definida, usa 8082 por defecto.
     restart: unless-stopped
 
   publisher:
     build:
-      context: ../src
+      context: ..
       dockerfile: Dockerfile
       target: publisher
     container_name: publisher
@@ -56,6 +70,39 @@ services:
         condition: service_started
     environment:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
+    restart: unless-stopped
+
+  rooms-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: rooms-api
+    container_name: rooms-api
+    depends_on:
+      mongodb:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATA_MONGODB_DATABASE: ${MONGODB_DATABASE}
+      SPRING_DATA_MONGODB_URI: ${MONGODB_URI}
+      ROOMS_API_KEY: ${ROOMS_API_KEY}
+    ports:
+      - '${ROOMS_API_PORT:-8080}:${ROOMS_API_PORT:-8080}'
+    restart: unless-stopped
+
+  switches-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: switches-api
+    container_name: switches-api
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY}
+    ports:
+      - '${SWITCHES_API_PORT:-8090}:${SWITCHES_API_PORT:-8090}'
     restart: unless-stopped
 
 volumes:

@@ -1,0 +1,428 @@
+openapi: 3.0.3
+info:
+  title: API de Control de Temperatura e Habitaciones - IISS 2026 (Iteración 3)
+  description: >
+    API REST para el CRUD de habitaciones, comandos de control de termostato y stub de switches.
+    Cumple con el Nivel 2 del Modelo de Madurez de Richardson y requiere autenticación mediante API Key.
+  version: 3.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Servicio API de Habitaciones (rooms-api)
+  - url: http://localhost:8082
+    description: Servicio Controlador y Suscriptor (subscriber)
+  - url: http://localhost:8090
+    description: Servicio Stub de Switches (switches-api)
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # =========================================================================
+  # RECURSO: HABITACIONES (rooms-api)
+  # =========================================================================
+  /habitaciones:
+    get:
+      summary: Listar todas las habitaciones
+      operationId: listarHabitaciones
+      tags:
+        - Habitaciones
+      responses:
+        '200':
+          description: Lista de habitaciones obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Crear una nueva habitación
+      operationId: crearHabitacion
+      tags:
+        - Habitaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitacionCreacion'
+      responses:
+        '201':
+          description: Habitación creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /habitaciones/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador único de la habitación
+        schema:
+          type: string
+
+    get:
+      summary: Obtener una habitación por ID
+      operationId: obtenerHabitacionPorId
+      tags:
+        - Habitaciones
+      responses:
+        '200':
+          description: Habitación encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Reemplazar/Modificar completamente una habitación
+      operationId: modificarHabitacion
+      tags:
+        - Habitaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitacionCreacion'
+      responses:
+        '200':
+          description: Habitación modificada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Modificar parcialmente una habitación
+      operationId: modificarParcialmenteHabitacion
+      tags:
+        - Habitaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitacionPatch'
+      responses:
+        '200':
+          description: Habitación actualizada parcialmente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Eliminar una habitación
+      operationId: eliminarHabitacion
+      tags:
+        - Habitaciones
+      responses:
+        '204':
+          description: Habitación eliminada (Sin contenido)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /habitaciones/termostato/{idTermostato}:
+    get:
+      summary: Buscar habitación por identificador de termostato
+      operationId: buscarHabitacionPorTermostato
+      tags:
+        - Habitaciones
+      parameters:
+        - name: idTermostato
+          in: path
+          required: true
+          description: Identificador del termostato
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Habitación encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =========================================================================
+  # COMANDOS / TASKS: CONTROLADOR (subscriber)
+  # =========================================================================
+  /controller/start:
+    post:
+      summary: Iniciar el controlador automático de temperatura
+      operationId: iniciarControlador
+      tags:
+        - Comandos Controlador
+      security: [] # Accesible para gestión del sistema
+      responses:
+        '200':
+          description: Controlador iniciado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoControlador'
+
+  /controller/stop:
+    post:
+      summary: Detener/Pausar el controlador automático de temperatura
+      operationId: detenerControlador
+      tags:
+        - Comandos Controlador
+      security: []
+      responses:
+        '200':
+          description: Controlador detenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoControlador'
+
+  /controller/status:
+    get:
+      summary: Consultar el estado actual del controlador
+      operationId: obtenerEstadoControlador
+      tags:
+        - Comandos Controlador
+      security: []
+      responses:
+        '200':
+          description: Estado del controlador obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoControlador'
+
+  # =========================================================================
+  # STUB DEL SWITCH (switches-api)
+  # =========================================================================
+  /switches/{id}:
+    get:
+      summary: Consultar el estado de un switch
+      operationId: obtenerSwitch
+      tags:
+        - Stub Switches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador del switch
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado del switch obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /switches:
+    post:
+      summary: Accionar (encender/apagar) un switch
+      operationId: accionarSwitch
+      tags:
+        - Stub Switches
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchAccion'
+      responses:
+        '200':
+          description: Estado del switch actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+# =========================================================================
+# COMPONENTES Y ESQUEMAS DE DOMINIO
+# =========================================================================
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: Clave de acceso a la API (Ej. dev-rooms-key o development-key)
+
+  schemas:
+    Habitacion:
+      type: object
+      required:
+        - id
+        - nombre
+        - temperaturaEsperada
+        - idTermostato
+        - idSwitch
+      properties:
+        id:
+          type: string
+          example: "66f123456789abcdef012345"
+        nombre:
+          type: string
+          example: "Living Room"
+        temperaturaEsperada:
+          type: number
+          format: double
+          example: 24.0
+        idTermostato:
+          type: string
+          example: "0"
+        idSwitch:
+          type: string
+          example: "switch-0"
+
+    HabitacionCreacion:
+      type: object
+      required:
+        - nombre
+        - temperaturaEsperada
+        - idTermostato
+        - idSwitch
+      properties:
+        nombre:
+          type: string
+          example: "Dormitorio Principal"
+        temperaturaEsperada:
+          type: number
+          format: double
+          example: 22.0
+        idTermostato:
+          type: string
+          example: "1"
+        idSwitch:
+          type: string
+          example: "switch-1"
+
+    HabitacionPatch:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: "Dormitorio Modificado"
+        temperaturaEsperada:
+          type: number
+          format: double
+          example: 23.5
+        idTermostato:
+          type: string
+          example: "1"
+        idSwitch:
+          type: string
+          example: "switch-1"
+
+    Switch:
+      type: object
+      required:
+        - id
+        - encendido
+      properties:
+        id:
+          type: string
+          example: "switch-0"
+        encendido:
+          type: boolean
+          example: true
+
+    SwitchAccion:
+      type: object
+      required:
+        - id
+        - encendido
+      properties:
+        id:
+          type: string
+          example: "switch-0"
+        encendido:
+          type: boolean
+          example: false
+
+    EstadoControlador:
+      type: object
+      properties:
+        activo:
+          type: boolean
+          example: true
+        estado:
+          type: string
+          example: "activo"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "No autorizado"
+        mensaje:
+          type: string
+          example: "Clave de API no proporcionada o inválida"
+
+  responses:
+    BadRequest:
+      description: Solicitud incorrecta o datos de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autorizado - Falta el encabezado X-API-KEY
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Prohibido - Clave de API inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

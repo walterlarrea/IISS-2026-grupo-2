@@ -1,0 +1,315 @@
+openapi: 3.0.3
+info:
+  title: IISS Smart Home APIs
+  description: Contrato conjunto de rooms-api y switches-api.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: rooms-api (development)
+  - url: http://localhost:8081
+    description: rooms-api (local)
+  - url: http://localhost:8090
+    description: switches-api (development)
+  - url: http://localhost:8091
+    description: switches-api (local)
+tags:
+  - name: Habitaciones
+    description: Gestion de habitaciones
+  - name: Switches
+    description: Consulta y actualizacion de switches
+paths:
+  /habitaciones:
+    get:
+      tags: [Habitaciones]
+      summary: Lista todas las habitaciones
+      operationId: listarHabitaciones
+      responses:
+        '200':
+          description: Lista de habitaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Habitaciones]
+      summary: Crea una habitacion
+      operationId: crearHabitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitacionInput'
+      responses:
+        '200':
+          description: Habitacion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /habitaciones/validar:
+    get:
+      tags: [Habitaciones]
+      summary: Valida todas las habitaciones de la coleccion
+      description: Retorna la lista de habitaciones con idTermostato o uriSwitch invalidos, o con idTermostato o uriSwitch duplicados.
+      operationId: validarHabitaciones
+      responses:
+        '200':
+          description: Lista de habitaciones no conformes o duplicadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /habitaciones/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Habitaciones]
+      summary: Obtiene una habitacion por su identificador
+      operationId: obtenerHabitacion
+      responses:
+        '200':
+          description: Habitacion encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Habitaciones]
+      summary: Reemplaza una habitacion
+      operationId: reemplazarHabitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitacionInput'
+      responses:
+        '200':
+          description: Habitacion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Habitaciones]
+      summary: Actualiza parcialmente una habitacion
+      operationId: actualizarParcialmenteHabitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Campos de Habitacion que se desean modificar.
+      responses:
+        '200':
+          description: Habitacion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Habitaciones]
+      summary: Elimina una habitacion
+      operationId: eliminarHabitacion
+      responses:
+        '204':
+          description: Habitacion eliminada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /habitaciones/termostato/{idTermostato}:
+    parameters:
+      - name: idTermostato
+        in: path
+        required: true
+        description: Identificador del termostato asociado.
+        schema:
+          type: string
+    get:
+      tags: [Habitaciones]
+      summary: Obtiene una habitacion por su termostato
+      operationId: obtenerHabitacionPorTermostato
+      responses:
+        '200':
+          description: Habitacion encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Habitacion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /switches/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Switches]
+      summary: Obtiene el estado de un switch
+      operationId: obtenerSwitch
+      responses:
+        '200':
+          description: Estado actual del switch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Switches]
+      summary: Actualiza el estado de un switch
+      description: El identificador se envia en el cuerpo de la peticion.
+      operationId: actualizarSwitch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchRequest'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Switch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador del recurso.
+      schema:
+        type: string
+  schemas:
+    Habitacion:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        nombre:
+          type: string
+        temperaturaEsperada:
+          type: number
+          format: double
+        idTermostato:
+          type: string
+        uriSwitch:
+          type: string
+          format: uri
+    HabitacionInput:
+      type: object
+      properties:
+        nombre:
+          type: string
+        temperaturaEsperada:
+          type: number
+          format: double
+        idTermostato:
+          type: string
+        uriSwitch:
+          type: string
+          format: uri
+    Switch:
+      type: object
+      required: [id, encendido]
+      properties:
+        id:
+          type: string
+        encendido:
+          type: boolean
+    SwitchRequest:
+      type: object
+      required: [id, encendido]
+      properties:
+        id:
+          type: string
+          minLength: 1
+        encendido:
+          type: boolean
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+  responses:
+    BadRequest:
+      description: La peticion no tiene un formato valido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Falta la cabecera X-API-KEY.
+    Forbidden:
+      description: La cabecera X-API-KEY no es valida.
+    NotFound:
+      description: Recurso no encontrado.
+
+security:
+  - ApiKey: []

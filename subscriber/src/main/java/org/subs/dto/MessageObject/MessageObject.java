@@ -1,0 +1,31 @@
+package org.subs.dto.MessageObject;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.subs.dto.serializer.CustomSerializer.TwoDecimalSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MessageObject {
+    private static final Logger logger = LoggerFactory.getLogger(MessageObject.class);
+
+    public record Temperatura(
+            int id,
+            @JsonSerialize(using = TwoDecimalSerializer.class)
+            double tC,
+            @JsonSerialize(using = TwoDecimalSerializer.class)
+            double tF,
+            long ts
+    ){}
+
+    public static <Type> String validateJson(Type object) throws Exception {
+        try{
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(object);
+        }catch(JsonProcessingException e){
+            logger.error("Failed to validate JSON object of type {}", object.getClass().getName(), e);
+            throw new Exception("Failed to validate JSON object", e);
+        }
+    }
+}

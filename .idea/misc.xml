@@ -4,14 +4,14 @@
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/subscriber/pom.xml" />
-        <option value="$PROJECT_DIR$/src/publisher/pom.xml" />
-        <option value="$PROJECT_DIR$/src/pom.xml" />
+        <option value="$PROJECT_DIR$/subscriber/pom.xml" />
+        <option value="$PROJECT_DIR$/publisher/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
       <set>
-        <option value="$PROJECT_DIR$/src/publisher/publisher/pom.xml" />
+        <option value="$PROJECT_DIR$/publisher/publisher/pom.xml" />
       </set>
     </option>
   </component>
