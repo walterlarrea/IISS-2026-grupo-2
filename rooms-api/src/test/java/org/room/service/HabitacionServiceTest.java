@@ -1,13 +1,14 @@
-package org.example;
+package org.room.service;
 
-import org.example.controller.HabitacionController;
-import org.example.service.HabitacionService;
 import org.junit.jupiter.api.Test;
+import org.room.Room;
+import org.room.repository.RoomRepository;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class HabitacionServiceTest {
@@ -15,11 +16,11 @@ public class HabitacionServiceTest {
     @Test
     void crearHabitacionTest() {
 
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -34,18 +35,18 @@ public class HabitacionServiceTest {
     @Test
     void listarHabitacionesTest() {
 
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
-        List<Habitacion> habitaciones = List.of(
-            new Habitacion("Dormitorio", 21.0, "termostato-01", "switch-01"),
-            new Habitacion("Sala", 22.0, "termostato-02", "switch-02")
+        List<Room> habitaciones = List.of(
+            new Room("Dormitorio", 21.0, "termostato-01", "switch-01"),
+            new Room("Sala", 22.0, "termostato-02", "switch-02")
         );
 
         when(repositoryMock.findAll()).thenReturn(habitaciones);
 
-        List<Habitacion> resultado = service.listar();
+        List<Room> resultado = service.listar();
 
         assertEquals(habitaciones, resultado);
 
@@ -55,13 +56,13 @@ public class HabitacionServiceTest {
     @Test
     void buscarPorIdTest() {
 
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String id = "habitacion-01";
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -70,7 +71,7 @@ public class HabitacionServiceTest {
 
         when(repositoryMock.findById(id)).thenReturn(java.util.Optional.of(habitacion));
 
-        java.util.Optional<Habitacion> resultado = service.buscarPorId(id);
+        java.util.Optional<Room> resultado = service.buscarPorId(id);
 
         assertEquals(java.util.Optional.of(habitacion), resultado);
 
@@ -80,9 +81,9 @@ public class HabitacionServiceTest {
     @Test
     void eliminarHabitacionTest() {
 
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String id = "habitacion-01";
 
@@ -99,9 +100,9 @@ public class HabitacionServiceTest {
     @Test
     void eliminarHabitacionNoExistenteTest() {
         
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String id = "habitacion-01";
 
@@ -118,13 +119,13 @@ public class HabitacionServiceTest {
     @Test
     void buscarPorIdTermostatoTest() {
         
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String idTermostato = "termostato-01";
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 idTermostato,
@@ -133,7 +134,7 @@ public class HabitacionServiceTest {
 
         when(repositoryMock.findByIdTermostato(idTermostato)).thenReturn(java.util.Optional.of(habitacion));
 
-        java.util.Optional<Habitacion> resultado = service.buscarPorIdTermostato(idTermostato);
+        java.util.Optional<Room> resultado = service.buscarPorIdTermostato(idTermostato);
 
         assertEquals(java.util.Optional.of(habitacion), resultado);
 
@@ -143,13 +144,13 @@ public class HabitacionServiceTest {
     @Test
     void modificarParcialmenteTest() {
 
-    HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+    RoomRepository repositoryMock = mock(RoomRepository.class);
 
-    HabitacionService service = new HabitacionService(repositoryMock);
+    RoomService service = new RoomService(repositoryMock);
 
     String id = "habitacion-01";
 
-    Habitacion habitacionExistente = new Habitacion(
+    Room habitacionExistente = new Room(
             "Dormitorio",
             21.0,
             "termostato-01",
@@ -167,7 +168,7 @@ public class HabitacionServiceTest {
         "temperaturaEsperada", 22.0
     );
 
-    java.util.Optional<Habitacion> resultado =
+    java.util.Optional<Room> resultado =
             service.modificarParcialmente(id, cambios);
 
     assertEquals("Sala", resultado.get().getNombre());
@@ -180,9 +181,9 @@ public class HabitacionServiceTest {
     @Test
     void modificarParcialmenteNoExistenteTest() {
         
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String id = "habitacion-01";
 
@@ -193,7 +194,7 @@ public class HabitacionServiceTest {
             "temperaturaEsperada", 22.0
         );
 
-        java.util.Optional<Habitacion> resultado = service.modificarParcialmente(id, cambios);
+        java.util.Optional<Room> resultado = service.modificarParcialmente(id, cambios);
 
         assertEquals(java.util.Optional.empty(), resultado);
 
@@ -204,13 +205,13 @@ public class HabitacionServiceTest {
     @Test
     void modificarTest(){
 
-        HabitacionRepository repositoryMock = mock(HabitacionRepository.class);
+        RoomRepository repositoryMock = mock(RoomRepository.class);
 
-        HabitacionService service = new HabitacionService(repositoryMock);
+        RoomService service = new RoomService(repositoryMock);
 
         String id = "habitacion-01";
 
-            Habitacion habitacionExistente = new Habitacion(
+            Room habitacionExistente = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -219,7 +220,7 @@ public class HabitacionServiceTest {
 
             when(repositoryMock.findById(id)).thenReturn(java.util.Optional.of(habitacionExistente));
 
-            Habitacion habitacionModificada = new Habitacion(
+            Room habitacionModificada = new Room(
                 "Sala",
                 22.0,
                 "termostato-02",
@@ -228,12 +229,12 @@ public class HabitacionServiceTest {
 
             when(repositoryMock.save(habitacionExistente)).thenReturn(habitacionExistente);
 
-            java.util.Optional<Habitacion> resultado = service.modificar(id, habitacionModificada);
+            java.util.Optional<Room> resultado = service.modificar(id, habitacionModificada);
 
             assertEquals("Sala", resultado.get().getNombre());
             assertEquals(22.0, resultado.get().getTemperaturaEsperada());
             assertEquals("termostato-02", resultado.get().getIdTermostato());
-            assertEquals("switch-02", resultado.get().getIdSwitch());
+            assertEquals("switch-02", resultado.get().getUriSwitch());
 
             verify(repositoryMock, times(1)).findById(id);
             verify(repositoryMock, times(1)).save(habitacionExistente);

@@ -260,6 +260,7 @@ components:
           type: string
         uriSwitch:
           type: string
+          format: uri
     HabitacionInput:
       type: object
       properties:
@@ -272,6 +273,7 @@ components:
           type: string
         uriSwitch:
           type: string
+          format: uri
     Switch:
       type: object
       required: [id, encendido]

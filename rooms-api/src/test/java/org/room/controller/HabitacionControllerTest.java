@@ -1,8 +1,11 @@
-package org.example;
-import org.example.controller.HabitacionController;
+package org.room.controller;
 
-import org.example.service.HabitacionService;
+// import org.room.controller.HabitacionController;
+// import org.example.service.HabitacionService;
 import org.junit.jupiter.api.Test;
+import org.room.Room;
+import org.room.service.RoomService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,18 +18,18 @@ public class HabitacionControllerTest {
     @Test
     void listarHabitacionesTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
-        List<Habitacion> habitaciones = List.of(
-            new Habitacion("Dormitorio", 21.0, "termostato-01", "switch-01"),
-            new Habitacion("Sala", 22.0, "termostato-02", "switch-02")
+        List<Room> habitaciones = List.of(
+            new Room("Dormitorio", 21.0, "termostato-01", "switch-01"),
+            new Room("Sala", 22.0, "termostato-02", "switch-02")
         );
 
         when(serviceMock.listar()).thenReturn(habitaciones);
 
-        List<Habitacion> resultado = controller.listar();
+        List<Room> resultado = controller.listar();
 
         assertEquals(habitaciones, resultado);
 
@@ -36,13 +39,13 @@ public class HabitacionControllerTest {
     @Test
     void buscarPorIdTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -51,7 +54,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.buscarPorId(id)).thenReturn(Optional.of(habitacion));
 
-        ResponseEntity<Habitacion> resultado = controller.buscarPorId(id);
+        ResponseEntity<Room> resultado = controller.buscarPorId(id);
 
         assertEquals(ResponseEntity.ok(habitacion), resultado);
 
@@ -61,11 +64,11 @@ public class HabitacionControllerTest {
     @Test
     void crearHabitacionTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -74,7 +77,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.crear(habitacion)).thenReturn(habitacion);
 
-        Habitacion resultado = controller.crear(habitacion);
+        Room resultado = controller.crear(habitacion);
 
         assertEquals(habitacion, resultado);
 
@@ -84,13 +87,13 @@ public class HabitacionControllerTest {
     @Test
     void modificarHabitacionTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -99,7 +102,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.modificar(id, habitacion)).thenReturn(Optional.of(habitacion));
 
-        ResponseEntity<Habitacion> resultado = controller.modificar(id, habitacion);
+        ResponseEntity<Room> resultado = controller.modificar(id, habitacion);
 
         assertEquals(ResponseEntity.ok(habitacion), resultado);
 
@@ -109,9 +112,9 @@ public class HabitacionControllerTest {
     @Test
     void eliminarHabitacionTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
@@ -127,9 +130,9 @@ public class HabitacionControllerTest {
     @Test
     void modificarParcialmenteHabitacionTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
@@ -138,7 +141,7 @@ public class HabitacionControllerTest {
                 "temperaturaEsperada", 22.0
         );
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Sala",
                 22.0,
                 "termostato-01",
@@ -147,7 +150,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.modificarParcialmente(id, cambios)).thenReturn(Optional.of(habitacion));
 
-        ResponseEntity<Habitacion> resultado = controller.modificarParcialmente(id, cambios);
+        ResponseEntity<Room> resultado = controller.modificarParcialmente(id, cambios);
 
         assertEquals(ResponseEntity.ok(habitacion), resultado);
 
@@ -157,9 +160,9 @@ public class HabitacionControllerTest {
     @Test
     void eliminarHabitacionNoExistenteTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
@@ -175,15 +178,15 @@ public class HabitacionControllerTest {
     @Test
     void buscarPorIdNoExistenteTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
         when(serviceMock.buscarPorId(id)).thenReturn(Optional.empty());
 
-        ResponseEntity<Habitacion> resultado = controller.buscarPorId(id);
+        ResponseEntity<Room> resultado = controller.buscarPorId(id);
 
         assertEquals(ResponseEntity.notFound().build(), resultado);
 
@@ -193,13 +196,13 @@ public class HabitacionControllerTest {
     @Test
     void modificarHabitacionNoExistenteTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "Dormitorio",
                 21.0,
                 "termostato-01",
@@ -208,7 +211,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.modificar(id, habitacion)).thenReturn(Optional.empty());
 
-        ResponseEntity<Habitacion> resultado = controller.modificar(id, habitacion);
+        ResponseEntity<Room> resultado = controller.modificar(id, habitacion);
 
         assertEquals(ResponseEntity.notFound().build(), resultado);
 
@@ -218,9 +221,9 @@ public class HabitacionControllerTest {
     @Test
     void modificarParcialmenteHabitacionNoExistenteTest() {
 
-        HabitacionService serviceMock = mock(HabitacionService.class);
+        RoomService serviceMock = mock(RoomService.class);
 
-        HabitacionController controller = new HabitacionController(serviceMock);
+        RoomController controller = new RoomController(serviceMock);
 
         String id = "habitacion-01";
 
@@ -231,7 +234,7 @@ public class HabitacionControllerTest {
 
         when(serviceMock.modificarParcialmente(id, cambios)).thenReturn(Optional.empty());
 
-        ResponseEntity<Habitacion> resultado = controller.modificarParcialmente(id, cambios);
+        ResponseEntity<Room> resultado = controller.modificarParcialmente(id, cambios);
 
         assertEquals(ResponseEntity.notFound().build(), resultado);
 
