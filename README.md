@@ -4,8 +4,8 @@
 
 **Estructura del proyecto**
 
-- **publisher/**, **subscriber/**, **rooms-api/** y **switches-api/** : módulos Maven del proyecto.
-- **Módulos**
+- **publisher/**, **subscriber/**, **rooms-api/** y **switches-api/** son módulos Maven del proyecto.
+- **Componentes destacados**
   - **MqttSubscriber.java**  programa escrito en Java para conectar al broker MQTT y recibir los mensajes.
   - **MongoTemperatureWriter**  programa escrito en Java para guardar mensajes que le llegan al subscriptor en base de datos MongoDB.
   - **ControllerTempAuto**  controlador de temperatura automático, se inicia, detiene y controla la temperatura esperada de la habitación.
@@ -13,14 +13,7 @@
   - **EventGenerator.java**  crea mensajes de los sensores constantemente para enviar al Subscriber.
   - **ApiKeyRoom**  intercepta las solicitudes HTTP antes de que lleguen al controlador y verifica que contengan una clave válida.
   - **RoomController.java**  se encarga de exponer la API REST para la gestión de las habitaciones. Recibe las solicitudes HTTP relacionadas con las habitaciones.
-    - GET /habitaciones: obtiene todas las habitaciones.
-    - GET /habitaciones/{id}: obtiene una habitación por su id.
-    - GET /habitaciones/termostato/{idTermostato}: obtiene la habitación asociada a un termostato.
-    - GET /habitaciones/validar: valida las habitaciones registradas.
-    - POST /habitaciones: crea una nueva habitación.
-    - PUT /habitaciones/{id}: modifica una habitación existente.
-    - PATCH /habitaciones/{id}: modifica parcialmente una habitación.
-    - DELETE /habitaciones/{id}: elimina una habitación.
+  - **RoomService** contiene la lógica de negocio relacionada con las habitaciones.
   - **SwitchController** se encarga de exponer la API REST para la gestión de los switches. Recibe las solicitudes HTTP relacionadas con el estado de los switches.
 - **pom.xml**  agregador Maven raíz que contiene las dependencias y detalles de todos los módulos.
 
@@ -60,7 +53,7 @@
 
 1. Abrir el proyecto desde su IDE.
 2. Asegurarse de que este en JDK-25.
-3. Ejecutar el programa desde el Main.java
+3. Ejecutar el programa desde Compose.
 4. El programa se conectará al broker MQTT.
 5. Una vez conectado se suscribirá al tópico : "#".
    - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker.
@@ -77,18 +70,37 @@
 ## 4. MÓDULO: PUBLISHER
 
 **Contiene un generador de eventos aleatorios con diferentes tópicos para sus respectivas habitaciones.**\
-Este manda mensajes al broker cada 3 segundos, con una id del dispositivo que lo envía, su temperatura y la fecha de envío como Epoch en milisegundos.
+Este manda mensajes al broker cada 3 segundos, con una id del dispositivo que lo envía, su temperatura y la fecha de envío como Epoch en milisegundos. Está desarrollada utilizando Spring Boot.
 
 ## 5. MÓDULO: SUBSCRIBER
 
 **Contiene un vínculo a una base de datos (MongoDB), donde guarda los mensajes que recibe de cada sensor al que está subscrito.**\
-Escucha los mensajes que le envía el Publisher.
+Escucha los mensajes que le envía el Publisher. Está desarrollada utilizando Spring Boot.
 
 ## 6. MÓDULO: ROOMS-API
-
+**Contiene la API REST encargada de gestionar las habitaciones del sistema.**\
+Está desarrollada utilizando Spring Boot y permite realizar operaciones CRUD y consultas relacionadas con los termostatos y switches asociados a cada habitación.
+- **Endpoints principales**
+  - GET /habitaciones: obtiene todas las habitaciones.
+  - GET /habitaciones/{id}: obtiene una habitación por su id.
+  - GET /habitaciones/termostato/{idTermostato}: obtiene la habitación asociada a un termostato.
+  - GET /habitaciones/validar: valida las habitaciones registradas.
+  - POST /habitaciones: crea una nueva habitación.
+  - PUT /habitaciones/{id}: modifica una habitación existente.
+  - PATCH /habitaciones/{id}: modifica parcialmente una habitación.
+  - DELETE /habitaciones/{id}: elimina una habitación.
 ## 7. MÓDULO: SWITCHES-API
+**Contiene la API REST encargada de consultar y modificar el estado de los switches del sistema.**\
+Está desarrollada utilizando Spring Boot. 
+El módulo es utilizado por el controlador automático de temperatura para activar o desactivar el switch correspondiente según la temperatura actual de una habitación.
+- **Endpoints principales**
+  - GET /switches/{id}: obtiene el estado actual de un switch.
+  - POST /switches/{id}: actualiza el estado del switch, permitiendo encenderlo o apagarlo.
+## 8. SWAGGER/OPENAPI
+Swagger permite visualizar y probar los endpoints disponibles de cada API desde una interfaz web, mostrando los métodos HTTP, parámetros, cuerpos de las solicitudes y respuestas esperadas.
 
-## 8. TEST UNITARIOS
+Es una alternativa más sencilla y fácil de visualizar que los ejemplos curl.
+## 9. TEST UNITARIOS
 
 Se crearon test para probar tramos del programa y confirmar el funcionamiento de envío y recibimiento de mensajes y datos.
 
@@ -108,14 +120,14 @@ Se crearon test para probar tramos del programa y confirmar el funcionamiento de
 **switches-api**
 - SwitchControllerTest
 
-## 9. MONGO DB
+## 10. MONGO DB
 
 Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
 
 - Habitaciones: muestra la id, nombre de la habitación, la temperatura esperada, el id del termostato y el uri del switch.
 - Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y marca de tiempo Epoch en milisegundos.
 
-## 10. JIRA
+## 11. JIRA
 
 Acá se encuentra la organización y seguimiento del proyecto.
 
