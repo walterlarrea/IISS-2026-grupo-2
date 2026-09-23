@@ -1,4 +1,4 @@
-package org.pub;
+package org.room;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
