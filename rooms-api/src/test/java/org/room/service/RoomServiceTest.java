@@ -16,16 +16,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HabitacionServiceTest {
+class RoomServiceTest {
 
     @Mock
     private RoomRepository repository;
 
-    private HabitacionService service;
+    private RoomService service;
 
     @BeforeEach
     void setUp() {
-        service = new HabitacionService(repository);
+        service = new RoomService(repository);
     }
 
     @Test

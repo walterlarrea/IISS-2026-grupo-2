@@ -13,11 +13,11 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-public class HabitacionService {
+public class RoomService {
 
     private final RoomRepository repository;
 
-    public HabitacionService(RoomRepository repository) {
+    public RoomService(RoomRepository repository) {
         this.repository = repository;
     }
 
