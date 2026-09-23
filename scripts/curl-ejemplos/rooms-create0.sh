@@ -7,5 +7,5 @@ curl -X POST http://localhost:8080/habitaciones \
     "nombre": "Living Room",
     "temperaturaEsperada": 24.0,
     "idTermostato": "0",
-    "idSwitch": "switch-0"
+    "uriSwitch": "http://switches-api:8090/switches/0"
   }'

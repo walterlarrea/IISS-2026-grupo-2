@@ -1,7 +1,7 @@
 package org.room.controller;
 
 import org.room.Room;
-import org.room.service.HabitacionService;
+import org.room.service.RoomService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,15 +20,20 @@ import java.util.Map;
 @RequestMapping("/habitaciones")
 public class RoomController {
 
-    private final HabitacionService service;
+    private final RoomService service;
 
-    public RoomController(HabitacionService service) {
+    public RoomController(RoomService service) {
         this.service = service;
     }
 
     @GetMapping
     public List<Room> listar() {
         return service.listar();
+    }
+
+    @GetMapping("/validar")
+    public List<Room> validar() {
+        return service.validar();
     }
 
     @GetMapping("/{id}")

@@ -1,11 +1,11 @@
-package org.subs.controllertemp;
+package org.subs.classes;
 
 public class Room {
     private String id;
     private String nombre;
     private double temperaturaEsperada;
     private String idTermostato;
-    private String idSwitch;
+    private String uriSwitch;
 
     public Room() {}
 
@@ -25,7 +25,7 @@ public class Room {
         return idTermostato;
     }
 
-    public String getIdSwitch() {
-        return idSwitch;
+    public String getUriSwitch() {
+        return uriSwitch;
     }
 }
