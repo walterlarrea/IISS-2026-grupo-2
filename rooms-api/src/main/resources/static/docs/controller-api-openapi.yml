@@ -1,0 +1,68 @@
+openapi: 3.0.3
+info:
+  title: Controller API
+  description: Control del controlador automático de temperatura del hogar inteligente (subscriber).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+    description: subscriber (development)
+tags:
+  - name: Controller
+    description: Inicio, detención y consulta de estado del controlador automático de temperatura
+paths:
+  /controller/start:
+    post:
+      tags: [Controller]
+      summary: Inicia el controlador automático
+      operationId: iniciarControlador
+      responses:
+        '200':
+          description: El controlador fue iniciado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoActivo'
+  /controller/stop:
+    post:
+      tags: [Controller]
+      summary: Detiene el controlador automático
+      operationId: detenerControlador
+      responses:
+        '200':
+          description: El controlador fue detenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDetenido'
+  /controller/status:
+    get:
+      tags: [Controller]
+      summary: Consulta si el controlador está activo
+      operationId: estadoControlador
+      responses:
+        '200':
+          description: Estado actual del controlador
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+components:
+  schemas:
+    EstadoActivo:
+      type: object
+      properties:
+        estado:
+          type: string
+          example: activo
+    EstadoDetenido:
+      type: object
+      properties:
+        estado:
+          type: string
+          example: detenido
+    StatusResponse:
+      type: object
+      properties:
+        activo:
+          type: boolean
+          example: true
