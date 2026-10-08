@@ -30,6 +30,7 @@
         <module>publisher</module>
         <module>rooms-api</module>
         <module>switches-api</module>
+        <module>core</module>
     </modules>
 
 </project>
