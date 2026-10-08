@@ -1,4 +1,4 @@
-package org.core.enums;
+package com.iiss.sensores.enums;
 
 public enum TipoAccion {
     SWITCH

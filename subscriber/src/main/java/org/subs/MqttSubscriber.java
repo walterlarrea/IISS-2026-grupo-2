@@ -1,6 +1,8 @@
 package org.subs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iiss.sensores.CoreFactory;
+import com.iiss.sensores.ICore;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
@@ -29,6 +31,8 @@ public class MqttSubscriber {
         this.broker = broker;
         this.clientId = clientId;
         this.topic = topic;
+
+        ICore core = CoreFactory.getCore();
     }
 
     void processMessage(String payload) {mongoWriter.saveTemperature(payload);}

@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="publisher" />
         <module name="switches-api" />
+        <module name="core-controlador" />
         <module name="subscriber" />
         <module name="rooms-api" />
       </profile>

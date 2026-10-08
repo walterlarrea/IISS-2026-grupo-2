@@ -1,4 +1,5 @@
-package org.core.dtos;
+package com.iiss.sensores.modelos;
+
 
 import java.util.List;
 
