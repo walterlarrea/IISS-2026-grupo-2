@@ -86,7 +86,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.subs.Main</mainClass>
+                            <mainClass>org.iiss.grupo_2.sub.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -113,7 +113,7 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.subs.Main</mainClass>
+                                    <mainClass>org.iiss.grupo_2.sub.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

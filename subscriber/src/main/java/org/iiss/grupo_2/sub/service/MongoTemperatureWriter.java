@@ -1,4 +1,4 @@
-package org.subs;
+package org.iiss.grupo_2.sub.service;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -12,15 +12,19 @@ import org.springframework.stereotype.Service;
 public class MongoTemperatureWriter {
     private final MongoCollection<Document> collection;
 
-    //constructor para springboot
+    // constructor para springboot
     @Autowired
-    public MongoTemperatureWriter(MongoClient mongoClient, @Value("${MONGODB_DATABASE}") String databaseName, @Value("${MONGODB_COLLECTION_MEDICIONES}") String collectionName) {
+    public MongoTemperatureWriter(MongoClient mongoClient,
+                                  @Value("${MONGODB_DATABASE}") String databaseName,
+                                  @Value("${MONGODB_COLLECTION_MEDICIONES}") String collectionName) {
         MongoDatabase database = mongoClient.getDatabase(databaseName);
         this.collection = database.getCollection(collectionName);
     }
 
-    //constructor para los tests
-    public MongoTemperatureWriter(MongoCollection<Document> collection) {this.collection = collection;}
+    // constructor para los tests
+    public MongoTemperatureWriter(MongoCollection<Document> collection) {
+        this.collection = collection;
+    }
 
     public void saveTemperature(String message) {
         Document document = Document.parse(message);

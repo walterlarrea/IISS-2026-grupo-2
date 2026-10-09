@@ -1,9 +1,9 @@
-package org.subs.dto.MessageObject;
+package org.iiss.grupo_2.sub.dto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.subs.dto.serializer.CustomSerializer.TwoDecimalSerializer;
+import org.iiss.grupo_2.sub.dto.serializer.CustomSerializer.TwoDecimalSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +20,10 @@ public class MessageObject {
     ){}
 
     public static <Type> String validateJson(Type object) throws Exception {
-        try{
+        try {
             ObjectMapper mapper = new ObjectMapper();
             return mapper.writeValueAsString(object);
-        }catch(JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             logger.error("Failed to validate JSON object of type {}", object.getClass().getName(), e);
             throw new Exception("Failed to validate JSON object", e);
         }

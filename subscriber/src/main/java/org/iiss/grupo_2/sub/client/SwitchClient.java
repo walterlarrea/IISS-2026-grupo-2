@@ -1,9 +1,9 @@
-package org.subs.client;
+package org.iiss.grupo_2.sub.client;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.subs.classes.Switch;
+import org.iiss.grupo_2.sub.dto.Switch;
 
 import java.net.URI;
 import java.net.URISyntaxException;

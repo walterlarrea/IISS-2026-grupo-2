@@ -1,8 +1,8 @@
-package org.subs.controllertemp;
+package org.iiss.grupo_2.sub.service;
 
-import org.subs.classes.Room;
-import org.subs.client.RoomClient;
-import org.subs.client.SwitchClient;
+import org.iiss.grupo_2.sub.dto.Room;
+import org.iiss.grupo_2.sub.client.RoomClient;
+import org.iiss.grupo_2.sub.client.SwitchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -55,6 +55,10 @@ public class ControllerTempAuto {
             return;
         }
         Room room = roomClient.obtenerHabPorTermo(idTermo);
-        controlarTemp(temperaturaActual, room.getTemperaturaEsperada(), room.getUriSwitch());
+        if (room != null && room.getUriSwitch() != null) {
+            controlarTemp(temperaturaActual, room.getTemperaturaEsperada(), room.getUriSwitch());
+        } else {
+            logger.warn("No se encontró habitación o switch para el termostato ID = {}", idTermo);
+        }
     }
 }

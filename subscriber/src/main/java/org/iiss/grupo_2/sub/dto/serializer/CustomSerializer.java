@@ -1,4 +1,4 @@
-package org.subs.dto.serializer;
+package org.iiss.grupo_2.sub.dto.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -10,9 +10,7 @@ public class CustomSerializer {
         @Override
         public void serialize(Double value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             if (value != null) {
-                // Aplica formato "%.3f" y escribe el resultado como texto
                 String formattedValue = "%.3f".formatted(value);
-                // Escribe el número ya formateado para conservar la notación decimal
                 gen.writeNumber(formattedValue.replace(',', '.'));
             } else {
                 gen.writeNull();

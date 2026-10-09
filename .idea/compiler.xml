@@ -9,6 +9,7 @@
         <module name="publisher" />
         <module name="switches-api" />
         <module name="core-controlador" />
+        <module name="core" />
         <module name="subscriber" />
         <module name="rooms-api" />
       </profile>

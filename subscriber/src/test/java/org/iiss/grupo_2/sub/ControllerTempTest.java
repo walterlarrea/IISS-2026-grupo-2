@@ -1,11 +1,12 @@
-package org.subs;
+package org.iiss.grupo_2.sub;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.subs.classes.Room;
-import org.subs.client.RoomClient;
-import org.subs.client.SwitchClient;
-import org.subs.controllertemp.ControllerTempAuto;
+import org.iiss.grupo_2.sub.dto.Room;
+import org.iiss.grupo_2.sub.client.RoomClient;
+import org.iiss.grupo_2.sub.client.SwitchClient;
+import org.iiss.grupo_2.sub.service.ControllerTempAuto;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -22,7 +23,7 @@ public class ControllerTempTest {
     }
 
     @Test
-    void turnOnSwitchIfBelowExpectedTemp() throws Exception {//para prender el switch si la temperatura está por debajo de la esperada.
+    void turnOnSwitchIfBelowExpectedTemp() throws Exception {
         controller.iniciar();
         controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1");
         verify(switchClient).encender("http://switches-api:8090/switches/1");
@@ -30,7 +31,7 @@ public class ControllerTempTest {
     }
 
     @Test
-    void turnOffSwitchIfAboveExpectedTemp() throws Exception {//para apagar el switch si la temperatura está por arriba de la esperada.
+    void turnOffSwitchIfAboveExpectedTemp() throws Exception {
         controller.iniciar();
         controller.controlarTemp(22.0, 20.0, "http://switches-api:8090/switches/1");
         verify(switchClient).apagar("http://switches-api:8090/switches/1");
@@ -38,34 +39,33 @@ public class ControllerTempTest {
     }
 
     @Test
-    void switchUntouchedIfTempEqualsExpected() throws Exception {//para que el switch no se accione si la temperatura es la esperada.
+    void switchUntouchedIfTempEqualsExpected() throws Exception {
         controller.iniciar();
         controller.controlarTemp(20.0, 20.0, "http://switches-api:8090/switches/1");
         verifyNoInteractions(switchClient);
     }
 
     @Test
-    void switchUntouchedIfControllerStopped() throws Exception {//para que el switch no se accione si el controlador está detenido.
-        //el controlador comienza detenido
+    void switchUntouchedIfControllerStopped() throws Exception {
         controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1");
         verifyNoInteractions(switchClient);
     }
 
     @Test
-    void startControllerTemp() {//para comprobar si se inicia el controlador.
+    void startControllerTemp() {
         controller.iniciar();
         assertTrue(controller.isActivo());
     }
 
     @Test
-    void stopControllerTemp() {//para comprobar que se detiene el controlador.
+    void stopControllerTemp() {
         controller.iniciar();
         controller.detener();
         assertFalse(controller.isActivo());
     }
 
     @Test
-    void controlarHabShouldTurnSwitchOnIfTempBelowExpected() throws Exception {//para comprobar si se enciende el switch correcto de una habitación asociada si la temperatura es menor a la esperada.
+    void controlarHabShouldTurnSwitchOnIfTempBelowExpected() throws Exception {
         controller.iniciar();
         Room room = mock(Room.class);
 
@@ -80,12 +80,11 @@ public class ControllerTempTest {
     }
 
     @Test
-    void nSpreadExceptionIfSwitchFails() throws Exception {//para comprobar el manejo de errores.
+    void nSpreadExceptionIfSwitchFails() throws Exception {
         controller.iniciar();
 
         doThrow(new RuntimeException("Error de conexión")).when(switchClient).encender("http://switches-api:8090/switches/1");
         assertDoesNotThrow(() -> controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1"));
         verify(switchClient).encender("http://switches-api:8090/switches/1");
     }
-
 }

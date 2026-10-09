@@ -1,5 +1,6 @@
-package org.subs.controllertemp;
+package org.iiss.grupo_2.sub.controller;
 
+import org.iiss.grupo_2.sub.service.ControllerTempAuto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;

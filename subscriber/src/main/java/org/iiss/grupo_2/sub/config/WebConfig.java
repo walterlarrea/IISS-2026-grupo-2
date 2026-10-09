@@ -1,4 +1,4 @@
-package org.subs.config;
+package org.iiss.grupo_2.sub.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

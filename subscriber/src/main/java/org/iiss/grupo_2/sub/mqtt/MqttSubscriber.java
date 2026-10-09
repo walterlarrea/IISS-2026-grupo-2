@@ -1,18 +1,19 @@
-package org.subs;
+package org.iiss.grupo_2.sub.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iiss.sensores.CoreFactory;
 import com.iiss.sensores.ICore;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.iiss.grupo_2.sub.dto.MessageObject;
+import org.iiss.grupo_2.sub.service.ControllerTempAuto;
+import org.iiss.grupo_2.sub.service.MongoTemperatureWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.subs.dto.MessageObject.MessageObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.subs.controllertemp.ControllerTempAuto;
+import org.springframework.stereotype.Service;
 
 @Service
 public class MqttSubscriber {
@@ -24,7 +25,12 @@ public class MqttSubscriber {
     private final String clientId;
     private final String topic;
 
-    public MqttSubscriber(MongoTemperatureWriter mongoWriter, ControllerTempAuto controllerTempAuto, ObjectMapper objMap, @Value("${mqtt.broker-url}") String broker, @Value("${mqtt.client-id}") String clientId, @Value("${mqtt.topic}") String topic) {
+    public MqttSubscriber(MongoTemperatureWriter mongoWriter,
+                          ControllerTempAuto controllerTempAuto,
+                          ObjectMapper objMap,
+                          @Value("${mqtt.broker-url}") String broker,
+                          @Value("${mqtt.client-id}") String clientId,
+                          @Value("${mqtt.topic}") String topic) {
         this.mongoWriter = mongoWriter;
         this.controllerTempAuto = controllerTempAuto;
         this.objMap = objMap;
@@ -35,7 +41,9 @@ public class MqttSubscriber {
         ICore core = CoreFactory.getCore();
     }
 
-    void processMessage(String payload) {mongoWriter.saveTemperature(payload);}
+    void processMessage(String payload) {
+        mongoWriter.saveTemperature(payload);
+    }
 
     private void initiateConnection() {
         int qos = 1;
@@ -48,13 +56,14 @@ public class MqttSubscriber {
                 public void connectionLost(Throwable cause) {
                     logger.error("Connection lost: " + cause.getMessage());
                 }
+
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
                     String payload = new String(message.getPayload());
                     logger.info("Topic: " + topic + " | Message: " + payload);
                     try {
                         MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
-                        logger.info("Controller for room id = {}",temp.id());
+                        logger.info("Controller for room id = {}", temp.id());
                         try {
                             processMessage(payload);
                             logger.info("'Medición' saved in MongoDB");
@@ -64,7 +73,7 @@ public class MqttSubscriber {
                         }
 
                         try {
-                            logger.info("Controller for room id = {}",temp.id());
+                            logger.info("Controller for room id = {}", temp.id());
                             controllerTempAuto.controlarHab(temp.tC(), String.valueOf(temp.id()));
                         } catch (Exception e) {
                             logger.error("Failed handling temperature control for room id = {}", temp.id(), e);
@@ -75,6 +84,7 @@ public class MqttSubscriber {
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {
                     // Unused for subscribers
@@ -102,5 +112,7 @@ public class MqttSubscriber {
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void start() {initiateConnection();}
+    public void start() {
+        initiateConnection();
+    }
 }
