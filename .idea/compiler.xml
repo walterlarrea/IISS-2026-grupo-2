@@ -6,15 +6,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="publisher" />
         <module name="switches-api" />
         <module name="core-controlador" />
-        <module name="subscriber" />
-        <module name="rooms-api" />
+        <module name="core" />
+        <module name="common" />
+        <module name="publisher" />
+        <module name="controlador" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="iot_este" target="1.5" />
+      <module name="rooms-api" target="25" />
+      <module name="subscriber" target="25" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
