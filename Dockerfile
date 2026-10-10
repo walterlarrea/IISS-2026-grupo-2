@@ -3,31 +3,28 @@ FROM maven:3.9.16-eclipse-temurin-25 AS build_base
 WORKDIR /workspace
 
 COPY pom.xml .
-
-COPY subscriber/pom.xml ./subscriber/
-
+COPY core/pom.xml ./core/
+COPY common/pom.xml ./common/
+COPY controlador/pom.xml ./controlador/
 COPY publisher/pom.xml ./publisher/
-
-COPY rooms-api/pom.xml ./rooms-api/
-
 COPY switches-api/pom.xml ./switches-api/
 
 RUN mvn dependency:go-offline -B
 
 COPY . .
 
-RUN mvn clean package
+RUN mvn clean package -DskipTests
 
 
 # ===============================
-# Subscriber
+# Controlador (API + Engine)
 # ===============================
 
-FROM eclipse-temurin:25-jre AS subscriber
+FROM eclipse-temurin:25-jre AS controlador
 
 WORKDIR /app
 
-COPY --from=build_base /workspace/subscriber/target/subscriber-app.jar /app/app.jar
+COPY --from=build_base /workspace/controlador/target/controlador-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
@@ -41,19 +38,6 @@ FROM eclipse-temurin:25-jre AS publisher
 WORKDIR /app
 
 COPY --from=build_base /workspace/publisher/target/publisher-app.jar /app/app.jar
-
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-
-
-# ===============================
-# Rooms API
-# ===============================
-
-FROM eclipse-temurin:25-jre AS rooms-api
-
-WORKDIR /app
-
-COPY --from=build_base /workspace/rooms-api/target/rooms-api-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 

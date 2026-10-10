@@ -22,18 +22,20 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  subscriber:
+  controlador:
     build:
       context: ..
       dockerfile: Dockerfile
-      target: subscriber
-    container_name: subscriber
+      target: controlador
+    container_name: controlador
     depends_on:
       mongodb:
         condition: service_started
       mosquitto:
         condition: service_started
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
       MQTT_TOPIC: ${MQTT_TOPIC}
@@ -43,18 +45,14 @@ services:
       MONGODB_COLLECTION_HABITACIONES: ${MONGODB_COLLECTION_HABITACIONES}
       MONGODB_COLLECTION_MEDICIONES: ${MONGODB_COLLECTION_MEDICIONES}
 
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-
-      ROOMS_API_URL: ${ROOMS_API_URL}
       ROOMS_API_KEY: ${ROOMS_API_KEY}
+      ROOMS_API_PORT: ${ROOMS_API_PORT:-8080}
+      CONTROLADOR_PORT: ${CONTROLADOR_PORT:-8080}
 
       SWITCHES_API_URL: ${SWITCHES_API_URL}
       SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
-      - '${SUBSCRIBER_API_PORT:-8082}:${SUBSCRIBER_API_PORT:-8082}'
-      # "8082:8082" = el puerto 8082 del contenedor se conecta con el puerto 8082 del ordenador.
-      # "${SUBSCRIBER_API_PORT:-8082}" intenta usar el valor de la variable de entorno
-      # SUBSCRIBER_API_PORT; si no está definida, usa 8082 por defecto.
+      - '${ROOMS_API_PORT:-8080}:${ROOMS_API_PORT:-8080}'
     restart: unless-stopped
 
   publisher:
@@ -70,26 +68,6 @@ services:
         condition: service_started
     environment:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
-    restart: unless-stopped
-
-  rooms-api:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      target: rooms-api
-    container_name: rooms-api
-    depends_on:
-      mongodb:
-        condition: service_started
-      mosquitto:
-        condition: service_started
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      SPRING_DATA_MONGODB_DATABASE: ${MONGODB_DATABASE}
-      SPRING_DATA_MONGODB_URI: ${MONGODB_URI}
-      ROOMS_API_KEY: ${ROOMS_API_KEY}
-    ports:
-      - '${ROOMS_API_PORT:-8080}:${ROOMS_API_PORT:-8080}'
     restart: unless-stopped
 
   switches-api:

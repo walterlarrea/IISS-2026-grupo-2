@@ -1,0 +1,71 @@
+package com.iiss.sensores.grupo_2.controlador.engine.service;
+
+import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
+import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
+import com.iiss.sensores.grupo_2.controlador.shared.RoomProvider;
+import com.iiss.sensores.grupo_2.controlador.shared.TemperatureEngineService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class ControllerTempAuto implements TemperatureEngineService {
+    private static final Logger logger = LoggerFactory.getLogger(ControllerTempAuto.class);
+    private boolean activo = false;
+    private final SwitchClient switchClient;
+    private final RoomProvider roomProvider;
+
+    public ControllerTempAuto(SwitchClient switchClient, RoomProvider roomProvider) {
+        this.switchClient = switchClient;
+        this.roomProvider = roomProvider;
+    }
+
+    @Override
+    public void iniciar() {
+        activo = true;
+        logger.info("Controlador iniciado");
+    }
+
+    @Override
+    public void detener() {
+        activo = false;
+        logger.info("Controlador detenido");
+    }
+
+    @Override
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void controlarTemp(double temperaturaActual, double temperaturaEsperada, String uriSwitch) {
+        if (!activo) {
+            return;
+        }
+        try {
+            if (temperaturaActual > temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) > esperada ({}). Apagando switch ID = {}", temperaturaActual, temperaturaEsperada, uriSwitch);
+                switchClient.apagar(uriSwitch);
+            } else if (temperaturaActual < temperaturaEsperada) {
+                logger.info("Temperatura actual ({}) < esperada ({}). Encendiendo switch ID = {}", temperaturaActual, temperaturaEsperada, uriSwitch);
+                switchClient.encender(uriSwitch);
+            }
+        } catch (Exception e) {
+            logger.error("Error al accionar el switch ID = {}: {}", uriSwitch, e.getMessage());
+        }
+    }
+
+    public void controlarHab(double temperaturaActual, String idTermo) {
+        if (!activo) {
+            return;
+        }
+        Optional<RoomInfo> roomOpt = roomProvider.obtenerPorTermostato(idTermo);
+        if (roomOpt.isPresent()) {
+            RoomInfo room = roomOpt.get();
+            controlarTemp(temperaturaActual, room.temperaturaEsperada(), room.uriSwitch());
+        } else {
+            logger.warn("No se encontró habitación configurada para el termostato: {}", idTermo);
+        }
+    }
+}
