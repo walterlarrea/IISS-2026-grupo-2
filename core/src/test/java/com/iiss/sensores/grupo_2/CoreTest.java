@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CoreTest {
     private final ICore core = new Core();
@@ -87,7 +88,19 @@ class CoreTest {
     }
 
     private void assertComandosIguales(RespuestaCore respuesta, ComandoSwitch... esperados) {
-        assertEquals(Set.of(esperados), Set.copyOf(respuesta.comandos()));
+        assertEquals(esperados.length, respuesta.comandos().size(),
+                "La respuesta debe devolver la misma cantidad de comandos que los esperados");
+
+        for (ComandoSwitch esperado : esperados) {
+            assertTrue(respuesta.comandos().stream().anyMatch(actual ->
+                switch(actual) {
+                    case ComandoSwitch actualSwitch when
+                        actualSwitch.idSwitch().equals(esperado.idSwitch()) &&
+                        actualSwitch.estado() == esperado.estado() -> true;
+                    default -> false;
+                }
+            ), "No se encontró el comando esperado: " + esperado.idSwitch() + " -> " + esperado.estado());
+        }
     }
 
     private DataSitio crearConfig(
