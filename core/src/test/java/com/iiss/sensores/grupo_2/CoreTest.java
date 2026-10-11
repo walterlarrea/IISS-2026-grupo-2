@@ -1,14 +1,15 @@
 package com.iiss.sensores.grupo_2;
 
-import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.enums.DiasPunta;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
+import com.iiss.sensores.grupo_2.interfaces.ICore;
+import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
 import com.iiss.sensores.grupo_2.modelos.input.Punta;
 import com.iiss.sensores.grupo_2.modelos.input.Sitio;
 import com.iiss.sensores.grupo_2.modelos.input.Tarifa;
-import com.iiss.sensores.grupo_2.modelos.ComandoSwitch;
-import com.iiss.sensores.grupo_2.modelos.RespuestaCore;
+import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
+import com.iiss.sensores.grupo_2.modelos.output.ComandoSwitch;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;

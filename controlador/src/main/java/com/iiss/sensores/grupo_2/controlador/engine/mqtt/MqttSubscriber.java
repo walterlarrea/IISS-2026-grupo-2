@@ -2,7 +2,7 @@ package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iiss.sensores.grupo_2.CoreFactory;
-import com.iiss.sensores.grupo_2.ICore;
+import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.controlador.engine.writer.MongoTemperatureWriter;
 import com.iiss.sensores.grupo_2.dto.MessageObject;

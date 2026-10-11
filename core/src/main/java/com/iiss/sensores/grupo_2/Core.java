@@ -2,12 +2,13 @@ package com.iiss.sensores.grupo_2;
 
 import com.iiss.sensores.grupo_2.enums.DiasPunta;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
-import com.iiss.sensores.grupo_2.modelos.Comando;
-import com.iiss.sensores.grupo_2.modelos.ComandoSwitch;
-import com.iiss.sensores.grupo_2.modelos.RespuestaCore;
+import com.iiss.sensores.grupo_2.interfaces.ICore;
+import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
 import com.iiss.sensores.grupo_2.modelos.input.Punta;
+import com.iiss.sensores.grupo_2.modelos.output.Comando;
+import com.iiss.sensores.grupo_2.modelos.output.ComandoSwitch;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -21,16 +22,19 @@ class Core implements ICore {
         // Constructor de la clase Core
     }
 
+    // Faltan los checks del estado actual de un switch antes de enviar un comando para encenderlo o apagarlo
     @Override
     public RespuestaCore calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio) {
         if (dataSitio == null || dataSitio.habitaciones() == null || dataSitio.habitaciones().isEmpty()) {
+            // Podría lanzar una excepción?
             return new RespuestaCore(List.of());
         }
 
+        // Apagar todos los switches durante el horario punta
         if (esHorarioPunta(fechaHora, dataSitio)) {
             List<Comando> comandos = new ArrayList<>();
             for (Habitacion habitacion : dataSitio.habitaciones()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
+                comandos.add((Comando) new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
             }
             return new RespuestaCore(comandos);
         }
@@ -41,13 +45,14 @@ class Core implements ICore {
 
         Habitacion habitacionSeleccionada = null;
         if (!habitacionesBajoTemperatura.isEmpty()) {
+            // Acá debería armar una lista en vez de solo tomar una única habitación de mayor déficit
             habitacionSeleccionada = habitacionesBajoTemperatura.stream()
                     .max(Comparator.comparingDouble(habitacion -> habitacion.temperaturaEsperada() - habitacion.temperaturaActual()))
                     .orElse(null);
 
             if (habitacionSeleccionada != null) {
                 double potenciaActual = dataSitio.habitaciones().stream()
-                        .filter(habitacion -> habitacion.estadoActual() == EstadoSwitch.ENCENDIDO)
+                        .filter(habitacion -> habitacion.estadoActualSwitch() == EstadoSwitch.ENCENDIDO)
                         .mapToDouble(Habitacion::potenciaKW)
                         .sum();
 
@@ -60,12 +65,13 @@ class Core implements ICore {
 
         List<Comando> comandos = new ArrayList<>();
         for (Habitacion habitacion : dataSitio.habitaciones()) {
+            // Tiene que apagar antes de prender otras, así se libera
             if (habitacion.temperaturaActual() > habitacion.temperaturaEsperada()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
+                comandos.add((Comando) new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
             } else if (habitacionSeleccionada != null && habitacion.id().equals(habitacionSeleccionada.id())) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.ENCENDIDO));
+                comandos.add((Comando) new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.ENCENDIDO));
             } else if (habitacion.temperaturaActual() < habitacion.temperaturaEsperada()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
+                comandos.add((Comando) new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
             }
         }
 
@@ -86,6 +92,7 @@ class Core implements ICore {
             return false;
         }
 
+        // Debería usar .toLocalTime() para obtener la hora local antes de .getDayOfWeek()?
         DayOfWeek diaSemana = fechaHora.getDayOfWeek();
         if (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY) {
             return false;
