@@ -176,7 +176,7 @@ class RoomServiceTest {
                         "Living",
                         21.0,
                         "termo1",
-                        "http://switches:8081/switches/switch1"
+                        "http://switches:8081/switches/switch1/comandos"
                 )),
                 conInventario.obtenerPorTermostato("termo1")
         );

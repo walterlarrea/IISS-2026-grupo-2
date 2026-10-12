@@ -91,7 +91,7 @@ public class RoomService implements RoomProvider {
                                 habitacion.temperaturaEsperada(),
                                 habitacion.idTermostato(),
                                 UriComponentsBuilder.fromUriString(habitacion.urlSwitch())
-                                        .pathSegment("switches", habitacion.idSwitch())
+                                        .pathSegment("switches", habitacion.idSwitch(), "comandos")
                                         .encode()
                                         .build()
                                         .toUriString()

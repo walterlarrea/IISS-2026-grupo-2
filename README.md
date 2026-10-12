@@ -59,6 +59,22 @@
    - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker.
 6. Cualquier mensaje recibido lo mostrará en la consola.
 
+### Integración con el simulador EcoWarm
+
+La integración se habilita configurando `SIMULATOR_API_URL` en `.env.dev` (por ejemplo,
+`http://iiss-simulator:9090`) y, si el simulador la requiere, `SIMULATOR_API_KEY`. Al iniciar,
+el controlador registra su `CONTROLADOR_ETIQUETA`, anuncia `CONTROLADOR_BASE_URL` y la clave
+`ROOMS_API_KEY`, obtiene el inventario y el broker MQTT del simulador, y se suscribe a los topics
+`topicTermostato` del inventario. Si el simulador todavía no está disponible, reintenta el registro
+cada `SIMULATOR_REGISTRATION_RETRY_MS` milisegundos.
+
+El contenedor del controlador debe poder alcanzar el API del simulador y el broker MQTT devuelto;
+el simulador debe poder alcanzar `CONTROLADOR_BASE_URL`. Si están en Docker, conecta ambos
+contenedores a una red Docker común y usa nombres DNS resolubles desde esa red. `SIMULATOR_API_KEY`
+es la credencial para llamar al simulador; `ROOMS_API_KEY` es la que el simulador debe enviar al
+controlador. Si `SIMULATOR_API_URL` queda vacío, se conserva el modo local configurado por
+`MQTT_BROKER_URL` y `MQTT_TOPIC`.
+
 **Datos de conexión necesarios**
 
 **broker**: tcp://localhost:1883 **(esto en caso de que sea una conexión únicamente local, sino: tcp://mosquitto:1883)**
