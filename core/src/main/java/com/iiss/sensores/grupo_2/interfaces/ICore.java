@@ -1,7 +1,7 @@
-package com.iiss.sensores.grupo_2;
+package com.iiss.sensores.grupo_2.interfaces;
 
 
-import com.iiss.sensores.grupo_2.modelos.RespuestaCore;
+import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 
 import java.time.ZonedDateTime;
