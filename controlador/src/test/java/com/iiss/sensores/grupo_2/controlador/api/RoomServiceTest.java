@@ -9,12 +9,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.iiss.sensores.grupo_2.controlador.api.model.Room;
 import com.iiss.sensores.grupo_2.controlador.api.repository.RoomRepository;
 import com.iiss.sensores.grupo_2.controlador.api.service.RoomService;
+import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
+import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
+import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
@@ -133,5 +140,46 @@ class RoomServiceTest {
         assertEquals(2, resultado.size());
         assertTrue(resultado.contains(r1));
         assertTrue(resultado.contains(r2));
+    }
+
+    @Test
+    @DisplayName("Usa la habitación del inventario activo para el control y compone la URL del switch")
+    void obtenerPorTermostatoUsaInventarioActivo() {
+        InventarioService inventarioService = mock(InventarioService.class);
+        Inventario.Habitacion habitacion = new Inventario.Habitacion(
+                "room1",
+                "Living",
+                21.0,
+                1.2,
+                "termo1",
+                "termo1/status/temperature:0",
+                "switch1",
+                "http://switches:8081"
+        );
+        Inventario inventario = new Inventario(
+                "2.0",
+                new Inventario.Sitio(
+                        "casa",
+                        "Casa",
+                        3.7,
+                        new Inventario.Tarifa(new Inventario.Franja("17:00", "23:00", Inventario.Dias.HABILES))
+                ),
+                List.of(habitacion)
+        );
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
+
+        RoomService conInventario = new RoomService(repository, inventarioService);
+
+        assertEquals(
+                Optional.of(new RoomInfo(
+                        "room1",
+                        "Living",
+                        21.0,
+                        "termo1",
+                        "http://switches:8081/switches/switch1"
+                )),
+                conInventario.obtenerPorTermostato("termo1")
+        );
+        verify(repository, never()).findByIdTermostato("termo1");
     }
 }

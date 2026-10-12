@@ -2,12 +2,14 @@ package com.iiss.sensores.grupo_2.controlador.engine;
 
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
+import com.iiss.sensores.grupo_2.controlador.api.model.EstadoControl;
 import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
 import com.iiss.sensores.grupo_2.controlador.shared.RoomProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -64,6 +66,27 @@ public class ControllerTempTest {
         controller.iniciar();
         controller.detener();
         assertFalse(controller.isActivo());
+    }
+
+    @Test
+    void clockStateUsesRequestedStartTimeAndAcceleration() throws InterruptedException {
+        Instant fechaHora = Instant.parse("2026-10-01T09:15:03.120Z");
+        controller.iniciar(fechaHora, 10.0);
+
+        Thread.sleep(10);
+
+        var estado = controller.obtenerEstado();
+        assertEquals(EstadoControl.Estado.EN_EJECUCION, estado.estado());
+        assertTrue(estado.fechaHora().isAfter(fechaHora));
+        assertEquals(10.0, estado.factorTiempo());
+        assertNotNull(estado.iniciadoEn());
+
+        controller.detener();
+        var detenido = controller.obtenerEstado();
+        assertEquals(EstadoControl.Estado.DETENIDO, detenido.estado());
+        assertNull(detenido.fechaHora());
+        assertNull(detenido.factorTiempo());
+        assertNull(detenido.iniciadoEn());
     }
 
     @Test

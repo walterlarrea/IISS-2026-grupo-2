@@ -26,12 +26,12 @@ class PublisherUnitTest {
 
     @Test
     void validateJsonSerializesTemperaturaToJson() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(7, 24.0f, 75.5f, 1789351400L);
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
         JsonNode root = mapper.readTree(json);
 
-        assertEquals(7, root.get("id").asInt());
+        assertEquals("ht-sim-room7", root.get("id").asText());
         assertEquals(24.0, root.get("tC").asDouble(), 0.0001);
         assertEquals(75.5, root.get("tF").asDouble(), 0.0001);
         assertEquals(1789351400L, root.get("ts").asLong());
@@ -39,7 +39,7 @@ class PublisherUnitTest {
 
     @Test
     void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(3, 12.345f, 54.321f, 1789351400L);
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
 
@@ -50,7 +50,7 @@ class PublisherUnitTest {
 
     @Test
     void epochTimeIsSerializedAsAnInteger() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura(1, 24.65f, 0.0f, 1789351400L);
+        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, 1789351400L);
 
         String json = MessageObject.validateJson(temperatura);
 
@@ -114,12 +114,12 @@ class PublisherUnitTest {
         }).when(publisher).publish(anyString());
 
         EventGenerator generator = new EventGenerator(publisherFactory);
-        Method spamMethod = EventGenerator.class.getDeclaredMethod("spamEventMessage", EventPublisher.class, int.class);
+        Method spamMethod = EventGenerator.class.getDeclaredMethod("spamEventMessage", EventPublisher.class, String.class);
         spamMethod.setAccessible(true);
 
         Thread thread = new Thread(() -> {
             try {
-                spamMethod.invoke(generator, publisher, 0);
+                spamMethod.invoke(generator, publisher, "ht-sim-room0");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -28,7 +28,7 @@ class ApiKeyTest {
 
     @Test
     @DisplayName("Devuelve 401 Unauthorized cuando la clave API está ausente")
-    void deniesApiKeyRequestAbsent() {
+    void deniesApiKeyRequestAbsent() throws Exception {
         boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
         assertFalse(result);
@@ -37,7 +37,7 @@ class ApiKeyTest {
 
     @Test
     @DisplayName("Devuelve 401 Unauthorized cuando la clave API está en blanco")
-    void deniesApiKeyBlankSpace() {
+    void deniesApiKeyBlankSpace() throws Exception {
         request.addHeader("X-API-KEY", "   ");
 
         boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
@@ -47,19 +47,20 @@ class ApiKeyTest {
     }
 
     @Test
-    @DisplayName("Devuelve 403 Forbidden cuando la clave API es incorrecta")
-    void deniesApiKeyRequestIncorrect() {
+    @DisplayName("Devuelve 401 Unauthorized con el formato de error documentado cuando la clave es incorrecta")
+    void deniesApiKeyRequestIncorrect() throws Exception {
         request.addHeader("X-API-KEY", "clave-invalida");
 
         boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
         assertFalse(result);
-        assertEquals(HttpServletResponse.SC_FORBIDDEN, response.getStatus());
+        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+        assertTrue(response.getContentAsString().contains("\"mensaje\":\"falta o no coincide el header X-API-Key\""));
     }
 
     @Test
     @DisplayName("Permite el acceso cuando la clave API es correcta")
-    void allowsApiKeyRequest() {
+    void allowsApiKeyRequest() throws Exception {
         request.addHeader("X-API-KEY", VALID_KEY);
 
         boolean result = apiKeyInterceptor.preHandle(request, response, new Object());

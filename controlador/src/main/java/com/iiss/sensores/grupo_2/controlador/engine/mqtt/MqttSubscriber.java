@@ -25,12 +25,14 @@ public class MqttSubscriber {
     private final String clientId;
     private final String topic;
 
-    public MqttSubscriber(MongoTemperatureWriter mongoWriter,
-                          ControllerTempAuto controllerTempAuto,
-                          ObjectMapper objMap,
-                          @Value("${mqtt.broker-url:tcp://localhost:1883}") String broker,
-                          @Value("${mqtt.client-id:ControladorSubscriber}") String clientId,
-                          @Value("${mqtt.topic:sensores/temperatura}") String topic) {
+    public MqttSubscriber(
+        MongoTemperatureWriter mongoWriter,
+        ControllerTempAuto controllerTempAuto,
+        ObjectMapper objMap,
+        @Value("${mqtt.broker-url:tcp://localhost:1883}") String broker,
+        @Value("${mqtt.client-id:ControladorSubscriber}") String clientId,
+        @Value("${mqtt.topic:sensores/temperatura}") String topic
+    ) {
         this.mongoWriter = mongoWriter;
         this.controllerTempAuto = controllerTempAuto;
         this.objMap = objMap;
@@ -59,33 +61,48 @@ public class MqttSubscriber {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
                     String payload = new String(message.getPayload());
-                    logger.info("Topic: " + topic + " | Message: " + payload);
+
+                    logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
+
                     try {
-                        MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
-                        logger.info("Controller for room id = {}", temp.id());
+                        MessageObject.Temperatura temp =
+                                objMap.readValue(payload, MessageObject.Temperatura.class);
+
+                        logger.info(
+                                "Temperatura recibida: {} °C. Termostato: {}",
+                                temp.tC(),
+                                temp.id()
+                        );
+
                         try {
                             processMessage(payload);
-                            logger.info("'Medición' saved in MongoDB");
+                            logger.info("Medición guardada en MongoDB");
                         } catch (Exception e) {
-                            logger.error("Failed saving 'Medición' in MongoDB");
-                            e.printStackTrace();
+                            logger.error("Error al guardar la medición en MongoDB", e);
                         }
 
                         try {
-                            logger.info("Controller for room id = {}", temp.id());
-                            controllerTempAuto.controlarHab(temp.tC(), String.valueOf(temp.id()));
+                            logger.info("Iniciando control de temperatura para {}", temp.id());
+
+                            controllerTempAuto.controlarHab(temp.tC(), temp.id());
+
+                            logger.info("Finalizó el procesamiento de temperatura para {}", temp.id());
                         } catch (Exception e) {
-                            logger.error("Failed handling temperature control for room id = {}", temp.id(), e);
-                            e.printStackTrace();
+                            logger.error(
+                                    "Error al controlar la temperatura del termostato {}",
+                                    temp.id(),
+                                    e
+                            );
                         }
+
                     } catch (Exception e) {
-                        logger.error("Failed parsing 'Medición' from payload: {}", payload, e);
-                        e.printStackTrace();
+                        logger.error("Error al interpretar el mensaje MQTT: {}", payload, e);
                     }
                 }
 
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {
+                    // No se utiliza en el subscriber
                 }
             });
 
