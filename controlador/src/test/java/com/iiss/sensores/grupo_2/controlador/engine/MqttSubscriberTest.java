@@ -3,7 +3,7 @@ package com.iiss.sensores.grupo_2.controlador.engine;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iiss.sensores.grupo_2.controlador.engine.mqtt.MqttSubscriber;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
-import com.iiss.sensores.grupo_2.controlador.engine.writer.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

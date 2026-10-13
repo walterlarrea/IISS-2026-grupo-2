@@ -1,10 +1,8 @@
 package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iiss.sensores.grupo_2.CoreFactory;
-import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
-import com.iiss.sensores.grupo_2.controlador.engine.writer.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
 import com.iiss.sensores.grupo_2.dto.MessageObject;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
@@ -60,15 +58,10 @@ public class MqttSubscriber {
                     logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
                     try {
-                        MessageObject.Temperatura temp =
-                                objMap.readValue(payload, MessageObject.Temperatura.class);
+                        MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
                         String idTermostato = resolverIdTermostato(topic, temp.id(), termostatosPorTopic);
 
-                        logger.info(
-                                "Temperatura recibida: {} °C. Termostato: {}",
-                                temp.tC(),
-                                idTermostato
-                        );
+                        logger.info("Temperatura recibida: {} °C. Termostato: {}", temp.tC(), idTermostato);
 
                         try {
                             processMessage(payload);
@@ -78,17 +71,12 @@ public class MqttSubscriber {
                         }
 
                         try {
-                            logger.info("Iniciando control de temperatura para {}", idTermostato);
+                            logger.info("Procesando nueva medición del termostato {}", idTermostato);
 
-                            controllerTempAuto.controlarHab(temp.tC(), idTermostato);
+                            controllerTempAuto.procesarTemperatura(idTermostato, temp.tC());
 
-                            logger.info("Finalizó el procesamiento de temperatura para {}", idTermostato);
                         } catch (Exception e) {
-                            logger.error(
-                                    "Error al controlar la temperatura del termostato {}",
-                                    idTermostato,
-                                    e
-                            );
+                            logger.error("Error al procesar la temperatura del termostato {}", idTermostato, e);
                         }
 
                     } catch (Exception e) {

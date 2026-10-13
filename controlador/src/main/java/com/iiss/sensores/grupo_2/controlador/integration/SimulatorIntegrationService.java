@@ -112,7 +112,6 @@ public class SimulatorIntegrationService {
             if (inventario == null) {
                 throw new IllegalStateException("El simulador devolvió un inventario vacío");
             }
-            inventarioService.reemplazar(inventario);
 
             Map<String, String> termostatosPorTopic = new LinkedHashMap<>();
             for (Inventario.Habitacion habitacion : inventario.habitaciones()) {
@@ -121,12 +120,11 @@ public class SimulatorIntegrationService {
                         habitacion.idTermostato()
                 );
                 if (anterior != null && !anterior.equals(habitacion.idTermostato())) {
-                    throw new IllegalStateException(
-                            "El topic MQTT " + habitacion.topicTermostato()
-                                    + " está asociado a más de un termostato"
-                    );
+                    throw new IllegalStateException("El topic MQTT " + habitacion.topicTermostato() + " está asociado a más de un termostato");
                 }
             }
+            inventarioService.reemplazar(inventario);
+
             String broker = "tcp://" + registro.mqtt().host() + ":" + registro.mqtt().puerto();
             mqttSubscriber.conectar(broker, mqttClientId, termostatosPorTopic);
             initialized.set(true);

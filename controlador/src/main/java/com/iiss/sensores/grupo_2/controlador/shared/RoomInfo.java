@@ -5,6 +5,6 @@ public record RoomInfo(
         String nombre,
         double temperaturaEsperada,
         String idTermostato,
-        String uriSwitch
+        String urlSwitch
 ) {
 }

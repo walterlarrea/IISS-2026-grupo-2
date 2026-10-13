@@ -24,8 +24,7 @@ public record Inventario(
     ) {
     }
 
-    public record Tarifa(@NotNull @Valid Franja punta) {
-    }
+    public record Tarifa(@NotNull @Valid Franja punta) { }
 
     public record Franja(
             @NotBlank
@@ -39,8 +38,8 @@ public record Inventario(
     }
 
     public enum Dias {
-        HABILES,
-        TODOS
+        HABILES
+        //TODOS
     }
 
     public record Habitacion(

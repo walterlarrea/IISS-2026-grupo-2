@@ -322,7 +322,7 @@ components:
           example: "23:00"
         dias:
           type: string
-          enum: [HABILES, TODOS]
+          enum: [HABILES]
           description: "`HABILES` = lunes a viernes."
 
     Habitacion:
