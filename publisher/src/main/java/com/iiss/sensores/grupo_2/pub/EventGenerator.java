@@ -40,15 +40,13 @@ public class EventGenerator {
 
     public void generate(){
         ArrayList<String> topics = new ArrayList<String>(List.of("ht-sim-room0/status/temperature:0", "ht-sim-room1/status/temperature:1"));
-        int id = 0;
 
         // Una solucion de paralelismo
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (String topic: topics) {
                 EventPublisher publisher = this.publisherFactory.buildPublisher(topic);
-                int finalId = id;
-                executor.submit(() -> this.spamEventMessage(publisher, finalId));
-                id++;
+                String idTermostato = topic.substring(0, topic.indexOf("/status/"));
+                executor.submit(() -> this.spamEventMessage(publisher, idTermostato));
             }
         }catch(Exception e){
             logger.error("Error occur while running publishers");
@@ -56,7 +54,7 @@ public class EventGenerator {
         }
     }
 
-    private void spamEventMessage(EventPublisher publisher, int id) {
+    private void spamEventMessage(EventPublisher publisher, String id) {
         logger.info("Starting event publisher with ID = {}", id);
 
         float lastTemp = this.startingTemp;

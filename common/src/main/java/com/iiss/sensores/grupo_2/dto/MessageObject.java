@@ -11,7 +11,7 @@ public class MessageObject {
     private static final Logger logger = LoggerFactory.getLogger(MessageObject.class);
 
     public record Temperatura(
-            int id,
+            String id,
             @JsonSerialize(using = TwoDecimalSerializer.class)
             double tC,
             @JsonSerialize(using = TwoDecimalSerializer.class)

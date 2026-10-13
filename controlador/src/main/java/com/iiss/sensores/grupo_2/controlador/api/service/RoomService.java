@@ -1,12 +1,15 @@
 package com.iiss.sensores.grupo_2.controlador.api.service;
 
 import com.iiss.sensores.grupo_2.controlador.api.model.Room;
+import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.repository.RoomRepository;
 import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
 import com.iiss.sensores.grupo_2.controlador.shared.RoomProvider;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -21,9 +24,17 @@ import java.util.Set;
 public class RoomService implements RoomProvider {
 
     private final RoomRepository repository;
+    private final InventarioService inventarioService;
+
+    @Autowired
+    public RoomService(RoomRepository repository, InventarioService inventarioService) {
+        this.repository = repository;
+        this.inventarioService = inventarioService;
+    }
 
     public RoomService(RoomRepository repository) {
         this.repository = repository;
+        this.inventarioService = null;
     }
 
     public List<Room> listar() {
@@ -68,6 +79,25 @@ public class RoomService implements RoomProvider {
     @Override
     @Cacheable(value = "habitaciones_termostato", key = "#idTermostato")
     public Optional<RoomInfo> obtenerPorTermostato(String idTermostato) {
+        if (inventarioService != null) {
+            Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+            if (inventarioActivo.isPresent()) {
+                return inventarioActivo.get().habitaciones().stream()
+                        .filter(habitacion -> habitacion.idTermostato().equals(idTermostato))
+                        .findFirst()
+                        .map(habitacion -> new RoomInfo(
+                                habitacion.id(),
+                                habitacion.nombre(),
+                                habitacion.temperaturaEsperada(),
+                                habitacion.idTermostato(),
+                                UriComponentsBuilder.fromUriString(habitacion.urlSwitch())
+                                        .pathSegment("switches", habitacion.idSwitch(), "comandos")
+                                        .encode()
+                                        .build()
+                                        .toUriString()
+                        ));
+            }
+        }
         return repository.findByIdTermostato(idTermostato)
                 .map(r -> new RoomInfo(
                         r.getId(),

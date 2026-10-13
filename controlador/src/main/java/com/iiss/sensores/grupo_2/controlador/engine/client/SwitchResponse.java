@@ -1,4 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine.client;
 
-public record SwitchResponse(String id, Boolean encendido) {
+import java.time.Instant;
+
+public record SwitchResponse(String idSwitch, String estado, boolean cambio, Instant aplicadoEn) {
 }
