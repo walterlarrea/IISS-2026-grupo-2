@@ -13,5 +13,5 @@ public record Habitacion(
         String urlSwitch,
 
         double temperaturaActual,
-        EstadoSwitch estadoActual
+        EstadoSwitch estadoActualSwitch
 ) {}

@@ -1,16 +1,13 @@
 package com.iiss.sensores.grupo_2;
 
-import com.iiss.sensores.grupo_2.enums.DiasPunta;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
-import com.iiss.sensores.grupo_2.modelos.Comando;
-import com.iiss.sensores.grupo_2.modelos.ComandoSwitch;
-import com.iiss.sensores.grupo_2.modelos.RespuestaCore;
+import com.iiss.sensores.grupo_2.interfaces.ICore;
+import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
-import com.iiss.sensores.grupo_2.modelos.input.Punta;
+import com.iiss.sensores.grupo_2.modelos.output.Comando;
+import com.iiss.sensores.grupo_2.modelos.output.ComandoSwitch;
 
-import java.time.DayOfWeek;
-import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,81 +21,78 @@ class Core implements ICore {
     @Override
     public RespuestaCore calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio) {
         if (dataSitio == null || dataSitio.habitaciones() == null || dataSitio.habitaciones().isEmpty()) {
+            // Podría lanzar una excepción?
             return new RespuestaCore(List.of());
         }
 
-        if (esHorarioPunta(fechaHora, dataSitio)) {
+        // Apaga todos los switches durante el horario punta
+        if (dataSitio.sitio() != null
+                && dataSitio.sitio().tarifa() != null
+                && dataSitio.sitio().tarifa().esHorarioPunta(fechaHora)) {
             List<Comando> comandos = new ArrayList<>();
             for (Habitacion habitacion : dataSitio.habitaciones()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
+                agregarComandoSiNecesario(comandos, habitacion, EstadoSwitch.APAGADO);
             }
             return new RespuestaCore(comandos);
         }
 
-        List<Habitacion> habitacionesBajoTemperatura = dataSitio.habitaciones().stream()
-                .filter(habitacion -> habitacion.temperaturaActual() < habitacion.temperaturaEsperada())
-                .toList();
+        // Lista de habitaciones que alcanzaron o están por encima de la temperatura esperada
+        List<Habitacion> habitacionesSobreTemperaturaEsperada = dataSitio.habitaciones().stream()
+            .filter(habitacion -> habitacion.temperaturaActual() >= habitacion.temperaturaEsperada())
+            .toList();
 
-        Habitacion habitacionSeleccionada = null;
-        if (!habitacionesBajoTemperatura.isEmpty()) {
-            habitacionSeleccionada = habitacionesBajoTemperatura.stream()
-                    .max(Comparator.comparingDouble(habitacion -> habitacion.temperaturaEsperada() - habitacion.temperaturaActual()))
-                    .orElse(null);
+        // Lista de habitaciones que están por debajo de la temperatura esperada,
+        // ordenadas por la diferencia entre la temperatura esperada y la actual (de mayor a menor)
+        List<Habitacion> habitacionesBajoTemperaturaEsperada = dataSitio.habitaciones().stream()
+            .filter(habitacion -> habitacion.temperaturaActual() < habitacion.temperaturaEsperada())
+            .sorted(Comparator.comparingDouble((Habitacion habitacion) ->
+                    habitacion.temperaturaEsperada() - habitacion.temperaturaActual()).reversed())
+            .toList();
 
-            if (habitacionSeleccionada != null) {
-                double potenciaActual = dataSitio.habitaciones().stream()
-                        .filter(habitacion -> habitacion.estadoActual() == EstadoSwitch.ENCENDIDO)
-                        .mapToDouble(Habitacion::potenciaKW)
-                        .sum();
+        // Calcula la potencia utilizada sumando la potencia de las habitaciones cuyo switch está encendido
+        double potenciaUtilizada = dataSitio.habitaciones().stream()
+            .filter(habitacion -> habitacion.estadoActualSwitch() == EstadoSwitch.ENCENDIDO)
+            .mapToDouble(Habitacion::potenciaKW)
+            .sum();
 
-                double potenciaLibre = dataSitio.sitio().potenciaContratadaKW() - potenciaActual;
-                if (potenciaLibre < habitacionSeleccionada.potenciaKW()) {
-                    habitacionSeleccionada = null;
+        List<Comando> comandos = new ArrayList<>();
+
+        /* - Agrega los comandos para apagar los switches de las habitaciones que están por encima de la temperatura esperada y está encendido
+         * -Libera potencia para poder encender las habitaciones que están por debajo de la temperatura esperada
+         */
+        for (Habitacion habitacion : habitacionesSobreTemperaturaEsperada) {
+            if (habitacion.estadoActualSwitch() != EstadoSwitch.APAGADO) {
+                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
+                potenciaUtilizada -= habitacion.potenciaKW();
+            }
+        }
+
+        /* - Agrega los comandos para encender los switches de las habitaciones que están por debajo de la temperatura esperada y cuyo switch está apagado.
+         * - Solo enciende la habitación si no supera la potencia contratada.
+         * - Si la habitación con mayor déficit de temperatura no puede encenderse por superar la potencia contratada,
+         *     se intenta encender la siguiente habitación con menor déficit de temperatura, y así sucesivamente.
+        */
+        for (Habitacion habitacion : habitacionesBajoTemperaturaEsperada) {
+            if (habitacion.estadoActualSwitch() != EstadoSwitch.ENCENDIDO) {
+                // Solo enciende la habitación si no supera la potencia contratada
+                if (potenciaUtilizada + habitacion.potenciaKW() <= dataSitio.sitio().potenciaContratadaKW()) {
+                    comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.ENCENDIDO));
+                    potenciaUtilizada += habitacion.potenciaKW();
                 }
             }
         }
-
-        List<Comando> comandos = new ArrayList<>();
-        for (Habitacion habitacion : dataSitio.habitaciones()) {
-            if (habitacion.temperaturaActual() > habitacion.temperaturaEsperada()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
-            } else if (habitacionSeleccionada != null && habitacion.id().equals(habitacionSeleccionada.id())) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.ENCENDIDO));
-            } else if (habitacion.temperaturaActual() < habitacion.temperaturaEsperada()) {
-                comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
-            }
-        }
-
+        
         return new RespuestaCore(comandos);
     }
 
-    private boolean esHorarioPunta(ZonedDateTime fechaHora, DataSitio dataSitio) {
-        if (dataSitio == null || dataSitio.sitio() == null || dataSitio.sitio().tarifa() == null) {
-            return false;
+    private void agregarComandoSiNecesario(
+            List<Comando> comandos,
+            Habitacion habitacion,
+            EstadoSwitch estadoDeseado
+    ) {
+        if (habitacion.estadoActualSwitch() != estadoDeseado) {
+            comandos.add(new ComandoSwitch(habitacion.idSwitch(), estadoDeseado));
         }
-
-        Punta punta = dataSitio.sitio().tarifa().punta();
-        if (punta == null || punta.dias() == null) {
-            return false;
-        }
-
-        if (punta.dias() != DiasPunta.HABILES) {
-            return false;
-        }
-
-        DayOfWeek diaSemana = fechaHora.getDayOfWeek();
-        if (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY) {
-            return false;
-        }
-
-        LocalTime horaActual = fechaHora.toLocalTime();
-        LocalTime horaInicio = LocalTime.parse(punta.desde());
-        LocalTime horaFin = LocalTime.parse(punta.hasta());
-
-        if (horaInicio.isBefore(horaFin)) {
-            return !horaActual.isBefore(horaInicio) && !horaActual.isAfter(horaFin);
-        }
-
-        return !horaActual.isBefore(horaInicio) || !horaActual.isAfter(horaFin);
     }
+
 }
