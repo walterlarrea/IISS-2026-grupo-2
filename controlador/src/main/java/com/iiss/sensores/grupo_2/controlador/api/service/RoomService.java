@@ -1,15 +1,10 @@
 package com.iiss.sensores.grupo_2.controlador.api.service;
 
-import com.iiss.sensores.grupo_2.controlador.api.model.Room;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
-import com.iiss.sensores.grupo_2.controlador.api.repository.RoomRepository;
-import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
 import com.iiss.sensores.grupo_2.controlador.shared.RoomProvider;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -23,159 +18,191 @@ import java.util.Set;
 @Service
 public class RoomService implements RoomProvider {
 
-    private final RoomRepository repository;
     private final InventarioService inventarioService;
 
-    @Autowired
-    public RoomService(RoomRepository repository, InventarioService inventarioService) {
-        this.repository = repository;
+    public RoomService(InventarioService inventarioService) {
         this.inventarioService = inventarioService;
     }
 
-    public RoomService(RoomRepository repository) {
-        this.repository = repository;
-        this.inventarioService = null;
+    public List<Inventario.Habitacion> listar() {
+        Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+        return inventarioActivo.map(Inventario::habitaciones).orElse(null);
     }
 
-    public List<Room> listar() {
-        return repository.findAll();
-    }
-
-    public Optional<Room> buscarPorId(String id) {
-        return repository.findById(id);
-    }
-
-    @CacheEvict(value = "habitaciones_termostato", allEntries = true)
-    public Room crear(Room room) {
-        return repository.save(room);
+    public Optional<Inventario.Habitacion> buscarPorId(String id) {
+        Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+        return inventarioActivo.flatMap(inventario -> inventario.habitaciones().stream()
+                .filter(habitacion -> habitacion.id().equals(id))
+                .findFirst());
     }
 
     @CacheEvict(value = "habitaciones_termostato", allEntries = true)
-    public Optional<Room> modificar(String id, Room room) {
-        return repository.findById(id).map(existente -> {
-            existente.setNombre(room.getNombre());
-            existente.setTemperaturaEsperada(room.getTemperaturaEsperada());
-            existente.setIdTermostato(room.getIdTermostato());
-            existente.setUriSwitch(room.getUriSwitch());
+    public Inventario.Habitacion crear(Inventario.Habitacion habitacion) {
+        Inventario inventario = inventarioService.obtenerActivo()
+                .orElseThrow(SitioNoConfiguradoException::new);
 
-            return repository.save(existente);
-        });
+        Optional<Inventario.Habitacion> existente = inventario.habitaciones().stream()
+                .filter(actual -> actual.id().equals(habitacion.id()))
+                .findFirst();
+        if (existente.isPresent()) {
+            return existente.get();
+        }
+
+        List<Inventario.Habitacion> habitaciones = new ArrayList<>(inventario.habitaciones());
+        habitaciones.add(habitacion);
+        inventarioService.reemplazar(new Inventario(inventario.schemaVersion(), inventario.sitio(), habitaciones));
+        return habitacion;
+    }
+
+    @CacheEvict(value = "habitaciones_termostato", allEntries = true)
+    public Optional<Inventario.Habitacion> modificar(String id, Inventario.Habitacion habitacion) {
+        Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+        if (inventarioActivo.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Inventario inventario = inventarioActivo.get();
+        List<Inventario.Habitacion> habitaciones = new ArrayList<>(inventario.habitaciones());
+        for (int i = 0; i < habitaciones.size(); i++) {
+            if (habitaciones.get(i).id().equals(id)) {
+                Inventario.Habitacion actualizada = new Inventario.Habitacion(
+                        id,
+                        habitacion.nombre(),
+                        habitacion.temperaturaEsperada(),
+                        habitacion.potenciaKW(),
+                        habitacion.idTermostato(),
+                        habitacion.topicTermostato(),
+                        habitacion.idSwitch(),
+                        habitacion.urlSwitch()
+                );
+                habitaciones.set(i, actualizada);
+                inventarioService.reemplazar(
+                        new Inventario(inventario.schemaVersion(), inventario.sitio(), habitaciones)
+                );
+                return Optional.of(actualizada);
+            }
+        }
+        return Optional.empty();
     }
 
     @CacheEvict(value = "habitaciones_termostato", allEntries = true)
     public boolean eliminar(String id) {
-        if (!repository.existsById(id)) {
+        Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+        if (inventarioActivo.isEmpty()) {
             return false;
         }
 
-        repository.deleteById(id);
+        Inventario inventario = inventarioActivo.get();
+        List<Inventario.Habitacion> habitaciones = new ArrayList<>(inventario.habitaciones());
+        if (!habitaciones.removeIf(habitacion -> habitacion.id().equals(id))) {
+            return false;
+        }
+        inventarioService.reemplazar(
+                new Inventario(inventario.schemaVersion(), inventario.sitio(), habitaciones)
+        );
         return true;
-    }
-
-    public Optional<Room> buscarPorIdTermostato(String idTermostato) {
-        return repository.findByIdTermostato(idTermostato);
     }
 
     @Override
     @Cacheable(value = "habitaciones_termostato", key = "#idTermostato")
-    public Optional<RoomInfo> obtenerPorTermostato(String idTermostato) {
+    public Optional<Inventario.Habitacion> obtenerPorTermostato(String idTermostato) {
         if (inventarioService != null) {
             Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
             if (inventarioActivo.isPresent()) {
                 return inventarioActivo.get().habitaciones().stream()
                         .filter(habitacion -> habitacion.idTermostato().equals(idTermostato))
-                        .findFirst()
-                        .map(habitacion -> new RoomInfo(
-                                habitacion.id(),
-                                habitacion.nombre(),
-                                habitacion.temperaturaEsperada(),
-                                habitacion.idTermostato(),
-                                UriComponentsBuilder.fromUriString(habitacion.urlSwitch())
-                                        .pathSegment("switches", habitacion.idSwitch(), "comandos")
-                                        .encode()
-                                        .build()
-                                        .toUriString()
-                        ));
+                        .findFirst();
             }
         }
-        return repository.findByIdTermostato(idTermostato)
-                .map(r -> new RoomInfo(
-                        r.getId(),
-                        r.getNombre(),
-                        r.getTemperaturaEsperada(),
-                        r.getIdTermostato(),
-                        r.getUriSwitch()
-                ));
+        return Optional.empty();
     }
 
     @CacheEvict(value = "habitaciones_termostato", allEntries = true)
-    public Optional<Room> modificarParcialmente(
+    public Optional<Inventario.Habitacion> modificarParcialmente(
             String id,
             Map<String, Object> cambios) {
 
-        return repository.findById(id)
-                .map(existente -> {
+        Optional<Inventario> inventarioActivo = inventarioService.obtenerActivo();
+        if (inventarioActivo.isEmpty()) {
+            return Optional.empty();
+        }
 
-                    if (cambios.containsKey("nombre")) {
-                        existente.setNombre((String) cambios.get("nombre"));
-                    }
-
-                    if (cambios.containsKey("temperaturaEsperada")) {
-                        existente.setTemperaturaEsperada(
-                                ((Number) cambios.get("temperaturaEsperada")).doubleValue()
-                        );
-                    }
-
-                    if (cambios.containsKey("idTermostato")) {
-                        existente.setIdTermostato(
-                                (String) cambios.get("idTermostato")
-                        );
-                    }
-
-                    if (cambios.containsKey("uriSwitch")) {
-                        existente.setUriSwitch(
-                                (String) cambios.get("uriSwitch")
-                        );
-                    }
-
-                    return repository.save(existente);
-                });
-    }
-
-    public List<Room> validar() {
-        List<Room> habitaciones = repository.findAll();
-        Set<Room> noCumplen = new LinkedHashSet<>();
-
-        Map<String, List<Room>> porTermostato = new LinkedHashMap<>();
-        Map<String, List<Room>> porUriSwitch = new LinkedHashMap<>();
-
-        for (Room room : habitaciones) {
-            boolean invalido = false;
-
-            if (room.getIdTermostato() == null || room.getIdTermostato().isBlank()) {
-                invalido = true;
-            } else {
-                porTermostato.computeIfAbsent(room.getIdTermostato(), k -> new ArrayList<>()).add(room);
+        Inventario inventario = inventarioActivo.get();
+        List<Inventario.Habitacion> habitaciones = new ArrayList<>(inventario.habitaciones());
+        for (int i = 0; i < habitaciones.size(); i++) {
+            Inventario.Habitacion existente = habitaciones.get(i);
+            if (!existente.id().equals(id)) {
+                continue;
             }
 
-            if (!esUriValida(room.getUriSwitch())) {
+            String urlSwitchKey = cambios.containsKey("urlSwitch") ? "urlSwitch" : "uriSwitch";
+            Inventario.Habitacion actualizada = new Inventario.Habitacion(
+                    id,
+                    cambios.containsKey("nombre") ? (String) cambios.get("nombre") : existente.nombre(),
+                    cambios.containsKey("temperaturaEsperada")
+                            ? ((Number) cambios.get("temperaturaEsperada")).doubleValue()
+                            : existente.temperaturaEsperada(),
+                    cambios.containsKey("potenciaKW")
+                            ? ((Number) cambios.get("potenciaKW")).doubleValue()
+                            : existente.potenciaKW(),
+                    cambios.containsKey("idTermostato")
+                            ? (String) cambios.get("idTermostato")
+                            : existente.idTermostato(),
+                    cambios.containsKey("topicTermostato")
+                            ? (String) cambios.get("topicTermostato")
+                            : existente.topicTermostato(),
+                    cambios.containsKey("idSwitch")
+                            ? (String) cambios.get("idSwitch")
+                            : existente.idSwitch(),
+                    cambios.containsKey(urlSwitchKey)
+                            ? (String) cambios.get(urlSwitchKey)
+                            : existente.urlSwitch()
+            );
+            habitaciones.set(i, actualizada);
+            inventarioService.reemplazar(
+                    new Inventario(inventario.schemaVersion(), inventario.sitio(), habitaciones)
+            );
+            return Optional.of(actualizada);
+        }
+        return Optional.empty();
+    }
+
+    public List<Inventario.Habitacion> validar() {
+        List<Inventario.Habitacion> habitaciones = inventarioService.obtenerActivo()
+                .map(Inventario::habitaciones)
+                .orElseGet(List::of);
+        Set<Inventario.Habitacion> noCumplen = new LinkedHashSet<>();
+
+        Map<String, List<Inventario.Habitacion>> porTermostato = new LinkedHashMap<>();
+        Map<String, List<Inventario.Habitacion>> porUrlSwitch = new LinkedHashMap<>();
+
+        for (Inventario.Habitacion habitacion : habitaciones) {
+            boolean invalido = false;
+
+            if (habitacion.idTermostato() == null || habitacion.idTermostato().isBlank()) {
                 invalido = true;
             } else {
-                porUriSwitch.computeIfAbsent(room.getUriSwitch(), k -> new ArrayList<>()).add(room);
+                porTermostato.computeIfAbsent(habitacion.idTermostato(), k -> new ArrayList<>()).add(habitacion);
+            }
+
+            if (!esUriValida(habitacion.urlSwitch())) {
+                invalido = true;
+            } else {
+                porUrlSwitch.computeIfAbsent(habitacion.urlSwitch(), k -> new ArrayList<>()).add(habitacion);
             }
 
             if (invalido) {
-                noCumplen.add(room);
+                noCumplen.add(habitacion);
             }
         }
 
-        for (List<Room> grupo : porTermostato.values()) {
+        for (List<Inventario.Habitacion> grupo : porTermostato.values()) {
             if (grupo.size() > 1) {
                 noCumplen.addAll(grupo);
             }
         }
 
-        for (List<Room> grupo : porUriSwitch.values()) {
+        for (List<Inventario.Habitacion> grupo : porUrlSwitch.values()) {
             if (grupo.size() > 1) {
                 noCumplen.addAll(grupo);
             }

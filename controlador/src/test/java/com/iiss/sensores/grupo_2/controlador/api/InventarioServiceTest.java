@@ -3,8 +3,10 @@ package com.iiss.sensores.grupo_2.controlador.api;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.model.InventarioDocumento;
 import com.iiss.sensores.grupo_2.controlador.api.repository.InventarioRepository;
+import com.iiss.sensores.grupo_2.controlador.api.event.InventarioActualizadoEvent;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventarioInvalidoException;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,12 +22,14 @@ import static org.mockito.Mockito.when;
 
 class InventarioServiceTest {
     private InventarioRepository repository;
+    private ApplicationEventPublisher eventPublisher;
     private InventarioService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(InventarioRepository.class);
-        service = new InventarioService(repository);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        service = new InventarioService(repository, eventPublisher);
     }
 
     @Test
@@ -35,6 +39,7 @@ class InventarioServiceTest {
         service.reemplazar(inventario);
 
         verify(repository).save(new InventarioDocumento("activo", inventario));
+        verify(eventPublisher).publishEvent(new InventarioActualizadoEvent(inventario));
     }
 
     @Test
@@ -51,6 +56,7 @@ class InventarioServiceTest {
 
         assertEquals(List.of("idSwitch duplicado: 'switch1'"), exception.getErrores());
         verify(repository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(eventPublisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

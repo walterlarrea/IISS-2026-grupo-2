@@ -24,8 +24,7 @@ public record Inventario(
     ) {
     }
 
-    public record Tarifa(@NotNull @Valid Franja punta) {
-    }
+    public record Tarifa(@NotNull @Valid Franja punta) { }
 
     public record Franja(
             @NotBlank
@@ -39,15 +38,15 @@ public record Inventario(
     }
 
     public enum Dias {
-        HABILES,
-        TODOS
+        HABILES
+        //TODOS
     }
 
     public record Habitacion(
             @NotBlank String id,
             @NotBlank @Size(max = 50) String nombre,
             @NotNull Double temperaturaEsperada,
-            @Positive double potenciaKW,
+            @Positive Double potenciaKW,
             @NotBlank String idTermostato,
             @NotBlank String topicTermostato,
             @NotBlank String idSwitch,

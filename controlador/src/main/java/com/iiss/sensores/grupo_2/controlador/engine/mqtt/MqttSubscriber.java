@@ -1,10 +1,8 @@
 package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iiss.sensores.grupo_2.CoreFactory;
-import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
-import com.iiss.sensores.grupo_2.controlador.engine.writer.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
 import com.iiss.sensores.grupo_2.dto.MessageObject;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
@@ -14,7 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class MqttSubscriber {
@@ -22,6 +22,8 @@ public class MqttSubscriber {
     private final MongoTemperatureWriter mongoWriter;
     private final ControllerTempAuto controllerTempAuto;
     private final ObjectMapper objMap;
+    private final Set<String> desiredTopics = new HashSet<>();
+    private final Set<String> subscribedTopics = new HashSet<>();
     private MqttClient client;
 
     public MqttSubscriber(
@@ -41,16 +43,45 @@ public class MqttSubscriber {
     public synchronized void conectar(
             String broker,
             String clientId,
-            Map<String, String> termostatosPorTopic
+            String topic
     ) {
+        conectar(broker, clientId, Set.of(topic));
+    }
+
+    public synchronized void conectar(
+            String broker,
+            String clientId,
+            Collection<String> topics
+    ) {
+        Set<String> topicsToSubscribe = validarTopics(topics);
         desconectar();
+        desiredTopics.clear();
+        desiredTopics.addAll(topicsToSubscribe);
         try {
             client = new MqttClient(broker, clientId, new MemoryPersistence());
 
-            client.setCallback(new MqttCallback() {
+            client.setCallback(new MqttCallbackExtended() {
                 @Override
                 public void connectionLost(Throwable cause) {
                     logger.error("Connection to MQTT broker was lost", cause);
+                    synchronized (MqttSubscriber.this) {
+                        subscribedTopics.clear();
+                    }
+                }
+
+                @Override
+                public void connectComplete(boolean reconnect, String serverURI) {
+                    if (!reconnect) {
+                        return;
+                    }
+                    synchronized (MqttSubscriber.this) {
+                        subscribedTopics.clear();
+                        try {
+                            aplicarSuscripciones();
+                        } catch (RuntimeException exception) {
+                            logger.error("No se pudieron restaurar las suscripciones MQTT tras conectar", exception);
+                        }
+                    }
                 }
 
                 @Override
@@ -60,15 +91,10 @@ public class MqttSubscriber {
                     logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
                     try {
-                        MessageObject.Temperatura temp =
-                                objMap.readValue(payload, MessageObject.Temperatura.class);
-                        String idTermostato = resolverIdTermostato(topic, temp.id(), termostatosPorTopic);
+                        MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
+                        String idTermostato = temp.id();
 
-                        logger.info(
-                                "Temperatura recibida: {} °C. Termostato: {}",
-                                temp.tC(),
-                                idTermostato
-                        );
+                        logger.info("Temperatura recibida: {} °C. Termostato: {}", temp.tC(), idTermostato);
 
                         try {
                             processMessage(payload);
@@ -78,17 +104,12 @@ public class MqttSubscriber {
                         }
 
                         try {
-                            logger.info("Iniciando control de temperatura para {}", idTermostato);
+                            logger.info("Procesando nueva medición del termostato {}", idTermostato);
 
-                            controllerTempAuto.controlarHab(temp.tC(), idTermostato);
+                            controllerTempAuto.procesarTemperatura(topic, temp.tC());
 
-                            logger.info("Finalizó el procesamiento de temperatura para {}", idTermostato);
                         } catch (Exception e) {
-                            logger.error(
-                                    "Error al controlar la temperatura del termostato {}",
-                                    idTermostato,
-                                    e
-                            );
+                            logger.error("Error al procesar la temperatura del termostato {}", idTermostato, e);
                         }
 
                     } catch (Exception e) {
@@ -110,14 +131,58 @@ public class MqttSubscriber {
             client.connect(connOpts);
             logger.info("Connected to MQTT broker");
 
-            for (String topic : termostatosPorTopic.keySet()) {
-                client.subscribe(topic, 1);
-                logger.info("Subscribed to topic: {}", topic);
-            }
+            aplicarSuscripciones();
 
         } catch (MqttException me) {
             desconectar();
             throw new IllegalStateException("No se pudo conectar o suscribir al broker MQTT " + broker, me);
+        } catch (RuntimeException exception) {
+            desconectar();
+            throw exception;
+        }
+    }
+
+    public synchronized void actualizarSuscripciones(Collection<String> topics) {
+        Set<String> topicsToSubscribe = validarTopics(topics);
+        desiredTopics.clear();
+        desiredTopics.addAll(topicsToSubscribe);
+        aplicarSuscripciones();
+    }
+
+    private Set<String> validarTopics(Collection<String> topics) {
+        if (topics == null || topics.stream().anyMatch(topic -> topic == null || topic.isBlank())) {
+            throw new IllegalArgumentException("Los topics MQTT deben ser una colección de valores no vacíos");
+        }
+        return new HashSet<>(topics);
+    }
+
+    private void aplicarSuscripciones() {
+        if (client == null || !client.isConnected()) {
+            return;
+        }
+
+        Set<String> topicsToRemove = new HashSet<>(subscribedTopics);
+        topicsToRemove.removeAll(desiredTopics);
+        for (String topic : topicsToRemove) {
+            try {
+                client.unsubscribe(topic);
+                subscribedTopics.remove(topic);
+                logger.info("Unsubscribed from topic: {}", topic);
+            } catch (MqttException exception) {
+                throw new IllegalStateException("No se pudo cancelar la suscripción MQTT al topic " + topic, exception);
+            }
+        }
+
+        Set<String> topicsToAdd = new HashSet<>(desiredTopics);
+        topicsToAdd.removeAll(subscribedTopics);
+        for (String topic : topicsToAdd) {
+            try {
+                client.subscribe(topic, 1);
+                subscribedTopics.add(topic);
+                logger.info("Subscribed to topic: {}", topic);
+            } catch (MqttException exception) {
+                throw new IllegalStateException("No se pudo suscribir al topic MQTT " + topic, exception);
+            }
         }
     }
 
@@ -134,20 +199,12 @@ public class MqttSubscriber {
             logger.warn("Error al cerrar la conexión MQTT anterior", exception);
         } finally {
             client = null;
+            subscribedTopics.clear();
         }
     }
 
     @PreDestroy
     public synchronized void cerrar() {
         desconectar();
-    }
-
-    public static String resolverIdTermostato(
-            String topic,
-            String idMensaje,
-            Map<String, String> termostatosPorTopic
-    ) {
-        String idTermostato = termostatosPorTopic.get(topic);
-        return idTermostato == null || idTermostato.isBlank() ? idMensaje : idTermostato;
     }
 }

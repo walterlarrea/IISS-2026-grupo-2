@@ -1,6 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
-import com.iiss.sensores.grupo_2.controlador.engine.writer.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;

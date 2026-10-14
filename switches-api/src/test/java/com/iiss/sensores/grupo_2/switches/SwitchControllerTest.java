@@ -32,62 +32,81 @@ class SwitchControllerTest {
     void creaUnSwitchApagadoAlConsultarUnIdNuevo() throws Exception {
         mockMvc.perform(get("/switches/nuevo").header("X-API-KEY", API_KEY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("nuevo"))
-                .andExpect(jsonPath("$.encendido").value(false));
+                .andExpect(jsonPath("$.idSwitch").value("nuevo"))
+                .andExpect(jsonPath("$.estado").value("OFF"));
     }
 
     @Test
     void retornaElMismoIdQueSeConsulto() throws Exception {
         mockMvc.perform(get("/switches/cocina-luz").header("X-API-KEY", API_KEY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("cocina-luz"));
+                .andExpect(jsonPath("$.idSwitch").value("cocina-luz"));
     }
 
     // -------------------------------------------------------------------------
-    // POST /switches/{id}
+    // POST /switches/{id}/comandos
     // -------------------------------------------------------------------------
 
     @Test
     void actualizaElEstadoDelSwitchAEncendido() throws Exception {
-        mockMvc.perform(post("/switches/sala-1")
+        mockMvc.perform(post("/switches/sala-1/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
-                        .content("{\"encendido\":true}"))
+                        .content("{\"accion\":\"ON\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("sala-1"))
-                .andExpect(jsonPath("$.encendido").value(true));
+                .andExpect(jsonPath("$.idSwitch").value("sala-1"))
+                .andExpect(jsonPath("$.estado").value("ON"))
+                .andExpect(jsonPath("$.cambio").value(true));
     }
 
     @Test
     void actualizaElEstadoDelSwitchAApagado() throws Exception {
         // Primero encendemos
-        mockMvc.perform(post("/switches/sala-2")
+        mockMvc.perform(post("/switches/sala-2/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
-                        .content("{\"encendido\":true}"))
+                        .content("{\"accion\":\"ON\"}"))
                 .andExpect(status().isOk());
 
         // Luego apagamos y verificamos
-        mockMvc.perform(post("/switches/sala-2")
+        mockMvc.perform(post("/switches/sala-2/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
-                        .content("{\"encendido\":false}"))
+                        .content("{\"accion\":\"OFF\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.encendido").value(false));
+                .andExpect(jsonPath("$.estado").value("OFF"))
+                .andExpect(jsonPath("$.cambio").value(true));
+    }
+
+    @Test
+    void indicaQueNoHuboCambioSiSeRepiteElEstado() throws Exception {
+        mockMvc.perform(post("/switches/sala-4/comandos")
+                        .header("X-API-KEY", API_KEY)
+                        .contentType("application/json")
+                        .content("{\"accion\":\"ON\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/switches/sala-4/comandos")
+                        .header("X-API-KEY", API_KEY)
+                        .contentType("application/json")
+                        .content("{\"accion\":\"ON\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ON"))
+                .andExpect(jsonPath("$.cambio").value(false));
     }
 
     @Test
     void actualizaYConsultaElEstadoDelSwitch() throws Exception {
-        mockMvc.perform(post("/switches/sala-3")
+        mockMvc.perform(post("/switches/sala-3/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
-                        .content("{\"encendido\":true}"))
+                        .content("{\"accion\":\"ON\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.encendido").value(true));
+                .andExpect(jsonPath("$.estado").value("ON"));
 
         mockMvc.perform(get("/switches/sala-3").header("X-API-KEY", API_KEY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.encendido").value(true));
+                .andExpect(jsonPath("$.estado").value("ON"));
     }
 
     // -------------------------------------------------------------------------
@@ -95,17 +114,17 @@ class SwitchControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void rechazaBodyConTipoInvalidoEnEncendido() throws Exception {
-        mockMvc.perform(post("/switches/sala-1")
+    void rechazaBodyConAccionInvalida() throws Exception {
+        mockMvc.perform(post("/switches/sala-1/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
-                        .content("{\"encendido\":\"si\"}"))
+                        .content("{\"accion\":\"INVALIDA\"}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void rechazaBodySinCampoEncendido() throws Exception {
-        mockMvc.perform(post("/switches/sala-1")
+    void rechazaBodySinCampoAccion() throws Exception {
+        mockMvc.perform(post("/switches/sala-1/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
                         .content("{}"))
@@ -114,7 +133,7 @@ class SwitchControllerTest {
 
     @Test
     void rechazaBodyVacio() throws Exception {
-        mockMvc.perform(post("/switches/sala-1")
+        mockMvc.perform(post("/switches/sala-1/comandos")
                         .header("X-API-KEY", API_KEY)
                         .contentType("application/json")
                         .content(""))

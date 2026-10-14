@@ -233,6 +233,7 @@ paths:
       operationId: obtenerSwitch
       tags:
         - Stub Switches
+      security: []
       parameters:
         - name: id
           in: path
@@ -247,17 +248,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Switch'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
-  /switches:
+  /switches/{id}/comandos:
     post:
-      summary: Accionar (encender/apagar) un switch
+      summary: Accionar un switch
       operationId: accionarSwitch
       tags:
         - Stub Switches
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador del switch
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -270,13 +275,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Switch'
+                $ref: '#/components/schemas/SwitchAccionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
 # =========================================================================
 # COMPONENTES Y ESQUEMAS DE DOMINIO
@@ -358,28 +359,43 @@ components:
     Switch:
       type: object
       required:
-        - id
-        - encendido
+        - idSwitch
+        - estado
+        - aplicadoEn
       properties:
-        id:
+        idSwitch:
           type: string
           example: "switch-0"
-        encendido:
-          type: boolean
-          example: true
+        estado:
+          type: string
+          enum: [ON, OFF]
+          example: ON
+        aplicadoEn:
+          type: string
+          format: date
+          example: "2026-10-14"
 
     SwitchAccion:
       type: object
       required:
-        - id
-        - encendido
+        - accion
       properties:
-        id:
+        accion:
           type: string
-          example: "switch-0"
-        encendido:
-          type: boolean
-          example: false
+          enum: [ON, OFF]
+          example: ON
+
+    SwitchAccionResponse:
+      allOf:
+        - $ref: '#/components/schemas/Switch'
+        - type: object
+          required:
+            - cambio
+          properties:
+            cambio:
+              type: boolean
+              description: Indica si el estado del switch cambió con esta actualización.
+              example: true
 
     EstadoControlador:
       type: object

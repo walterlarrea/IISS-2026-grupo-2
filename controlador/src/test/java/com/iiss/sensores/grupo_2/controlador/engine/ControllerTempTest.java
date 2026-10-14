@@ -1,113 +1,66 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
-import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
-import com.iiss.sensores.grupo_2.controlador.api.model.EstadoControl;
-import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
-import com.iiss.sensores.grupo_2.controlador.shared.RoomProvider;
-import org.junit.jupiter.api.BeforeEach;
+import com.iiss.sensores.grupo_2.controlador.engine.service.EstadoSitioService;
+import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
+import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchEstadoResponse;
+import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
+import com.iiss.sensores.grupo_2.interfaces.ICore;
+import com.iiss.sensores.grupo_2.modelos.input.*;
+import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
+
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-import java.time.Instant;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.Instant;
+import java.util.List;
 
-public class ControllerTempTest {
+@ExtendWith(MockitoExtension.class)
+class ControllerTempAutoTest {
+    @Mock
     private SwitchClient switchClient;
-    private RoomProvider roomProvider;
+    @Mock
+    private ICore core;
     private ControllerTempAuto controller;
 
-    @BeforeEach
-    void setUp() {
-        switchClient = mock(SwitchClient.class);
-        roomProvider = mock(RoomProvider.class);
-        controller = new ControllerTempAuto(switchClient, roomProvider);
-    }
-
     @Test
-    void turnOnSwitchIfBelowExpectedTemp() throws Exception {
-        controller.iniciar();
-        controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1");
-        verify(switchClient).encender("http://switches-api:8090/switches/1");
-        verify(switchClient, never()).apagar(anyString());
-    }
+    void temperaturaActualizadaLlegaAlCore() {
+        when(switchClient.consultarEstado(any()))
+                .thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
+        EstadoSitioService estadoService = new EstadoSitioService(switchClient);
 
-    @Test
-    void turnOffSwitchIfAboveExpectedTemp() throws Exception {
-        controller.iniciar();
-        controller.controlarTemp(22.0, 20.0, "http://switches-api:8090/switches/1");
-        verify(switchClient).apagar("http://switches-api:8090/switches/1");
-        verify(switchClient, never()).encender(anyString());
-    }
+        estadoService.cargarEstado(new DataSitio(
+                new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null)),
+                List.of(new Habitacion(
+                        "hab-1",
+                        "Living",
+                        21.0,
+                        1.5,
+                        "termo-1",
+                        "casa/living/temperatura",
+                        "switch-1",
+                        "http://localhost/switches/1",
+                        19.0,
+                        EstadoSwitch.APAGADO
+                ))
+        ));
 
-    @Test
-    void switchUntouchedIfTempEqualsExpected() throws Exception {
-        controller.iniciar();
-        controller.controlarTemp(20.0, 20.0, "http://switches-api:8090/switches/1");
-        verifyNoInteractions(switchClient);
-    }
+        controller = new ControllerTempAuto(switchClient, core, estadoService);
 
-    @Test
-    void switchUntouchedIfControllerStopped() throws Exception {
-        controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1");
-        verifyNoInteractions(switchClient);
-    }
+        when(core.calcularComandos(any(), any())).thenReturn(new RespuestaCore(List.of()));
 
-    @Test
-    void startControllerTemp() {
-        controller.iniciar();
-        assertTrue(controller.isActivo());
-    }
+        controller.iniciar(Instant.now(), 1.0);
+        controller.procesarTemperatura("casa/living/temperatura", 18.0);
 
-    @Test
-    void stopControllerTemp() {
-        controller.iniciar();
-        controller.detener();
-        assertFalse(controller.isActivo());
-    }
+        ArgumentCaptor<DataSitio> captor = ArgumentCaptor.forClass(DataSitio.class);
 
-    @Test
-    void clockStateUsesRequestedStartTimeAndAcceleration() throws InterruptedException {
-        Instant fechaHora = Instant.parse("2026-10-01T09:15:03.120Z");
-        controller.iniciar(fechaHora, 10.0);
+        verify(core).calcularComandos(any(), captor.capture());
 
-        Thread.sleep(10);
-
-        var estado = controller.obtenerEstado();
-        assertEquals(EstadoControl.Estado.EN_EJECUCION, estado.estado());
-        assertTrue(estado.fechaHora().isAfter(fechaHora));
-        assertEquals(10.0, estado.factorTiempo());
-        assertNotNull(estado.iniciadoEn());
-
-        controller.detener();
-        var detenido = controller.obtenerEstado();
-        assertEquals(EstadoControl.Estado.DETENIDO, detenido.estado());
-        assertNull(detenido.fechaHora());
-        assertNull(detenido.factorTiempo());
-        assertNull(detenido.iniciadoEn());
-    }
-
-    @Test
-    void controlarHabShouldTurnSwitchOnIfTempBelowExpected() throws Exception {
-        controller.iniciar();
-        RoomInfo room = new RoomInfo("1", "Living", 20.0, "termo-1", "http://switches-api:8090/switches/1");
-
-        when(roomProvider.obtenerPorTermostato("termo-1")).thenReturn(Optional.of(room));
-
-        controller.controlarHab(18.0, "termo-1");
-        verify(roomProvider).obtenerPorTermostato("termo-1");
-        verify(switchClient).encender("http://switches-api:8090/switches/1");
-        verify(switchClient, never()).apagar(anyString());
-    }
-
-    @Test
-    void nSpreadExceptionIfSwitchFails() throws Exception {
-        controller.iniciar();
-
-        doThrow(new RuntimeException("Error de conexión")).when(switchClient).encender("http://switches-api:8090/switches/1");
-        assertDoesNotThrow(() -> controller.controlarTemp(18.0, 20.0, "http://switches-api:8090/switches/1"));
-        verify(switchClient).encender("http://switches-api:8090/switches/1");
+        assertEquals(18.0, captor.getValue().habitaciones().get(0).temperaturaActual());
     }
 }

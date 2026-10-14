@@ -1,0 +1,26 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Compose Debug" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker">
+    <deployment type="docker-compose.yml">
+      <settings>
+        <option name="envFilePath" value="C:\Users\Walter\Desktop\IISS\IISS-2026-grupo-2\.env.dev" />
+        <option name="envFilePaths">
+          <list>
+            <option value="C:\Users\Walter\Desktop\IISS\IISS-2026-grupo-2\.env.dev" />
+          </list>
+        </option>
+        <option name="commandLineOptions" value="--build" />
+        <option name="services">
+          <list>
+            <option value="controlador" />
+            <option value="mongodb" />
+            <option value="mosquitto" />
+            <option value="publisher" />
+            <option value="switches-api" />
+          </list>
+        </option>
+        <option name="sourceFilePath" value="docker/docker-compose.yml" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>

@@ -20,7 +20,7 @@ public class ApiKeyRoom implements HandlerInterceptor {
 
     @Autowired
     public ApiKeyRoom(
-            @Value("${ROOMS_API_KEY:development-key}") String expectedApiKey,
+            @Value("${CONTROLADOR_API_KEY:development-key}") String expectedApiKey,
             ObjectMapper objectMapper
     ) {
         this.expectedApiKey = expectedApiKey;
