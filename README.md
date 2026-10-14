@@ -1,21 +1,28 @@
-# PROYECTO DE SENSORES VERSION 3.
+# PROYECTO DE SENSORES VERSION 4.
 
 ## 1. ESTRUCTURA
 
-**Estructura del proyecto**
+El proyecto está organizado en módulos Maven, cada uno con una responsabilidad específica dentro del sistema de control de temperatura EcoWarm.
 
-- **publisher/**, **subscriber/**, **rooms-api/** y **switches-api/** son módulos Maven del proyecto.
-- **Componentes destacados**
-  - **MqttSubscriber.java**  programa escrito en Java para conectar al broker MQTT y recibir los mensajes.
-  - **MongoTemperatureWriter**  programa escrito en Java para guardar mensajes que le llegan al subscriptor en base de datos MongoDB.
-  - **ControllerTempAuto**  controlador de temperatura automático, se inicia, detiene y controla la temperatura esperada de la habitación.
-  - **EventPublisher.java**  programa escrito en Java para enviar mensajes hacia el subscriptor que esté escuchando.
-  - **EventGenerator.java**  crea mensajes de los sensores constantemente para enviar al Subscriber.
-  - **ApiKeyRoom**  intercepta las solicitudes HTTP antes de que lleguen al controlador y verifica que contengan una clave válida.
-  - **RoomController.java**  se encarga de exponer la API REST para la gestión de las habitaciones. Recibe las solicitudes HTTP relacionadas con las habitaciones.
-  - **RoomService** contiene la lógica de negocio relacionada con las habitaciones.
-  - **SwitchController** se encarga de exponer la API REST para la gestión de los switches. Recibe las solicitudes HTTP relacionadas con el estado de los switches.
-- **pom.xml**  agregador Maven raíz que contiene las dependencias y detalles de todos los módulos.
+### Directorios principales
+
+**engine/** contiene la lógica de integración y ejecución del controlador, la recepción de mediciones y las API relacionadas con la gestión del sistema.
+
+**core/** contiene la lógica central del control de temperatura y las reglas de negocio, separadas de las tecnologías externas.
+
+**publisher/** genera y publica mediciones de temperatura mediante MQTT para simular los sensores.
+
+**switches-api/** expone la API REST para consultar y modificar el estado de los switches.
+
+**common/** reúne funcionalidades compartidas que pueden utilizar los distintos módulos.
+
+**docker/** contiene la configuración necesaria para construir y ejecutar los servicios mediante Docker Compose.
+
+**scripts/** contiene scripts para construir, iniciar y detener los servicios, probar las API y enviar o recibir mensajes MQTT.
+
+El proyecto utiliza **Spring Boot** para las aplicaciones Java, **MQTT** para la comunicación entre componentes, **MongoDB** para persistir los datos y **Docker Compose** para ejecutar los servicios.
+
+El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras que cada módulo dispone de su propia configuración.
 
 ## 2. SCRIPTS y CONF
 
@@ -32,21 +39,33 @@
   - **receive-temp.sh** se suscribe a un tópico MQTT y muestra en la consola todos los mensajes que lleguen de dicho tópico.
   - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
   - **test-validacion.sh**  para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
-- **Curl-ejemplos**
-  - **ctrl-start.sh** iniciar el controlador automático de temperatura.
-  - **ctrl-status.sh** consultar si está activo el controlador automático de temperatura.
-  - **ctrl-stop.sh** detener el controlador automático de temperatura.
-  - **rooms-create0.sh** crea la habitación nº0.
-  - **rooms-create1.sh** crea la habitación nº1.
-  - **rooms-delete.sh** elimina una habitación por su ID.
-  - **rooms-find.sh** busca la habitación por ID de termostato.
-  - **rooms-list.sh** lista todas las habitaciones.
-  - **rooms-patch.sh** modificar la temperatura esperada de la habitación por su ID.
-  - **rooms-validar.sh** validar todas las habitaciones de la coleccion (detecta inválidas o duplicadas).
-  - **switch-off.sh** apaga el switch.
-  - **switch-on.sh** enciende el switch.
-  - **switch-status-sw0.sh** consulta el estado actual del switch 0.
+  - **run-controlador-local.sh** para cambiarlo a local.
+- **curl-ejemplos**
 
+  - **curl-ctrl**
+    - **ctrln-start.sh** inicia el controlador. Modificar el factor tiempo a gusto.
+    - **ctrln-status.sh** obtiene el estado del controlador.
+    - **ctrln-stop.sh** detiene el controlador.
+
+  - **curl-rooms**
+    - **rooms-create0.sh** crea la habitación nº0.
+    - **rooms-create1.sh** crea la habitación nº1.
+    - **rooms-delete.sh** elimina una habitación por su ID.
+    - **rooms-find.sh** busca la habitación por ID de termostato.
+    - **rooms-list.sh** lista todas las habitaciones.
+    - **rooms-patch.sh** modificar la temperatura esperada de la habitación por su ID.
+    - **rooms-validar.sh** validar todas las habitaciones de la coleccion (detecta inválidas o duplicadas).
+
+  - **curl-site**
+    - **site-replace.sh** reemplaza el inventario.
+    - **site-status.sh** obtiene el inventario del sitio.
+
+  - **curl-switch**
+    - **switch-off.sh** apaga el switch.
+    - **switch-on.sh** enciende el switch.
+    - **switch-status-sw0.sh** consulta el estado actual del switch 0.
+  
+  
 ## 3. EJECUCIÓN
 
 **Como ejecutar el programa en Java**
@@ -58,6 +77,19 @@
 5. Una vez conectado se suscribirá al tópico : "#".
    - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker.
 6. Cualquier mensaje recibido lo mostrará en la consola.
+
+### Integración con el simulador EcoWarm
+
+Iniciar el Simulador con el argumento `anunciar` setteado en la ruta de salida del docker
+```
+java -jar ecowarm-check.jar --anunciar host.docker.internal
+```
+
+**IMPORTANTE**
+
+**Para cuando se usa Compose debug (actual) y no Compose Sim (Simulador), cambiar las variables de entorno (ubicado en .env) a false (true si usa el Simulador):**
+
+**CONECTAR_CON_SIMULADOR=false**
 
 **Datos de conexión necesarios**
 
@@ -72,15 +104,19 @@
 **Contiene un generador de eventos aleatorios con diferentes tópicos para sus respectivas habitaciones.**\
 Este manda mensajes al broker cada 3 segundos, con una id del dispositivo que lo envía, su temperatura y la fecha de envío como Epoch en milisegundos. Está desarrollada utilizando Spring Boot.
 
-## 5. MÓDULO: SUBSCRIBER
+## 5. MÓDULO: ENGINE
 
-**Contiene un vínculo a una base de datos (MongoDB), donde guarda los mensajes que recibe de cada sensor al que está subscrito.**\
-Escucha los mensajes que le envía el Publisher. Está desarrollada utilizando Spring Boot.
+**Se juntaron los módulos subscriber y rooms-api en uno solo.**
 
-## 6. MÓDULO: ROOMS-API
-**Contiene la API REST encargada de gestionar las habitaciones del sistema.**\
-Está desarrollada utilizando Spring Boot y permite realizar operaciones CRUD y consultas relacionadas con los termostatos y switches asociados a cada habitación.
-- **Endpoints principales**
+El módulo engine integra los componentes necesarios para ejecutar el sistema de control automático de temperatura. Actúa como intermediario entre las mediciones recibidas, la configuración del sitio, la lógica de control del core y los dispositivos que se deben accionar.
+
+Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST para comunicarse con los demás componentes.
+### Endpoints principales
+- **EngineController**
+  - GET /control: consulta y devuelve el estado actual del controlador.
+  - POST /control/comandos: permite iniciar o detener el controlador.
+
+- **RoomController**
   - GET /habitaciones: obtiene todas las habitaciones.
   - GET /habitaciones/{id}: obtiene una habitación por su id.
   - GET /habitaciones/termostato/{idTermostato}: obtiene la habitación asociada a un termostato.
@@ -89,6 +125,25 @@ Está desarrollada utilizando Spring Boot y permite realizar operaciones CRUD y 
   - PUT /habitaciones/{id}: modifica una habitación existente.
   - PATCH /habitaciones/{id}: modifica parcialmente una habitación.
   - DELETE /habitaciones/{id}: elimina una habitación.
+
+- **SiteController**
+  - GET /sitio: consulta la configuración actual del sitio.
+  - PUT /sitio: reemplaza y actualiza el estado del sitio.
+
+## 6. MÓDULO: CORE
+
+El core recibe la información necesaria para evaluar las condiciones del sistema y determinar las acciones que corresponden según las reglas configuradas. El engine integra esta lógica con las mediciones reales, el estado de las habitaciones y la comunicación con los switches.
+
+### Responsabilidades principales
+
+- **Evaluación de temperaturas** permite determinar las acciones de control a partir de las temperaturas actuales y esperadas.
+
+- **Reglas de negocio** concentra las decisiones del sistema sin depender directamente de MQTT, MongoDB o los controladores REST.
+
+- **Evaluación de condiciones de operación** permite modelar las reglas que correspondan al funcionamiento del sistema, como las relacionadas con las tarifas, horarios punta, etc.
+
+Esta separación permite mantener el core enfocado en las decisiones del sistema y el engine encargado de integrarlas con el entorno real.
+
 ## 7. MÓDULO: SWITCHES-API
 **Contiene la API REST encargada de consultar y modificar el estado de los switches del sistema.**\
 Está desarrollada utilizando Spring Boot. 
@@ -104,18 +159,33 @@ Es una alternativa más sencilla y fácil de visualizar que los ejemplos curl.
 
 Se crearon test para probar tramos del programa y confirmar el funcionamiento de envío y recibimiento de mensajes y datos.
 
+**controlador**
+
+- **controlador/api**
+  - ApiKeyTest
+  - EngineContractTest
+  - HabitacionControllerTest
+  - HabitacionServiceTest
+  - InventarioServiceTest
+  - RoomServiceTest
+
+- **controlador/engine**
+  - ControllerTempAutoTest
+  - EstadoSitioServiceTest
+  - MongoTemperatureTest
+  - MqttSubscriberTest
+  - SwitchClientTest
+
+- **controlador/integration**
+  - IntegrationServiceTest
+  - MqttSubscriberTest
+
+**core**
+- CoreTest
+- PuntaTest
+
 **publisher**
 - PublisherUnitTest
-
-**subscriber**
-- MqttSubscriberTest
-- MongoTemperatureTest
-- ControllerTempTest
-
-**rooms-api**
-- ApiKeyTest
-- RoomControllerTest
-- RoomServiceTest
 
 **switches-api**
 - SwitchControllerTest
@@ -124,7 +194,7 @@ Se crearon test para probar tramos del programa y confirmar el funcionamiento de
 
 Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
 
-- Habitaciones: muestra la id, nombre de la habitación, la temperatura esperada, el id del termostato y el uri del switch.
+- inventario: contiene sitios y sus datos. Cada sitio contiene una lista de habitaciones con sus respectivos datos.
 - Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y marca de tiempo Epoch en milisegundos.
 
 ## 11. JIRA

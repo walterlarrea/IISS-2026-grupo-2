@@ -21,6 +21,13 @@ build.log
 .idea/vcs.xml
 .idea/jsLibraryMappings.xml
 .idea/caches/
+.idea/inspectionProfiles/
+
+# =========================================================================
+# VSCode Settings
+# =========================================================================
+# Ignore user-specific files and internal caches
+.vscode/
 
 # Ignore compiled output if using IntelliJ's built-in compiler instead of Maven
 out/
