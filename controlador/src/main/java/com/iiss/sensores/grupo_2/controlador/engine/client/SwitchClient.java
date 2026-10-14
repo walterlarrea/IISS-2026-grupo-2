@@ -15,7 +15,7 @@ public class SwitchClient {
 
     public SwitchClient(
             @Qualifier("switchRestClient") RestClient restClient,
-            @Value("${SIMULATOR_API_KEY:}") String apiKey
+            @Value("${SWITCHES_API_KEY:}") String apiKey
     ) {
         this.restClient = restClient;
         this.apiKey = apiKey;

@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
-        "ROOMS_API_KEY=test-api-key",
+        "CONTROLADOR_API_KEY=test-api-key",
         "spring.data.mongodb.uri=mongodb://localhost:27017/test",
         "mqtt.broker-url=tcp://localhost:1883",
         "mqtt.client-id=TestClient",

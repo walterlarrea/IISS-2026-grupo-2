@@ -41,7 +41,7 @@ public class MqttSubscriber {
     public synchronized void conectar(
             String broker,
             String clientId,
-            Map<String, String> termostatosPorTopic
+            String topic
     ) {
         desconectar();
         try {
@@ -62,7 +62,7 @@ public class MqttSubscriber {
                     try {
                         MessageObject.Temperatura temp =
                                 objMap.readValue(payload, MessageObject.Temperatura.class);
-                        String idTermostato = resolverIdTermostato(topic, temp.id(), termostatosPorTopic);
+                        String idTermostato = temp.id();
 
                         logger.info(
                                 "Temperatura recibida: {} °C. Termostato: {}",
@@ -110,10 +110,8 @@ public class MqttSubscriber {
             client.connect(connOpts);
             logger.info("Connected to MQTT broker");
 
-            for (String topic : termostatosPorTopic.keySet()) {
-                client.subscribe(topic, 1);
-                logger.info("Subscribed to topic: {}", topic);
-            }
+            client.subscribe(topic, 1);
+            logger.info("Subscribed to topic: {}", topic);
 
         } catch (MqttException me) {
             desconectar();
@@ -140,14 +138,5 @@ public class MqttSubscriber {
     @PreDestroy
     public synchronized void cerrar() {
         desconectar();
-    }
-
-    public static String resolverIdTermostato(
-            String topic,
-            String idMensaje,
-            Map<String, String> termostatosPorTopic
-    ) {
-        String idTermostato = termostatosPorTopic.get(topic);
-        return idTermostato == null || idTermostato.isBlank() ? idMensaje : idTermostato;
     }
 }

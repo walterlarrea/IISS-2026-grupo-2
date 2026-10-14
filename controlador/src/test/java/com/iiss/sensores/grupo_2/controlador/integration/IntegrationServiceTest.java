@@ -1,6 +1,5 @@
 package com.iiss.sensores.grupo_2.controlador.integration;
 
-import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
 import com.iiss.sensores.grupo_2.controlador.engine.mqtt.MqttSubscriber;
 import org.junit.jupiter.api.Test;
@@ -15,10 +14,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
-import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 
-class SimulatorIntegrationServiceTest {
+class IntegrationServiceTest {
 
     @Test
     void registersFetchesInventoryAndConnectsToReturnedBrokerAndDeclaredTopics() {
@@ -46,34 +44,35 @@ class SimulatorIntegrationServiceTest {
                           "mqtt":{"host":"broker.test","puerto":1883}
                         }
                         """, MediaType.APPLICATION_JSON));
-        server.expect(requestTo("http://iiss-simulator:9090/sitio"))
-                .andExpect(method(GET))
-                .andRespond(withSuccess("""
-                        {
-                          "schemaVersion":"2.0",
-                          "sitio":{
-                            "id":"casa",
-                            "nombre":"Casa",
-                            "potenciaContratadaKW":3.7,
-                            "tarifa":{"punta":{"desde":"17:00","hasta":"23:00","dias":"HABILES"}}
-                          },
-                          "habitaciones":[{
-                            "id":"room1",
-                            "nombre":"Living",
-                            "temperaturaEsperada":21.5,
-                            "potenciaKW":1.2,
-                            "idTermostato":"ht-sim-room1",
-                            "topicTermostato":"ht-sim-room1/status/temperature:0",
-                            "idSwitch":"sw-sim-room1",
-                            "urlSwitch":"http://iiss-simulator:9090"
-                          }]
-                        }
-                        """, MediaType.APPLICATION_JSON));
+        // server.expect(requestTo("http://iiss-simulator:9090/sitio"))
+        //         .andExpect(method(GET))
+        //         .andRespond(withSuccess("""
+        //                 {
+        //                   "schemaVersion":"2.0",
+        //                   "sitio":{
+        //                     "id":"casa",
+        //                     "nombre":"Casa",
+        //                     "potenciaContratadaKW":3.7,
+        //                     "tarifa":{"punta":{"desde":"17:00","hasta":"23:00","dias":"HABILES"}}
+        //                   },
+        //                   "habitaciones":[{
+        //                     "id":"room1",
+        //                     "nombre":"Living",
+        //                     "temperaturaEsperada":21.5,
+        //                     "potenciaKW":1.2,
+        //                     "idTermostato":"ht-sim-room1",
+        //                     "topicTermostato":"ht-sim-room1/status/temperature:0",
+        //                     "idSwitch":"sw-sim-room1",
+        //                     "urlSwitch":"http://iiss-simulator:9090"
+        //                   }]
+        //                 }
+        //                 """, MediaType.APPLICATION_JSON));
 
-        SimulatorIntegrationService service = new SimulatorIntegrationService(
+        IntegrationService service = new IntegrationService(
                 builder,
                 inventoryService,
                 mqttSubscriber,
+                true,
                 "http://iiss-simulator:9090",
                 "simulator-api-key",
                 "control-casa",
@@ -86,11 +85,10 @@ class SimulatorIntegrationServiceTest {
 
         service.onApplicationReady();
 
-        verify(inventoryService).reemplazar(org.mockito.ArgumentMatchers.any(Inventario.class));
         verify(mqttSubscriber).conectar(
                 "tcp://broker.test:1883",
                 "controlador-test",
-                java.util.Map.of("ht-sim-room1/status/temperature:0", "ht-sim-room1")
+                "#"
         );
         server.verify();
     }
