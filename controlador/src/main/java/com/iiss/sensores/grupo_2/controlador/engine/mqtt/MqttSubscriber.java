@@ -106,7 +106,7 @@ public class MqttSubscriber {
                         try {
                             logger.info("Procesando nueva medición del termostato {}", idTermostato);
 
-                            controllerTempAuto.procesarTemperatura(idTermostato, temp.tC());
+                            controllerTempAuto.procesarTemperatura(topic, temp.tC());
 
                         } catch (Exception e) {
                             logger.error("Error al procesar la temperatura del termostato {}", idTermostato, e);

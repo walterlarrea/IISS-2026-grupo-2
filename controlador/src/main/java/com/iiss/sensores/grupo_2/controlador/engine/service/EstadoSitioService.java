@@ -3,6 +3,7 @@ package com.iiss.sensores.grupo_2.controlador.engine.service;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
+import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +12,32 @@ import java.util.List;
 public class EstadoSitioService {
     //conserva el estado actual en memoria, actualiza las temperaturas y registra los estados de los switches
     private DataSitio dataSitio;
+    private final SwitchClient switchClient;
+
+    public EstadoSitioService(SwitchClient switchClient) {
+        this.switchClient = switchClient;
+    }
 
     //inicializa o reemplaza el estado del sitio, ejecutar: estadoSitioService.cargarEstado(dataSitioInicial);
     public synchronized void cargarEstado(DataSitio nuevoEstado) {
         if (nuevoEstado == null || nuevoEstado.sitio() == null || nuevoEstado.habitaciones() == null) {
             throw new IllegalArgumentException("El estado del sitio no puede ser nulo");
         }
-        this.dataSitio = new DataSitio(nuevoEstado.sitio(), List.copyOf(nuevoEstado.habitaciones()));
+        List<Habitacion> habitacionesConEstado = nuevoEstado.habitaciones().stream()
+                .map(h -> new Habitacion(
+                        h.id(),
+                        h.nombre(),
+                        h.temperaturaEsperada(),
+                        h.potenciaKW(),
+                        h.idTermostato(),
+                        h.topicTermostato(),
+                        h.idSwitch(),
+                        h.urlSwitch(),
+                        h.temperaturaActual(),
+                        switchClient.consultarEstado(h).estado()
+                ))
+                .toList();
+        this.dataSitio = new DataSitio(nuevoEstado.sitio(), List.copyOf(habitacionesConEstado));
     }
 
     private void validarEstadoInicializado() {
@@ -39,18 +59,18 @@ public class EstadoSitioService {
     }
 
     //actualiza la temperatura recibida de un termostato
-    public synchronized DataSitio actualizarTemperatura(String idTermostato, double temperatura) {
+    public synchronized DataSitio actualizarTemperatura(String topic, double temperatura) {
         validarEstadoInicializado();
         List<Habitacion> habitaciones = new ArrayList<>(dataSitio.habitaciones());
         boolean encontrada = false;
 
-        if (idTermostato == null || idTermostato.isBlank() || !Double.isFinite(temperatura)) {
-            throw new IllegalArgumentException("El termostato y la temperatura deben ser válidos");
+        if (topic == null || topic.isBlank() || !Double.isFinite(temperatura)) {
+            throw new IllegalArgumentException("El topic y la temperatura deben ser válidos");
         }
 
         for (int i = 0; i < habitaciones.size(); i++) {
             Habitacion h = habitaciones.get(i);
-            if (h.idTermostato().equals(idTermostato)) {
+            if (h.topicTermostato().equals(topic)) {
                 habitaciones.set(i, new Habitacion(
                         h.id(),
                         h.nombre(),
@@ -69,7 +89,7 @@ public class EstadoSitioService {
         }
 
         if (!encontrada) {
-            throw new IllegalArgumentException("No existe una habitación asociada al termostato " + idTermostato);
+            throw new IllegalArgumentException("No existe una habitación asociada al termostato " + topic);
         }
         reemplazarHabitaciones(habitaciones);
         return dataSitio;
@@ -112,5 +132,4 @@ public class EstadoSitioService {
         return dataSitio;
     }
 }
-
 

@@ -3,7 +3,10 @@ package com.iiss.sensores.grupo_2.controlador.api;
 import com.iiss.sensores.grupo_2.controlador.api.model.EstadoControl;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
+import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
+import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchEstadoResponse;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
+import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +44,9 @@ class EngineContractTest {
     @MockitoBean
     private ControllerTempAuto engineService;
 
+    @MockitoBean
+    private SwitchClient switchClient;
+
     @Test
     void obtieneSitioYDevuelve404CuandoAunNoFueConfigurado() throws Exception {
         when(inventarioService.obtenerActivo()).thenReturn(Optional.empty());
@@ -75,6 +81,8 @@ class EngineContractTest {
                 """;
         when(inventarioService.reemplazar(any(Inventario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(switchClient.consultarEstado(any()))
+                .thenReturn(new SwitchEstadoResponse("switch1", EstadoSwitch.APAGADO, null));
 
         mockMvc.perform(put("/sitio")
                         .header("X-API-KEY", "test-api-key")

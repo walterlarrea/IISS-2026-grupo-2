@@ -3,6 +3,7 @@ package com.iiss.sensores.grupo_2.controlador.engine;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.controlador.engine.service.EstadoSitioService;
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
+import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchEstadoResponse;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
 import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.modelos.input.*;
@@ -15,7 +16,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
@@ -30,7 +30,9 @@ class ControllerTempAutoTest {
 
     @Test
     void temperaturaActualizadaLlegaAlCore() {
-        EstadoSitioService estadoService = new EstadoSitioService();
+        when(switchClient.consultarEstado(any()))
+                .thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
+        EstadoSitioService estadoService = new EstadoSitioService(switchClient);
 
         estadoService.cargarEstado(new DataSitio(
                 new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null)),
@@ -53,7 +55,7 @@ class ControllerTempAutoTest {
         when(core.calcularComandos(any(), any())).thenReturn(new RespuestaCore(List.of()));
 
         controller.iniciar(Instant.now(), 1.0);
-        controller.procesarTemperatura("termo-1", 18.0);
+        controller.procesarTemperatura("casa/living/temperatura", 18.0);
 
         ArgumentCaptor<DataSitio> captor = ArgumentCaptor.forClass(DataSitio.class);
 
@@ -62,4 +64,3 @@ class ControllerTempAutoTest {
         assertEquals(18.0, captor.getValue().habitaciones().get(0).temperaturaActual());
     }
 }
-

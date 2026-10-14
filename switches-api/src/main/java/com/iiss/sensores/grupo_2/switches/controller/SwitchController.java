@@ -22,9 +22,9 @@ public class SwitchController {
         return service.obtener(id);
     }
 
-    @PostMapping("/{id}")
+    @PostMapping("/{id}/comandos")
     @ResponseStatus(HttpStatus.OK)
     public SwitchResponse actualizar(@PathVariable("id") String id, @Valid @RequestBody SwitchRequest request) {
-        return service.actualizar(id, request.getEncendido());
+        return service.actualizar(id, request.getAccion());
     }
 }

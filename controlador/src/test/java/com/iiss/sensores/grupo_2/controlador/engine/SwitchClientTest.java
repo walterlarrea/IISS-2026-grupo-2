@@ -1,6 +1,9 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
+import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
+import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -11,7 +14,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SwitchClientTest {
 
@@ -31,7 +36,57 @@ class SwitchClientTest {
                         {"idSwitch":"sw-sim-room1","estado":"ON","cambio":true,"aplicadoEn":"2026-10-12T20:00:00Z"}
                         """, MediaType.APPLICATION_JSON));
 
-        client.encender("http://iiss-simulator:9090/switches/sw-sim-room1/comandos");
+        Habitacion habitacion = new Habitacion(
+                "room1",
+                "Room 1",
+                22.0,
+                1.5,
+                "thermostat-room1",
+                "topic-room1",
+                "sw-sim-room1",
+                "http://iiss-simulator:9090",
+                21.0,
+                EstadoSwitch.APAGADO
+        );
+
+        client.encender(habitacion);
+
+        server.verify();
+    }
+
+    @Test
+    void readsAndMapsTheSwitchStateWithApiKey() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
+        Habitacion habitacion = new Habitacion(
+                "room1",
+                "Room 1",
+                22.0,
+                1.5,
+                "thermostat-room1",
+                "topic-room1",
+                "sw-sim-room1",
+                "http://iiss-simulator:9090",
+                21.0,
+                EstadoSwitch.APAGADO
+        );
+
+        server.expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+                .andExpect(method(GET))
+                .andExpect(header("X-API-Key", "simulator-key"))
+                .andRespond(withSuccess("""
+                        {"idSwitch":"sw-sim-room1","estado":"ON","aplicadoEn":"2026-10-12"}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+                .andExpect(method(GET))
+                .andExpect(header("X-API-Key", "simulator-key"))
+                .andRespond(withSuccess("""
+                        {"idSwitch":"sw-sim-room1","estado":"OFF","aplicadoEn":"2026-10-12"}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertEquals(EstadoSwitch.ENCENDIDO, client.consultarEstado(habitacion).estado());
+        assertEquals(EstadoSwitch.APAGADO, client.consultarEstado(habitacion).estado());
 
         server.verify();
     }

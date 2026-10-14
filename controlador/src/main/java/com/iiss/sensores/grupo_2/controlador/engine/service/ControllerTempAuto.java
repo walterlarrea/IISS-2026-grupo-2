@@ -120,10 +120,10 @@ public class ControllerTempAuto implements TemperatureEngineService {
 
                 try {
                     if (comandoSwitch.estado() == EstadoSwitch.ENCENDIDO) {
-                        switchClient.encender(habitacion.urlSwitch());
+                        switchClient.encender(habitacion);
                         logger.info("Estado: encendido");
                     } else if (comandoSwitch.estado() == EstadoSwitch.APAGADO) {
-                        switchClient.apagar(habitacion.urlSwitch());
+                        switchClient.apagar(habitacion);
                         logger.info("Estado: apagado");
                     } else {
                         logger.warn("Estado de switch no reconocido: {}", comandoSwitch.estado());
@@ -135,7 +135,7 @@ public class ControllerTempAuto implements TemperatureEngineService {
                     logger.info("Switch {} actualizado a {}", comandoSwitch.idSwitch(), comandoSwitch.estado());
 
                 } catch (Exception e) {
-                    logger.error("Error al ejecutar el comando del switch {}", comandoSwitch.idSwitch(), e);
+                    logger.error("Error al ejecutar el comando del switch {} con url {}", comandoSwitch.idSwitch(), habitacion.urlSwitch(), e);
                 }
             }
         } catch (Exception e) {
@@ -144,23 +144,23 @@ public class ControllerTempAuto implements TemperatureEngineService {
     }
 
     //actualiza una temperatura y ejecuta un nuevo ciclo de control.
-    public synchronized void procesarTemperatura(String idTermostato, double temperatura) {
+    public synchronized void procesarTemperatura(String topic, double temperatura) {
         if (!activo) {
-            logger.debug("Controlador detenido, ignora la temperatura del termostato {}", idTermostato);
+            logger.debug("Controlador detenido, ignora la temperatura del topic {}", topic);
             return;
         }
 
-        if (idTermostato == null || idTermostato.isBlank() || !Double.isFinite(temperatura)) {
-            logger.warn("Medición inválida. Termostato: {}, temperatura: {}", idTermostato, temperatura);
+        if (topic == null || topic.isBlank() || !Double.isFinite(temperatura)) {
+            logger.warn("Medición inválida. Topic: {}, temperatura: {}", topic, temperatura);
             return;
         }
 
         try {
-            estadoSitioService.actualizarTemperatura(idTermostato, temperatura);
+            estadoSitioService.actualizarTemperatura(topic, temperatura);
             controlar();
 
         } catch (Exception e) {
-            logger.error("Error al procesar la temperatura del termostato {}", idTermostato, e);
+            logger.error("Error al procesar la temperatura del topic {}", topic, e);
         }
     }
 
