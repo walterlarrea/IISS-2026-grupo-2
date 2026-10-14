@@ -2,8 +2,8 @@
 # Script para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
 # y verificar el endpoint GET /habitaciones/validar
 
-API_URL="${ROOMS_API_URL:-http://localhost:8080}"
-API_KEY="${ROOMS_API_KEY:-dev-rooms-key}"
+API_URL="${CONTROLADOR_API_URL:-http://localhost:8080}"
+API_KEY="${CONTROLADOR_API_KEY:-dev-rooms-key}"
 
 echo "=========================================================="
 echo "Creando datos de prueba en la API: $API_URL"

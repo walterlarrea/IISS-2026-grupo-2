@@ -38,8 +38,8 @@ public record Inventario(
     }
 
     public enum Dias {
-        HABILES
-        //TODOS
+        HABILES,
+        TODOS
     }
 
     public record Habitacion(

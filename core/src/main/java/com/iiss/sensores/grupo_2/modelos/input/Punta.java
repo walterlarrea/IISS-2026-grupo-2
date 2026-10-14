@@ -16,12 +16,21 @@ public record Punta(
             return false;
         }
 
-        DayOfWeek diaSemana = fechaHora.getDayOfWeek();
-        if (
-            this.dias == DiasPunta.HABILES &&
-            (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY)
-        ) {
-            return false;
+        switch (this.dias) {
+            case DiasPunta.HABILES:
+                DayOfWeek diaSemana = fechaHora.getDayOfWeek();
+                if (
+                    this.dias == DiasPunta.HABILES &&
+                    (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY)
+                ) {
+                    return false;
+                }
+                break;
+            case DiasPunta.TODOS:
+                // No se requiere ninguna verificación adicional para todos los días
+                break;
+            default:
+                break;
         }
 
         LocalTime horaActual = fechaHora.toLocalTime();
