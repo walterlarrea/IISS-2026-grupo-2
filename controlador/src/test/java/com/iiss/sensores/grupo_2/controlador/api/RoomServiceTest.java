@@ -1,151 +1,131 @@
 package com.iiss.sensores.grupo_2.controlador.api;
 
+import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
+import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
+import com.iiss.sensores.grupo_2.controlador.api.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import com.iiss.sensores.grupo_2.controlador.api.model.Room;
-import com.iiss.sensores.grupo_2.controlador.api.repository.RoomRepository;
-import com.iiss.sensores.grupo_2.controlador.api.service.RoomService;
-import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
-import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
-import com.iiss.sensores.grupo_2.controlador.shared.RoomInfo;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
 
-    @Mock
-    private RoomRepository repository;
-
+    private InventarioService inventarioService;
     private RoomService service;
 
     @BeforeEach
     void setUp() {
-        service = new RoomService(repository);
+        inventarioService = mock(InventarioService.class);
+        service = new RoomService(inventarioService);
     }
 
     @Test
-    @DisplayName("Devuelve lista vacía si la colección no contiene habitaciones")
+    @DisplayName("Devuelve lista vacía si el inventario no contiene habitaciones")
     void validarColeccionVacia() {
-        when(repository.findAll()).thenReturn(List.of());
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of())));
 
-        List<Room> resultado = service.validar();
-
-        assertTrue(resultado.isEmpty());
+        assertTrue(service.validar().isEmpty());
     }
 
     @Test
-    @DisplayName("Devuelve lista vacía cuando todas las habitaciones son válidas y no hay duplicados")
+    @DisplayName("Devuelve lista vacía cuando las habitaciones son válidas y no están duplicadas")
     void validarTodasValidas() {
-        Room r1 = new Room("1", "Living", 21.0, "termo-1", "http://switches-api:8090/switches/1");
-        Room r2 = new Room("2", "Cocina", 20.0, "termo-2", "http://switches-api:8090/switches/2");
+        Inventario.Habitacion living = habitacion(
+                "1", "termo-1", "http://switches-api:8090/switches/1");
+        Inventario.Habitacion cocina = habitacion(
+                "2", "termo-2", "http://switches-api:8090/switches/2");
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(living, cocina))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2));
-
-        List<Room> resultado = service.validar();
-
-        assertTrue(resultado.isEmpty());
+        assertTrue(service.validar().isEmpty());
     }
 
     @Test
     @DisplayName("Detecta habitaciones con idTermostato nulo o vacío")
     void validarIdTermostatoInvalido() {
-        Room r1 = new Room("1", "Living", 21.0, null, "http://switches-api:8090/switches/1");
-        Room r2 = new Room("2", "Cocina", 20.0, "   ", "http://switches-api:8090/switches/2");
-        Room r3 = new Room("3", "Dormitorio", 22.0, "termo-3", "http://switches-api:8090/switches/3");
+        Inventario.Habitacion nulo = habitacion(
+                "1", null, "http://switches-api:8090/switches/1");
+        Inventario.Habitacion vacio = habitacion(
+                "2", "   ", "http://switches-api:8090/switches/2");
+        Inventario.Habitacion valido = habitacion(
+                "3", "termo-3", "http://switches-api:8090/switches/3");
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(nulo, vacio, valido))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2, r3));
+        List<Inventario.Habitacion> resultado = service.validar();
 
-        List<Room> resultado = service.validar();
-
-        assertEquals(2, resultado.size());
-        assertTrue(resultado.contains(r1));
-        assertTrue(resultado.contains(r2));
+        assertEquals(List.of(nulo, vacio), resultado);
     }
 
     @Test
-    @DisplayName("Detecta habitaciones con uriSwitch nulo, vacío o malformado")
-    void validarUriSwitchInvalido() {
-        Room r1 = new Room("1", "Living", 21.0, "termo-1", null);
-        Room r2 = new Room("2", "Cocina", 20.0, "termo-2", "   ");
-        Room r3 = new Room("3", "Dormitorio", 22.0, "termo-3", "no-es-una-uri-valida");
-        Room r4 = new Room("4", "Baño", 23.0, "termo-4", "ftp://invalido.com");
-        Room r5 = new Room("5", "Garage", 18.0, "termo-5", "http://switches-api:8090/switches/5");
+    @DisplayName("Detecta habitaciones con urlSwitch nula, vacía o inválida")
+    void validarUrlSwitchInvalida() {
+        Inventario.Habitacion nula = habitacion("1", "termo-1", null);
+        Inventario.Habitacion vacia = habitacion("2", "termo-2", "   ");
+        Inventario.Habitacion malformada = habitacion("3", "termo-3", "no-es-una-uri-valida");
+        Inventario.Habitacion protocoloInvalido = habitacion("4", "termo-4", "ftp://invalido.com");
+        Inventario.Habitacion valida = habitacion(
+                "5", "termo-5", "http://switches-api:8090/switches/5");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(
+                inventario(List.of(nula, vacia, malformada, protocoloInvalido, valida))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2, r3, r4, r5));
+        List<Inventario.Habitacion> resultado = service.validar();
 
-        List<Room> resultado = service.validar();
-
-        assertEquals(4, resultado.size());
-        assertTrue(resultado.contains(r1));
-        assertTrue(resultado.contains(r2));
-        assertTrue(resultado.contains(r3));
-        assertTrue(resultado.contains(r4));
+        assertEquals(List.of(nula, vacia, malformada, protocoloInvalido), resultado);
     }
 
     @Test
     @DisplayName("Devuelve todas las habitaciones duplicadas por idTermostato")
     void validarIdTermostatoDuplicado() {
-        Room r1 = new Room("1", "Living", 21.0, "termo-dup", "http://switches-api:8090/switches/1");
-        Room r2 = new Room("2", "Cocina", 20.0, "termo-dup", "http://switches-api:8090/switches/2");
-        Room r3 = new Room("3", "Dormitorio", 22.0, "termo-ok", "http://switches-api:8090/switches/3");
+        Inventario.Habitacion living = habitacion(
+                "1", "termo-dup", "http://switches-api:8090/switches/1");
+        Inventario.Habitacion cocina = habitacion(
+                "2", "termo-dup", "http://switches-api:8090/switches/2");
+        Inventario.Habitacion dormitorio = habitacion(
+                "3", "termo-ok", "http://switches-api:8090/switches/3");
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(living, cocina, dormitorio))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2, r3));
-
-        List<Room> resultado = service.validar();
-
-        assertEquals(2, resultado.size());
-        assertTrue(resultado.contains(r1));
-        assertTrue(resultado.contains(r2));
+        assertEquals(List.of(living, cocina), service.validar());
     }
 
     @Test
-    @DisplayName("Devuelve todas las habitaciones duplicadas por uriSwitch")
-    void validarUriSwitchDuplicado() {
-        Room r1 = new Room("1", "Living", 21.0, "termo-1", "http://switches-api:8090/switches/dup");
-        Room r2 = new Room("2", "Cocina", 20.0, "termo-2", "http://switches-api:8090/switches/dup");
-        Room r3 = new Room("3", "Dormitorio", 22.0, "termo-3", "http://switches-api:8090/switches/ok");
+    @DisplayName("Devuelve todas las habitaciones duplicadas por urlSwitch")
+    void validarUrlSwitchDuplicada() {
+        String urlDuplicada = "http://switches-api:8090/switches/duplicado";
+        Inventario.Habitacion living = habitacion("1", "termo-1", urlDuplicada);
+        Inventario.Habitacion cocina = habitacion("2", "termo-2", urlDuplicada);
+        Inventario.Habitacion dormitorio = habitacion(
+                "3", "termo-3", "http://switches-api:8090/switches/ok");
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(living, cocina, dormitorio))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2, r3));
-
-        List<Room> resultado = service.validar();
-
-        assertEquals(2, resultado.size());
-        assertTrue(resultado.contains(r1));
-        assertTrue(resultado.contains(r2));
+        assertEquals(List.of(living, cocina), service.validar());
     }
 
     @Test
-    @DisplayName("Una habitación con múltiples incumplimientos no se duplica en el resultado")
+    @DisplayName("Una habitación con varios incumplimientos no se duplica en el resultado")
     void validarMultiplesIncumplimientosNoDuplica() {
-        Room r1 = new Room("1", "Living", 21.0, "termo-dup", "malformada");
-        Room r2 = new Room("2", "Cocina", 20.0, "termo-dup", "http://switches-api:8090/switches/2");
+        Inventario.Habitacion living = habitacion("1", "termo-dup", "malformada");
+        Inventario.Habitacion cocina = habitacion(
+                "2", "termo-dup", "http://switches-api:8090/switches/2");
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(living, cocina))));
 
-        when(repository.findAll()).thenReturn(List.of(r1, r2));
-
-        List<Room> resultado = service.validar();
-
-        assertEquals(2, resultado.size());
-        assertTrue(resultado.contains(r1));
-        assertTrue(resultado.contains(r2));
+        assertEquals(List.of(living, cocina), service.validar());
     }
 
     @Test
-    @DisplayName("Usa la habitación del inventario activo para el control y compone la URL del switch")
+    @DisplayName("Busca la habitación por termostato en el inventario activo")
     void obtenerPorTermostatoUsaInventarioActivo() {
-        InventarioService inventarioService = mock(InventarioService.class);
         Inventario.Habitacion habitacion = new Inventario.Habitacion(
                 "room1",
                 "Living",
@@ -156,30 +136,38 @@ class RoomServiceTest {
                 "switch1",
                 "http://switches:8081"
         );
-        Inventario inventario = new Inventario(
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(habitacion))));
+
+        assertEquals(Optional.of(habitacion), service.obtenerPorTermostato("termo1"));
+        verify(inventarioService).obtenerActivo();
+    }
+
+    private static Inventario inventario(List<Inventario.Habitacion> habitaciones) {
+        return new Inventario(
                 "2.0",
                 new Inventario.Sitio(
                         "casa",
                         "Casa",
                         3.7,
-                        new Inventario.Tarifa(new Inventario.Franja("17:00", "23:00", Inventario.Dias.HABILES))
+                        new Inventario.Tarifa(
+                                new Inventario.Franja("17:00", "23:00", Inventario.Dias.HABILES)
+                        )
                 ),
-                List.of(habitacion)
+                habitaciones
         );
-        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
+    }
 
-        RoomService conInventario = new RoomService(repository, inventarioService);
-
-        assertEquals(
-                Optional.of(new RoomInfo(
-                        "room1",
-                        "Living",
-                        21.0,
-                        "termo1",
-                        "http://switches:8081/switches/switch1/comandos"
-                )),
-                conInventario.obtenerPorTermostato("termo1")
+    private static Inventario.Habitacion habitacion(String id, String idTermostato, String urlSwitch) {
+        return new Inventario.Habitacion(
+                id,
+                "Habitación " + id,
+                21.0,
+                1.2,
+                idTermostato,
+                "topic/" + id,
+                "switch-" + id,
+                urlSwitch
         );
-        verify(repository, never()).findByIdTermostato("termo1");
     }
 }

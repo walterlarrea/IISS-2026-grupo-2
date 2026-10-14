@@ -6,30 +6,38 @@ import java.util.Objects;
 
 @Document("habitaciones")
 public class Room {
-
     @Id
     private String id;
     private String nombre;
     private double temperaturaEsperada;
+    private double potenciaKW;
     private String idTermostato;
-    private String uriSwitch;
+    private String topicTermostato;
+    private String idSwitch;
+    private String urlSwitch;
 
     public Room() {
     }
 
-    public Room(String nombre, double temperaturaEsperada, String idTermostato, String uriSwitch) {
+    public Room(String nombre, double temperaturaEsperada, double potenciaKW, String idTermostato, String topicTermostato, String idSwitch, String urlSwitch) {
         this.nombre = nombre;
         this.temperaturaEsperada = temperaturaEsperada;
+        this.potenciaKW = potenciaKW;
         this.idTermostato = idTermostato;
-        this.uriSwitch = uriSwitch;
+        this.topicTermostato = topicTermostato;
+        this.idSwitch = idSwitch;
+        this.urlSwitch = urlSwitch;
     }
 
-    public Room(String id, String nombre, double temperaturaEsperada, String idTermostato, String uriSwitch) {
+    public Room(String id, String nombre, double temperaturaEsperada, double potenciaKW, String idTermostato, String topicTermostato, String idSwitch, String urlSwitch) {
         this.id = id;
         this.nombre = nombre;
         this.temperaturaEsperada = temperaturaEsperada;
+        this.potenciaKW = potenciaKW;
         this.idTermostato = idTermostato;
-        this.uriSwitch = uriSwitch;
+        this.topicTermostato = topicTermostato;
+        this.idSwitch = idSwitch;
+        this.urlSwitch = urlSwitch;
     }
 
     public String getId() {
@@ -48,12 +56,24 @@ public class Room {
         return temperaturaEsperada;
     }
 
+    public double getPotenciaKW() {
+        return potenciaKW;
+    }
+
     public String getIdTermostato() {
         return idTermostato;
     }
 
-    public String getUriSwitch() {
-        return uriSwitch;
+    public String getTopicTermostato(){
+        return topicTermostato;
+    };
+
+    public String getIdSwitch(){
+        return idSwitch;
+    };
+
+    public String getUrlSwitch() {
+        return urlSwitch;
     }
 
     public void setNombre(String nombre) {
@@ -64,12 +84,24 @@ public class Room {
         this.temperaturaEsperada = temperaturaEsperada;
     }
 
+    public void setPotenciaKW(double potenciaKW) {
+        this.potenciaKW = potenciaKW;
+    }
+
     public void setIdTermostato(String idTermostato) {
         this.idTermostato = idTermostato;
     }
 
-    public void setUriSwitch(String uriSwitch) {
-        this.uriSwitch = uriSwitch;
+    public void setTopicTermostato(String topicTermostato) {
+        this.topicTermostato = topicTermostato;
+    }
+
+    public void setIdSwitch(String idSwitch) {
+        this.idSwitch = idSwitch;
+    }
+
+    public void setUrlSwitch(String urlSwitch) {
+        this.urlSwitch = urlSwitch;
     }
 
     @Override
@@ -83,13 +115,16 @@ public class Room {
         return Objects.equals(id, room.id) &&
                 Objects.equals(nombre, room.nombre) &&
                 Double.compare(room.temperaturaEsperada, temperaturaEsperada) == 0 &&
+                Double.compare(room.potenciaKW, potenciaKW) == 0 &&
                 Objects.equals(idTermostato, room.idTermostato) &&
-                Objects.equals(uriSwitch, room.uriSwitch);
+                Objects.equals(topicTermostato, room.topicTermostato) &&
+                Objects.equals(idSwitch, room.idSwitch) &&
+                Objects.equals(urlSwitch, room.urlSwitch);
     }
 
     @Override
     public int hashCode() {
-        return id != null ? Objects.hashCode(id) : Objects.hash(nombre, temperaturaEsperada, idTermostato, uriSwitch);
+        return id != null ? Objects.hashCode(id) : Objects.hash(nombre, temperaturaEsperada, potenciaKW, idTermostato, topicTermostato, idSwitch, urlSwitch);
     }
 
     @Override
@@ -98,8 +133,11 @@ public class Room {
                 "id='" + id + '\'' +
                 ", nombre='" + nombre + '\'' +
                 ", temperaturaEsperada=" + temperaturaEsperada +
+                ", potenciaKW=" + potenciaKW +
                 ", idTermostato='" + idTermostato + '\'' +
-                ", uriSwitch='" + uriSwitch + '\'' +
+                ", topicTermostato='" + topicTermostato + '\'' +
+                ", idSwitch='" + idSwitch + '\'' +
+                ", urlSwitch='" + urlSwitch + '\'' +
                 '}';
     }
 }

@@ -46,7 +46,7 @@ public record Inventario(
             @NotBlank String id,
             @NotBlank @Size(max = 50) String nombre,
             @NotNull Double temperaturaEsperada,
-            @Positive double potenciaKW,
+            @Positive Double potenciaKW,
             @NotBlank String idTermostato,
             @NotBlank String topicTermostato,
             @NotBlank String idSwitch,

@@ -1,242 +1,202 @@
 package com.iiss.sensores.grupo_2.controlador.api;
 
-import org.junit.jupiter.api.Test;
-import com.iiss.sensores.grupo_2.controlador.api.model.Room;
-import com.iiss.sensores.grupo_2.controlador.api.repository.RoomRepository;
+import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
+import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
 import com.iiss.sensores.grupo_2.controlador.api.service.RoomService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class HabitacionServiceTest {
+class HabitacionServiceTest {
+
+    private InventarioService inventarioService;
+    private RoomService service;
+
+    @BeforeEach
+    void setUp() {
+        inventarioService = mock(InventarioService.class);
+        service = new RoomService(inventarioService);
+    }
 
     @Test
-    void crearHabitacionTest() {
+    void crearHabitacionLaAgregaAlInventario() {
+        Inventario inventario = inventario(List.of(habitacion("sala")));
+        Inventario.Habitacion nueva = habitacion("dormitorio");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
 
-        RoomRepository repositoryMock = mock(RoomRepository.class);
+        assertEquals(nueva, service.crear(nueva));
 
-        RoomService service = new RoomService(repositoryMock);
+        ArgumentCaptor<Inventario> captor = ArgumentCaptor.forClass(Inventario.class);
+        verify(inventarioService).reemplazar(captor.capture());
+        assertEquals(List.of(habitacion("sala"), nueva), captor.getValue().habitaciones());
+    }
 
-        Room habitacion = new Room(
+    @Test
+    void crearHabitacionConIdExistenteNoModificaInventario() {
+        Inventario.Habitacion existente = habitacion("sala");
+        Inventario inventario = inventario(List.of(existente));
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
+
+        assertEquals(existente, service.crear(habitacion("sala")));
+
+        verify(inventarioService, never()).reemplazar(any());
+    }
+
+    @Test
+    void listarHabitacionesDelInventarioActivo() {
+        List<Inventario.Habitacion> habitaciones = List.of(habitacion("sala"));
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(habitaciones)));
+
+        assertEquals(habitaciones, service.listar());
+    }
+
+    @Test
+    void buscarPorIdDevuelveHabitacionDelInventario() {
+        Inventario.Habitacion habitacion = habitacion("sala");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(habitacion))));
+
+        assertEquals(Optional.of(habitacion), service.buscarPorId("sala"));
+        assertTrue(service.buscarPorId("inexistente").isEmpty());
+    }
+
+    @Test
+    void eliminarHabitacionLaQuitaDelInventario() {
+        Inventario inventario = inventario(List.of(habitacion("sala"), habitacion("dormitorio")));
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
+
+        assertTrue(service.eliminar("sala"));
+
+        ArgumentCaptor<Inventario> captor = ArgumentCaptor.forClass(Inventario.class);
+        verify(inventarioService).reemplazar(captor.capture());
+        assertEquals(List.of(habitacion("dormitorio")), captor.getValue().habitaciones());
+    }
+
+    @Test
+    void eliminarHabitacionInexistenteNoModificaInventario() {
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(habitacion("sala")))));
+
+        assertFalse(service.eliminar("inexistente"));
+
+        verify(inventarioService, never()).reemplazar(any());
+    }
+
+    @Test
+    void obtenerPorTermostatoBuscaEnInventario() {
+        Inventario.Habitacion habitacion = habitacion("sala");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(habitacion))));
+
+        assertEquals(Optional.of(habitacion), service.obtenerPorTermostato("termostato-sala"));
+        assertTrue(service.obtenerPorTermostato("inexistente").isEmpty());
+    }
+
+    @Test
+    void modificarHabitacionReemplazaDatosYConservaElIdDeLaRuta() {
+        Inventario inventario = inventario(List.of(habitacion("sala")));
+        Inventario.Habitacion modificada = habitacion("otro-id");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario));
+
+        Optional<Inventario.Habitacion> resultado = service.modificar("sala", modificada);
+
+        assertTrue(resultado.isPresent());
+        assertEquals(habitacion("sala").id(), resultado.get().id());
+        assertEquals(modificada.nombre(), resultado.get().nombre());
+        assertEquals(modificada.temperaturaEsperada(), resultado.get().temperaturaEsperada());
+        assertEquals(modificada.idTermostato(), resultado.get().idTermostato());
+        ArgumentCaptor<Inventario> captor = ArgumentCaptor.forClass(Inventario.class);
+        verify(inventarioService).reemplazar(captor.capture());
+        assertEquals(List.of(resultado.get()), captor.getValue().habitaciones());
+    }
+
+    @Test
+    void modificarHabitacionInexistenteDevuelveVacio() {
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(habitacion("sala")))));
+
+        assertTrue(service.modificar("inexistente", habitacion("inexistente")).isEmpty());
+
+        verify(inventarioService, never()).reemplazar(any());
+    }
+
+    @Test
+    void modificarParcialmenteConservaCamposNoModificados() {
+        Inventario.Habitacion original = habitacion("sala");
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(original))));
+        Map<String, Object> cambios = Map.of("nombre", "Estar", "temperaturaEsperada", 23.0);
+
+        Inventario.Habitacion resultado = service.modificarParcialmente("sala", cambios).orElseThrow();
+
+        assertEquals("Estar", resultado.nombre());
+        assertEquals(23.0, resultado.temperaturaEsperada());
+        assertEquals(original.idTermostato(), resultado.idTermostato());
+        assertEquals(original.urlSwitch(), resultado.urlSwitch());
+        verify(inventarioService).reemplazar(any());
+    }
+
+    @Test
+    void modificarParcialmenteHabitacionInexistenteDevuelveVacio() {
+        when(inventarioService.obtenerActivo()).thenReturn(Optional.of(inventario(List.of(habitacion("sala")))));
+
+        assertTrue(service.modificarParcialmente("inexistente", Map.of("nombre", "Estar")).isEmpty());
+
+        verify(inventarioService, never()).reemplazar(any());
+    }
+
+    @Test
+    void validarDetectaHabitacionesConTermostatoDuplicado() {
+        Inventario.Habitacion sala = habitacion("sala");
+        Inventario.Habitacion dormitorio = new Inventario.Habitacion(
+                "dormitorio",
                 "Dormitorio",
                 21.0,
-                "termostato-01",
-                "switch-01"
+                1.5,
+                sala.idTermostato(),
+                "termostato/dormitorio",
+                "switch-dormitorio",
+                "http://switches-api:8090/switches/dormitorio"
         );
+        when(inventarioService.obtenerActivo())
+                .thenReturn(Optional.of(inventario(List.of(sala, dormitorio))));
 
-        service.crear(habitacion);
-
-        verify(repositoryMock, times(1)).save(habitacion);
+        assertEquals(List.of(sala, dormitorio), service.validar());
     }
 
-    @Test
-    void listarHabitacionesTest() {
-
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        List<Room> habitaciones = List.of(
-            new Room("Dormitorio", 21.0, "termostato-01", "switch-01"),
-            new Room("Sala", 22.0, "termostato-02", "switch-02")
+    private static Inventario inventario(List<Inventario.Habitacion> habitaciones) {
+        return new Inventario(
+                "2.0",
+                new Inventario.Sitio(
+                        "casa",
+                        "Casa",
+                        5.0,
+                        new Inventario.Tarifa(
+                                new Inventario.Franja("17:00", "23:00", Inventario.Dias.HABILES)
+                        )
+                ),
+                habitaciones
         );
-
-        when(repositoryMock.findAll()).thenReturn(habitaciones);
-
-        List<Room> resultado = service.listar();
-
-        assertEquals(habitaciones, resultado);
-
-        verify(repositoryMock, times(1)).findAll();
     }
 
-    @Test
-    void buscarPorIdTest() {
-
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        Room habitacion = new Room(
-                "Dormitorio",
+    private static Inventario.Habitacion habitacion(String id) {
+        return new Inventario.Habitacion(
+                id,
+                "Habitación " + id,
                 21.0,
-                "termostato-01",
-                "switch-01"
+                1.5,
+                "termostato-" + id,
+                "termostato/" + id,
+                "switch-" + id,
+                "http://switches-api:8090/switches/" + id
         );
-
-        when(repositoryMock.findById(id)).thenReturn(java.util.Optional.of(habitacion));
-
-        java.util.Optional<Room> resultado = service.buscarPorId(id);
-
-        assertEquals(java.util.Optional.of(habitacion), resultado);
-
-        verify(repositoryMock, times(1)).findById(id);
-    }
-
-    @Test
-    void eliminarHabitacionTest() {
-
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        when(repositoryMock.existsById(id)).thenReturn(true);
-
-        boolean resultado = service.eliminar(id);
-
-        assertEquals(true, resultado);
-
-        verify(repositoryMock, times(1)).existsById(id);
-        verify(repositoryMock, times(1)).deleteById(id);
-    }
-
-    @Test
-    void eliminarHabitacionNoExistenteTest() {
-        
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        when(repositoryMock.existsById(id)).thenReturn(false);
-
-        boolean resultado = service.eliminar(id);
-
-        assertEquals(false, resultado);
-
-        verify(repositoryMock, times(1)).existsById(id);
-        verify(repositoryMock, times(0)).deleteById(id);
-    }
-
-    @Test
-    void buscarPorIdTermostatoTest() {
-        
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String idTermostato = "termostato-01";
-
-        Room habitacion = new Room(
-                "Dormitorio",
-                21.0,
-                idTermostato,
-                "switch-01"
-        );
-
-        when(repositoryMock.findByIdTermostato(idTermostato)).thenReturn(java.util.Optional.of(habitacion));
-
-        java.util.Optional<Room> resultado = service.buscarPorIdTermostato(idTermostato);
-
-        assertEquals(java.util.Optional.of(habitacion), resultado);
-
-        verify(repositoryMock, times(1)).findByIdTermostato(idTermostato);
-    }
-
-    @Test
-    void modificarParcialmenteTest() {
-
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        Room habitacionExistente = new Room(
-                "Dormitorio",
-                21.0,
-                "termostato-01",
-                "switch-01"
-        );
-
-        when(repositoryMock.findById(id))
-                .thenReturn(java.util.Optional.of(habitacionExistente));
-
-        when(repositoryMock.save(habitacionExistente))
-                .thenReturn(habitacionExistente);
-
-        java.util.Map<String, Object> cambios = java.util.Map.of(
-            "nombre", "Sala",
-            "temperaturaEsperada", 22.0
-        );
-
-        java.util.Optional<Room> resultado =
-                service.modificarParcialmente(id, cambios);
-
-        assertEquals("Sala", resultado.get().getNombre());
-        assertEquals(22.0, resultado.get().getTemperaturaEsperada());
-
-        verify(repositoryMock, times(1)).findById(id);
-        verify(repositoryMock, times(1)).save(habitacionExistente);
-    }
-
-    @Test
-    void modificarParcialmenteNoExistenteTest() {
-        
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        when(repositoryMock.findById(id)).thenReturn(java.util.Optional.empty());
-
-        java.util.Map<String, Object> cambios = java.util.Map.of(
-            "nombre", "Sala",
-            "temperaturaEsperada", 22.0
-        );
-
-        java.util.Optional<Room> resultado = service.modificarParcialmente(id, cambios);
-
-        assertEquals(java.util.Optional.empty(), resultado);
-
-        verify(repositoryMock, times(1)).findById(id);
-        verify(repositoryMock, times(0)).save(any());
-    }
-
-    @Test
-    void modificarTest(){
-
-        RoomRepository repositoryMock = mock(RoomRepository.class);
-
-        RoomService service = new RoomService(repositoryMock);
-
-        String id = "habitacion-01";
-
-        Room habitacionExistente = new Room(
-            "Dormitorio",
-            21.0,
-            "termostato-01",
-            "switch-01"
-        );
-
-        when(repositoryMock.findById(id)).thenReturn(java.util.Optional.of(habitacionExistente));
-
-        Room habitacionModificada = new Room(
-            "Sala",
-            22.0,
-            "termostato-02",
-            "switch-02"
-        );
-
-        when(repositoryMock.save(habitacionExistente)).thenReturn(habitacionExistente);
-
-        java.util.Optional<Room> resultado = service.modificar(id, habitacionModificada);
-
-        assertEquals("Sala", resultado.get().getNombre());
-        assertEquals(22.0, resultado.get().getTemperaturaEsperada());
-        assertEquals("termostato-02", resultado.get().getIdTermostato());
-        assertEquals("switch-02", resultado.get().getUriSwitch());
-
-        verify(repositoryMock, times(1)).findById(id);
-        verify(repositoryMock, times(1)).save(habitacionExistente);
     }
 }

@@ -1,6 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.api.controller;
 
-import com.iiss.sensores.grupo_2.controlador.api.model.Room;
+import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.service.RoomService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,59 +20,63 @@ import java.util.Map;
 @RequestMapping("/habitaciones")
 public class RoomController {
 
-    private final RoomService service;
+    private final RoomService roomsService;
 
-    public RoomController(RoomService service) {
-        this.service = service;
+    public RoomController(RoomService roomsService) {
+        this.roomsService = roomsService;
     }
 
     @GetMapping
-    public List<Room> listar() {
-        return service.listar();
+    public List<Inventario.Habitacion> listar() {
+        return roomsService.listar();
     }
 
     @GetMapping("/validar")
-    public List<Room> validar() {
-        return service.validar();
+    public List<Inventario.Habitacion> validar() {
+        return roomsService.validar();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Room> buscarPorId(@PathVariable("id") String id) {
-        return service.buscarPorId(id)
+    public ResponseEntity<Inventario.Habitacion> buscarPorId(@PathVariable("id") String id) {
+        return roomsService.buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/termostato/{idTermostato}")
-    public ResponseEntity<Room> buscarPorTermostato(@PathVariable("idTermostato") String idTermostato) {
-        return service.buscarPorIdTermostato(idTermostato)
+    public ResponseEntity<Inventario.Habitacion> buscarPorTermostato(@PathVariable("idTermostato") String idTermostato) {
+        return roomsService.obtenerPorTermostato(idTermostato)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Room crear(@RequestBody Room room) {
-        return service.crear(room);
+    public Inventario.Habitacion crear(@RequestBody Inventario.Habitacion habitacion) {
+        return roomsService.crear(habitacion);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Room> modificar(@PathVariable("id") String id, @RequestBody Room room) {
-        return service.modificar(id, room)
+    public ResponseEntity<Inventario.Habitacion> modificar(
+            @PathVariable("id") String id,
+            @RequestBody Inventario.Habitacion habitacion) {
+        return roomsService.modificar(id, habitacion)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable("id") String id) {
-        if (!service.eliminar(id)) {
+        if (!roomsService.eliminar(id)) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Room> modificarParcialmente(@PathVariable("id") String id, @RequestBody Map<String, Object> cambios) {
-        return service.modificarParcialmente(id, cambios)
+    public ResponseEntity<Inventario.Habitacion> modificarParcialmente(
+            @PathVariable("id") String id,
+            @RequestBody Map<String, Object> cambios) {
+        return roomsService.modificarParcialmente(id, cambios)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

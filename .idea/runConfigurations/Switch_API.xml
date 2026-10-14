@@ -3,7 +3,7 @@
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/.env.local" />
     </option>
-    <option name="MAIN_CLASS_NAME" value="org.switches.SwitchesApiApplication" />
+    <option name="MAIN_CLASS_NAME" value="com.iiss.sensores.grupo_2.switches.SwitchesApiApplication" />
     <module name="switches-api" />
     <method v="2">
       <option name="Make" enabled="true" />

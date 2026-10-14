@@ -5,10 +5,7 @@ info:
   version: "2.0.0"
   description: |
     Lo que un controlador tiene que exponer para ser operado desde afuera: el API que define la **§5 de `interop-v2`**: cargar y consultar el sitio, y arrancar y detener
-    el control. Es lo mínimo, y es todo lo que se le exige.
-
-    Todo lo demás que un controlador ofrezca —ABM de habitaciones, diagnósticos, tableros— queda a
-    criterio de cada implementación y **fuera** de este documento.
+    el control. Este documento también incluye el ABM de habitaciones que ofrece esta implementación.
 
     > **Este archivo no alcanza para ser conforme.** Un controlador además tiene que:
     >
@@ -40,8 +37,178 @@ tags:
     description: §5.1 — el inventario que el controlador tiene en uso.
   - name: control
     description: §5.2 — arrancar y detener el control.
+  - name: Habitaciones
+    description: Consulta y mantenimiento de las habitaciones del inventario activo.
 
 paths:
+
+  /habitaciones:
+    get:
+      tags: [Habitaciones]
+      operationId: listarHabitaciones
+      summary: Lista las habitaciones del inventario activo
+      responses:
+        "200":
+          description: Habitaciones del inventario activo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Habitacion" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+
+    post:
+      tags: [Habitaciones]
+      operationId: crearHabitacion
+      summary: Agrega una habitación al inventario activo
+      description: Si ya existe una habitación con el mismo id, devuelve la existente sin agregar otra.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Habitacion" }
+      responses:
+        "200":
+          description: Habitación agregada o habitación ya existente con el mismo id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habitacion" }
+        "400":
+          description: La habitación o el inventario resultante no son válidos.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404":
+          description: Todavía no se cargó ningún inventario.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /habitaciones/validar:
+    get:
+      tags: [Habitaciones]
+      operationId: validarHabitaciones
+      summary: Valida las habitaciones del inventario activo
+      description: Devuelve habitaciones con URL de switch inválida o con idTermostato o URL de switch duplicados.
+      responses:
+        "200":
+          description: Habitaciones no conformes o duplicadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Habitacion" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+
+  /habitaciones/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador de la habitación.
+        schema: { type: string }
+    get:
+      tags: [Habitaciones]
+      operationId: obtenerHabitacionPorId
+      summary: Obtiene una habitación por su identificador
+      responses:
+        "200":
+          description: Habitación encontrada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habitacion" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404": { $ref: "#/components/responses/NoEncontrado" }
+    put:
+      tags: [Habitaciones]
+      operationId: modificarHabitacion
+      summary: Reemplaza una habitación existente
+      description: El identificador de la ruta prevalece sobre el id recibido en el cuerpo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Habitacion" }
+      responses:
+        "200":
+          description: Habitación actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habitacion" }
+        "400":
+          description: La habitación o el inventario resultante no son válidos.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404": { $ref: "#/components/responses/NoEncontrado" }
+    patch:
+      tags: [Habitaciones]
+      operationId: modificarParcialmenteHabitacion
+      summary: Modifica parcialmente una habitación existente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Campos de la habitación que se desean modificar.
+              additionalProperties: false
+              properties:
+                nombre: { type: string, maxLength: 50 }
+                temperaturaEsperada: { type: number, format: double }
+                potenciaKW: { type: number, format: double, exclusiveMinimum: true, minimum: 0 }
+                idTermostato: { type: string }
+                topicTermostato: { type: string }
+                idSwitch: { type: string }
+                urlSwitch: { type: string, format: uri }
+                uriSwitch:
+                  type: string
+                  format: uri
+                  deprecated: true
+                  description: Alias legado de urlSwitch.
+      responses:
+        "200":
+          description: Habitación actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habitacion" }
+        "400":
+          description: Los cambios o el inventario resultante no son válidos.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404": { $ref: "#/components/responses/NoEncontrado" }
+    delete:
+      tags: [Habitaciones]
+      operationId: eliminarHabitacion
+      summary: Elimina una habitación del inventario activo
+      responses:
+        "204": { description: Habitación eliminada. }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404": { $ref: "#/components/responses/NoEncontrado" }
+
+  /habitaciones/termostato/{idTermostato}:
+    parameters:
+      - name: idTermostato
+        in: path
+        required: true
+        description: Identificador del termostato asociado.
+        schema: { type: string }
+    get:
+      tags: [Habitaciones]
+      operationId: obtenerHabitacionPorTermostato
+      summary: Obtiene una habitación por su termostato
+      responses:
+        "200":
+          description: Habitación encontrada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habitacion" }
+        "401": { $ref: "#/components/responses/NoAutorizado" }
+        "404": { $ref: "#/components/responses/NoEncontrado" }
 
   /sitio:
     get:
@@ -218,6 +385,11 @@ components:
             status: 401
             mensaje: falta o no coincide el header X-API-Key
             errores: null
+    NoEncontrado:
+      description: No existe la habitación o todavía no se cargó el inventario.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
 
   examples:
     inventario:
@@ -336,9 +508,7 @@ components:
         id:
           type: string
           minLength: 1
-          description: |
-            Estable, elegido por el cliente, único en el sitio. Si la implementación usa un serial
-            en base, se serializa como string (`"1"`).
+          description: Identificador estable de la habitación, único dentro del inventario.
           example: room1
         nombre:
           type: string
