@@ -39,7 +39,7 @@ El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras qu
   - **receive-temp.sh** se suscribe a un tópico MQTT y muestra en la consola todos los mensajes que lleguen de dicho tópico.
   - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
   - **test-validacion.sh**  para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
-  - **run-controlador-local.sh** 
+  - **run-controlador-local.sh** para cambiarlo a local.
 - **curl-ejemplos**
 
   - **curl-ctrl**
