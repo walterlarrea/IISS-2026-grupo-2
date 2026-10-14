@@ -14,6 +14,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,6 +66,7 @@ class EstadoSitioServiceTest {
 
     @Test
     void actualizarEstadoSwitchConservaLaTemperatura() {
+        servicio.obtenerEstado();
         servicio.actualizarEstadoSwitch("switch-1", EstadoSwitch.ENCENDIDO);
         Habitacion habitacion = servicio.obtenerEstado().habitaciones().get(0);
 
@@ -93,14 +95,39 @@ class EstadoSitioServiceTest {
                 EstadoSwitch.APAGADO
         );
 
-        servicio.cargarEstado(new DataSitio(
+        Habitacion primeraHabitacion = new Habitacion(
+                "hab-1",
+                "Living",
+                21.0,
+                1.5,
+                "termo-1",
+                "casa/living/temperatura",
+                "switch-1",
+                "http://localhost/switches/1",
+                19.0,
+                EstadoSwitch.APAGADO
+        );
+        DataSitio nuevoEstado = new DataSitio(
                 new Sitio("sitio-2", "Casa", 5.0, new Tarifa(null)),
-                List.of(servicio.obtenerEstado().habitaciones().get(0), segundaHabitacion)
-        ));
+                List.of(primeraHabitacion, segundaHabitacion)
+        );
+        servicio.cargarEstado(nuevoEstado);
+
+        verify(switchClient, never()).consultarEstado(any());
 
         List<Habitacion> habitaciones = servicio.obtenerEstado().habitaciones();
         assertEquals(EstadoSwitch.ENCENDIDO, habitaciones.get(0).estadoActualSwitch());
         assertEquals(EstadoSwitch.APAGADO, habitaciones.get(1).estadoActualSwitch());
         verify(switchClient, times(2)).consultarEstado(any());
+    }
+
+    @Test
+    void consultarEstadoDeSitioLimpiaLaMarcaDeEstadoSucio() {
+        clearInvocations(switchClient);
+
+        servicio.obtenerEstado();
+        servicio.obtenerEstado();
+
+        verify(switchClient, times(1)).consultarEstado(any());
     }
 }

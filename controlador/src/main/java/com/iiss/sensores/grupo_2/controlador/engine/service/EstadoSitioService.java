@@ -13,6 +13,7 @@ public class EstadoSitioService {
     //conserva el estado actual en memoria, actualiza las temperaturas y registra los estados de los switches
     private DataSitio dataSitio;
     private final SwitchClient switchClient;
+    private boolean estadoSwitchSucio;
 
     public EstadoSitioService(SwitchClient switchClient) {
         this.switchClient = switchClient;
@@ -23,21 +24,8 @@ public class EstadoSitioService {
         if (nuevoEstado == null || nuevoEstado.sitio() == null || nuevoEstado.habitaciones() == null) {
             throw new IllegalArgumentException("El estado del sitio no puede ser nulo");
         }
-        List<Habitacion> habitacionesConEstado = nuevoEstado.habitaciones().stream()
-                .map(h -> new Habitacion(
-                        h.id(),
-                        h.nombre(),
-                        h.temperaturaEsperada(),
-                        h.potenciaKW(),
-                        h.idTermostato(),
-                        h.topicTermostato(),
-                        h.idSwitch(),
-                        h.urlSwitch(),
-                        h.temperaturaActual(),
-                        switchClient.consultarEstado(h).estado()
-                ))
-                .toList();
-        this.dataSitio = new DataSitio(nuevoEstado.sitio(), List.copyOf(habitacionesConEstado));
+        this.dataSitio = new DataSitio(nuevoEstado.sitio(), List.copyOf(nuevoEstado.habitaciones()));
+        this.estadoSwitchSucio = true;
     }
 
     private void validarEstadoInicializado() {
@@ -54,6 +42,24 @@ public class EstadoSitioService {
     public synchronized DataSitio obtenerEstado() {
         if (dataSitio == null) {
             throw new IllegalStateException("El estado del sitio todavía no fue inicializado");
+        }
+        if (estadoSwitchSucio) {
+            List<Habitacion> habitacionesConEstado = dataSitio.habitaciones().stream()
+                    .map(h -> new Habitacion(
+                            h.id(),
+                            h.nombre(),
+                            h.temperaturaEsperada(),
+                            h.potenciaKW(),
+                            h.idTermostato(),
+                            h.topicTermostato(),
+                            h.idSwitch(),
+                            h.urlSwitch(),
+                            h.temperaturaActual(),
+                            switchClient.consultarEstado(h).estado()
+                    ))
+                    .toList();
+            dataSitio = new DataSitio(dataSitio.sitio(), List.copyOf(habitacionesConEstado));
+            estadoSwitchSucio = false;
         }
         return dataSitio;
     }
@@ -132,4 +138,3 @@ public class EstadoSitioService {
         return dataSitio;
     }
 }
-
