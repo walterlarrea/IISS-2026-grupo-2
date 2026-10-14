@@ -7,6 +7,8 @@ import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
 import com.iiss.sensores.grupo_2.modelos.output.Comando;
 import com.iiss.sensores.grupo_2.modelos.output.ComandoSwitch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -14,25 +16,31 @@ import java.util.Comparator;
 import java.util.List;
 
 class Core implements ICore {
+    private static final Logger logger = LoggerFactory.getLogger(Core.class);
+
     public Core() {
         // Constructor de la clase Core
     }
 
     @Override
     public RespuestaCore calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio) {
+        logger.debug("Calculando comandos para {}. Sitio recibido: {}", fechaHora, dataSitio != null);
         if (dataSitio == null || dataSitio.habitaciones() == null || dataSitio.habitaciones().isEmpty()) {
-            // Podría lanzar una excepción?
+            logger.debug("No hay habitaciones para evaluar; no se generan comandos");
             return new RespuestaCore(List.of());
         }
+        logger.debug("Se evaluarán {} habitaciones", dataSitio.habitaciones().size());
 
         // Apaga todos los switches durante el horario punta
         if (dataSitio.sitio() != null
                 && dataSitio.sitio().tarifa() != null
                 && dataSitio.sitio().tarifa().esHorarioPunta(fechaHora)) {
+            logger.debug("Horario punta activo; se apagarán los switches que estén encendidos");
             List<Comando> comandos = new ArrayList<>();
             for (Habitacion habitacion : dataSitio.habitaciones()) {
                 agregarComandoSiNecesario(comandos, habitacion, EstadoSwitch.APAGADO);
             }
+            logger.debug("Cálculo en horario punta finalizado: {} comandos", comandos.size());
             return new RespuestaCore(comandos);
         }
 
@@ -48,12 +56,15 @@ class Core implements ICore {
             .sorted(Comparator.comparingDouble((Habitacion habitacion) ->
                     habitacion.temperaturaEsperada() - habitacion.temperaturaActual()).reversed())
             .toList();
+        logger.debug("Habitaciones en o sobre temperatura esperada: {}; bajo temperatura esperada: {}",
+                habitacionesSobreTemperaturaEsperada.size(), habitacionesBajoTemperaturaEsperada.size());
 
         // Calcula la potencia utilizada sumando la potencia de las habitaciones cuyo switch está encendido
         double potenciaUtilizada = dataSitio.habitaciones().stream()
             .filter(habitacion -> habitacion.estadoActualSwitch() == EstadoSwitch.ENCENDIDO)
             .mapToDouble(Habitacion::potenciaKW)
             .sum();
+        logger.debug("Potencia utilizada inicialmente: {} kW", potenciaUtilizada);
 
         List<Comando> comandos = new ArrayList<>();
 
@@ -64,6 +75,9 @@ class Core implements ICore {
             if (habitacion.estadoActualSwitch() != EstadoSwitch.APAGADO) {
                 comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
                 potenciaUtilizada -= habitacion.potenciaKW();
+                logger.debug("Se apaga el switch {}: temperatura actual {} °C, esperada {} °C; potencia liberada {} kW",
+                        habitacion.idSwitch(), habitacion.temperaturaActual(), habitacion.temperaturaEsperada(),
+                        habitacion.potenciaKW());
             }
         }
 
@@ -74,14 +88,25 @@ class Core implements ICore {
         */
         for (Habitacion habitacion : habitacionesBajoTemperaturaEsperada) {
             if (habitacion.estadoActualSwitch() != EstadoSwitch.ENCENDIDO) {
+                assert dataSitio.sitio() != null;
                 // Solo enciende la habitación si no supera la potencia contratada
                 if (potenciaUtilizada + habitacion.potenciaKW() <= dataSitio.sitio().potenciaContratadaKW()) {
                     comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.ENCENDIDO));
                     potenciaUtilizada += habitacion.potenciaKW();
+                    logger.debug("Se enciende el switch {}: déficit de temperatura {} °C; potencia utilizada {}/{} kW",
+                            habitacion.idSwitch(),
+                            habitacion.temperaturaEsperada() - habitacion.temperaturaActual(),
+                            potenciaUtilizada, dataSitio.sitio().potenciaContratadaKW());
+                } else {
+                    logger.debug("No se enciende el switch {}: potencia requerida {} kW supera el límite contratado de {} kW",
+                            habitacion.idSwitch(), potenciaUtilizada + habitacion.potenciaKW(),
+                            dataSitio.sitio().potenciaContratadaKW());
                 }
             }
         }
-        
+
+        logger.debug("Cálculo finalizado: {} comandos; potencia utilizada final: {} kW",
+                comandos.size(), potenciaUtilizada);
         return new RespuestaCore(comandos);
     }
 
@@ -92,6 +117,10 @@ class Core implements ICore {
     ) {
         if (habitacion.estadoActualSwitch() != estadoDeseado) {
             comandos.add(new ComandoSwitch(habitacion.idSwitch(), estadoDeseado));
+            logger.debug("Se agrega comando para el switch {}: estado {}", habitacion.idSwitch(), estadoDeseado);
+        } else {
+            logger.debug("El switch {} ya está en estado {}; no se genera comando",
+                    habitacion.idSwitch(), estadoDeseado);
         }
     }
 

@@ -45,8 +45,7 @@ public class SwitchClient {
         
         EstadoSwitch estadoSwitch = switch (response.estado()) {
             case EstadoRespuestaSwitch.ON -> EstadoSwitch.ENCENDIDO;
-            case EstadoRespuestaSwitch.OFF -> EstadoSwitch.APAGADO;
-            case EstadoRespuestaSwitch.DESCONOCIDO -> EstadoSwitch.APAGADO;
+            case EstadoRespuestaSwitch.OFF, EstadoRespuestaSwitch.DESCONOCIDO -> EstadoSwitch.APAGADO;
             default -> throw new IllegalStateException(
                     "La API de switches devolvió un estado no soportado: " + response.estado()
             );

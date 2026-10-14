@@ -24,10 +24,15 @@ public class InventarioMapper {
         Punta punta = null;
 
         if (franja != null) {
-            if (franja.dias() == null || !"HABILES".equals(franja.dias().name())) {
-                throw new IllegalArgumentException("La tarifa recibida utiliza días que el core no soporta");
+            if (franja.dias() == null) {
+                throw new IllegalArgumentException("La tarifa recibida utiliza días que el core no soporta. {}" + franja.dias());
             }
-            punta = new Punta(franja.desde(), franja.hasta(), DiasPunta.HABILES);
+            try {
+                DiasPunta diasPunta = DiasPunta.valueOf(franja.dias().name());
+                punta = new Punta(franja.desde(), franja.hasta(), diasPunta);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("La tarifa recibida utiliza días que el core no soporta. {}" + franja.dias(), e);
+            }
         }
 
         Sitio sitio = new Sitio(sitioApi.id(), sitioApi.nombre(), sitioApi.potenciaContratadaKW(), new Tarifa(punta));

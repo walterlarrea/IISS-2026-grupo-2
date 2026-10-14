@@ -39,7 +39,7 @@ public class EventGenerator {
     }
 
     public void generate(){
-        ArrayList<String> topics = new ArrayList<String>(List.of("ht-sim-room0/status/temperature:0", "ht-sim-room1/status/temperature:1"));
+        ArrayList<String> topics = new ArrayList<String>(List.of("ht-room1/status/temperature:0", "ht-room2/status/temperature:0"));
 
         // Una solucion de paralelismo
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {

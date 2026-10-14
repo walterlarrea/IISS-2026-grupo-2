@@ -14,5 +14,5 @@ else
     exit 1
 fi
 
-docker compose --env-file "$ENV_FILE" -f "$SCRIPT_DIR/../docker/docker-compose.yml" build
+CONECTAR_CON_SIMULADOR=false docker compose --env-file "$ENV_FILE" --profile development -f "$SCRIPT_DIR/../docker/docker-compose.yml" build
 echo "Build nicely done!"
