@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mosquitto:
     profiles:
-      - manual
+      - development
     image: eclipse-mosquitto:2.0.22
     container_name: mosquitto
     ports:
@@ -38,6 +38,7 @@ services:
         required: false
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
 
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
@@ -64,7 +65,7 @@ services:
 
   publisher:
     profiles:
-      - manual
+      - development
     build:
       context: ..
       dockerfile: Dockerfile
@@ -81,7 +82,7 @@ services:
 
   switches-api:
     profiles:
-      - manual
+      - development
     build:
       context: ..
       dockerfile: Dockerfile
@@ -89,6 +90,7 @@ services:
     container_name: switches-api
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
       SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
       - '${SWITCHES_API_PORT:-8090}:${SWITCHES_API_PORT:-8090}'
