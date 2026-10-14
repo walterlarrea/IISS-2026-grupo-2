@@ -27,8 +27,7 @@ class EstadoSitioServiceTest {
     @BeforeEach
     void setUp() {
         switchClient = mock(SwitchClient.class);
-        when(switchClient.consultarEstado(any()))
-                .thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
+        when(switchClient.consultarEstado(any())).thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
         servicio = new EstadoSitioService(switchClient);
         Sitio sitio = new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null));
 

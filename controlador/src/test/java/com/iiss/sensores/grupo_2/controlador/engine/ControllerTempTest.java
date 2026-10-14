@@ -30,8 +30,7 @@ class ControllerTempAutoTest {
 
     @Test
     void temperaturaActualizadaLlegaAlCore() {
-        when(switchClient.consultarEstado(any()))
-                .thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
+        when(switchClient.consultarEstado(any())).thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
         EstadoSitioService estadoService = new EstadoSitioService(switchClient);
 
         estadoService.cargarEstado(new DataSitio(
