@@ -2,12 +2,7 @@
   <configuration default="false" name="Compose Debug" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker">
     <deployment type="docker-compose.yml">
       <settings>
-        <option name="envFilePath" value="A:\OneDriveBackup\OneDrive\Desktop\PC_Ivo\UTEC\IISS\IISS-2026-grupo-2\.env.dev" />
-        <option name="envFilePaths">
-          <list>
-            <option value="A:\OneDriveBackup\OneDrive\Desktop\PC_Ivo\UTEC\IISS\IISS-2026-grupo-2\.env.dev" />
-          </list>
-        </option>
+        <option name="envFilePath" value="$PROJECT_DIR$/.env.dev" />
         <option name="commandLineOptions" value="--build" />
         <option name="services">
           <list>
