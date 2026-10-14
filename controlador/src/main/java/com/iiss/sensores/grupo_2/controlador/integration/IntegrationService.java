@@ -1,7 +1,5 @@
 package com.iiss.sensores.grupo_2.controlador.integration;
 
-import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
-import com.iiss.sensores.grupo_2.controlador.engine.mqtt.MqttSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,16 +23,13 @@ public class IntegrationService {
     private final String controllerApiKey;
     private final String fallbackBroker;
     private final String mqttClientId;
-    private final String fallbackTopic;
     private final RestClient simulatorClient;
-    private final InventarioService inventarioService;
-    private final MqttSubscriber mqttSubscriber;
+    private final MqttSubscriptionService mqttSubscriptionService;
     private final AtomicBoolean initialized = new AtomicBoolean();
 
     public IntegrationService(
             RestClient.Builder restClientBuilder,
-            InventarioService inventarioService,
-            MqttSubscriber mqttSubscriber,
+            MqttSubscriptionService mqttSubscriptionService,
             @Value("${CONECTAR_CON_SIMULADOR:false}") boolean conectarSimulador,
             @Value("${SIMULATOR_API_URL:}") String simulatorApiUrl,
             @Value("${SIMULATOR_API_KEY:}") String simulatorApiKey,
@@ -42,8 +37,7 @@ public class IntegrationService {
             @Value("${CONTROLADOR_API_URL:http://localhost:8080}") String controllerBaseUrl,
             @Value("${CONTROLADOR_API_KEY:development-key}") String controllerApiKey,
             @Value("${MQTT_BROKER_URL:tcp://localhost:1883}") String fallbackBroker,
-            @Value("${MQTT_CLIENT_ID:ControladorSubscriber}") String mqttClientId,
-            @Value("${MQTT_TOPIC:sensores/temperatura}") String fallbackTopic
+            @Value("${MQTT_CLIENT_ID:ControladorSubscriber}") String mqttClientId
     ) {
         this.conectarSimulador = conectarSimulador;
         this.simulatorApiUrl = simulatorApiUrl;
@@ -53,7 +47,6 @@ public class IntegrationService {
         this.controllerApiKey = controllerApiKey;
         this.fallbackBroker = fallbackBroker;
         this.mqttClientId = mqttClientId;
-        this.fallbackTopic = fallbackTopic;
 
         RestClient.Builder clientBuilder = restClientBuilder.clone();
         if(conectarSimulador) {
@@ -65,19 +58,18 @@ public class IntegrationService {
                 clientBuilder.defaultHeader("X-API-Key", simulatorApiKey);
             }
         } else {
-            logger.info("Integración con simulador deshabilitada; se usará broker y topic MQTT propios: {} y {}", fallbackBroker, fallbackTopic);
+            logger.info("Integración con simulador deshabilitada; se usará broker y topic MQTT propios: {} y {}", fallbackBroker);
         }
 
         this.simulatorClient = clientBuilder.build();
-        this.inventarioService = inventarioService;
-        this.mqttSubscriber = mqttSubscriber;
+        this.mqttSubscriptionService = mqttSubscriptionService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         if (!conectarSimulador) {
             try {
-                mqttSubscriber.conectar(fallbackBroker, mqttClientId, fallbackTopic);
+                mqttSubscriptionService.conectar(fallbackBroker, mqttClientId);
                 logger.info("Integración con simulador deshabilitada; usando broker y topic configurados localmente");
                 initialized.set(true);
             } catch (RuntimeException exception) {
@@ -111,31 +103,11 @@ public class IntegrationService {
                 throw new IllegalStateException("El simulador devolvió un registro sin broker MQTT válido");
             }
 
-            // Inventario inventario = simulatorClient.get()
-            //         .uri("/sitio")
-            //         .retrieve()
-            //         .body(Inventario.class);
-            // if (inventario == null) {
-            //     throw new IllegalStateException("El simulador devolvió un inventario vacío");
-            // }
-
-            // Map<String, String> termostatosPorTopic = new LinkedHashMap<>();
-            // for (Inventario.Habitacion habitacion : inventario.habitaciones()) {
-            //     String anterior = termostatosPorTopic.putIfAbsent(
-            //             habitacion.topicTermostato(),
-            //             habitacion.idTermostato()
-            //     );
-            //     if (anterior != null && !anterior.equals(habitacion.idTermostato())) {
-            //         throw new IllegalStateException("El topic MQTT " + habitacion.topicTermostato() + " está asociado a más de un termostato");
-            //     }
-            // }
-            // inventarioService.reemplazar(inventario);
-
             String broker = "tcp://" + registro.mqtt().host() + ":" + registro.mqtt().puerto();
-            mqttSubscriber.conectar(broker, mqttClientId, fallbackTopic);
+            mqttSubscriptionService.conectar(broker, mqttClientId);
             initialized.set(true);
             logger.info(
-                    "Integración con simulador lista. Etiqueta: {}, broker MQTT: {}, topics: {}",
+                    "Integración con simulador lista. Etiqueta: {}, broker MQTT: {}",
                     controllerLabel,
                     broker
             );

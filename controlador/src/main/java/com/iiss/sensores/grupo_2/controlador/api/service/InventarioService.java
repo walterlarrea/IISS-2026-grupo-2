@@ -3,7 +3,9 @@ package com.iiss.sensores.grupo_2.controlador.api.service;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.model.InventarioDocumento;
 import com.iiss.sensores.grupo_2.controlador.api.repository.InventarioRepository;
+import com.iiss.sensores.grupo_2.controlador.api.event.InventarioActualizadoEvent;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -19,9 +21,11 @@ public class InventarioService {
     private static final String INVENTARIO_ACTIVO_ID = "activo";
 
     private final InventarioRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public InventarioService(InventarioRepository repository) {
+    public InventarioService(InventarioRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     public Optional<Inventario> obtenerActivo() {
@@ -32,6 +36,7 @@ public class InventarioService {
     public Inventario reemplazar(Inventario inventario) {
         validar(inventario);
         repository.save(new InventarioDocumento(INVENTARIO_ACTIVO_ID, inventario));
+        eventPublisher.publishEvent(new InventarioActualizadoEvent(inventario));
         return inventario;
     }
 
