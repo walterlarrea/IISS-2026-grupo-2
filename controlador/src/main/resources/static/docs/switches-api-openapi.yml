@@ -24,11 +24,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Switch'
+  /switches/{id}/comandos:
+    parameters:
+      - $ref: '#/components/parameters/Id'
     post:
       tags: [Switches]
-      summary: Actualiza el estado de un switch
-      description: El identificador se envia en el cuerpo de la peticion.
-      operationId: actualizarSwitch
+      summary: Acciona un switch
+      operationId: accionarSwitch
       requestBody:
         required: true
         content:
@@ -41,7 +43,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Switch'
+                $ref: '#/components/schemas/SwitchAccionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
 components:
@@ -56,18 +58,37 @@ components:
   schemas:
     Switch:
       type: object
-      required: [id, encendido]
+      required: [idSwitch, estado, aplicadoEn]
       properties:
-        id:
+        idSwitch:
           type: string
-        encendido:
-          type: boolean
+          example: switch-0
+        estado:
+          type: string
+          enum: ["ON", "OFF"]
+          example: "OFF"
+        aplicadoEn:
+          type: string
+          format: date
+          example: "2026-10-14"
     SwitchRequest:
       type: object
-      required: [encendido]
+      required: [accion]
       properties:
-        encendido:
-          type: boolean
+        accion:
+          type: string
+          enum: ["ON", "OFF"]
+          example: "ON"
+    SwitchAccionResponse:
+      allOf:
+        - $ref: '#/components/schemas/Switch'
+        - type: object
+          required: [cambio]
+          properties:
+            cambio:
+              type: boolean
+              description: Indica si el estado del switch cambio con esta actualizacion.
+              example: true
     Error:
       type: object
       required: [error]
