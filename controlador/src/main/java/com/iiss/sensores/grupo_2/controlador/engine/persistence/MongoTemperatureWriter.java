@@ -1,4 +1,4 @@
-package com.iiss.sensores.grupo_2.controlador.engine.writer;
+package com.iiss.sensores.grupo_2.controlador.engine.persistence;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;

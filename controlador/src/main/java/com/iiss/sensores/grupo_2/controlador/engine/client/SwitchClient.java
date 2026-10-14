@@ -13,10 +13,8 @@ public class SwitchClient {
     private final RestClient restClient;
     private final String apiKey;
 
-    public SwitchClient(
-            @Qualifier("switchRestClient") RestClient restClient,
-            @Value("${SWITCHES_API_KEY:}") String apiKey
-    ) {
+    public SwitchClient(@Qualifier("switchRestClient") RestClient restClient, @Value("${SWITCHES_API_KEY:}") String apiKey) {
+        //ejecuta las órdenes contra el servicio de switches que esté configurado.
         this.restClient = restClient;
         this.apiKey = apiKey;
     }
