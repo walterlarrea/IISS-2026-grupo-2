@@ -24,6 +24,7 @@
       <module name="common" options="-parameters -parameters" />
       <module name="controlador" options="-parameters -parameters" />
       <module name="core" options="-parameters -parameters" />
+      <module name="iot_este" options="-parameters" />
       <module name="publisher" options="-parameters -parameters" />
       <module name="sensores-parent" options="-parameters" />
       <module name="switches-api" options="-parameters -parameters" />
