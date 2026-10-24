@@ -11,6 +11,7 @@ import org.mockito.MockedConstruction;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +27,7 @@ class PublisherUnitTest {
 
     @Test
     void validateJsonSerializesTemperaturaToJson() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, new BigDecimal("1789351400.000"));
 
         String json = TermostatMessageObject.validateJson(temperatura);
         JsonNode root = mapper.readTree(json);
@@ -39,7 +40,7 @@ class PublisherUnitTest {
 
     @Test
     void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, new BigDecimal("1789351400.000"));
 
         String json = TermostatMessageObject.validateJson(temperatura);
 
@@ -50,7 +51,7 @@ class PublisherUnitTest {
 
     @Test
     void epochTimeIsSerializedAsAnInteger() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, new BigDecimal("1789351400.000"));
 
         String json = TermostatMessageObject.validateJson(temperatura);
 

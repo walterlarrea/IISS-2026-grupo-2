@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -70,10 +71,10 @@ public class EventGenerator {
                 // TODO: Podria forzar tendencias sostenidas de elevacion / reduccion de la temperatura para formar cambios mas amplios
 
                 // Toma el tiempo epoch actual en milisegundos
-                long epochTime = java.time.Instant.now().toEpochMilli();
+                BigDecimal epochTime = new BigDecimal(java.time.Instant.now().toEpochMilli());
 
                 // Crea el JSON
-                Temperatura temp = new Temperatura(id, lastTemp, 0.0f, epochTime);
+                Temperatura temp = new Temperatura(id, lastTemp, 0.0f, epochTime.movePointLeft(3));
                 String message = TermostatMessageObject.validateJson(temp);
 
                 // Envia el mensaje

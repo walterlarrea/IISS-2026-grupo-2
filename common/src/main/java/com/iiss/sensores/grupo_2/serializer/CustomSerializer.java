@@ -45,7 +45,7 @@ public class CustomSerializer {
                 SerializerProvider serializers
         ) throws IOException {
             if (value != null) {
-                String formattedValue = value.setScale(0, RoundingMode.UNNECESSARY)
+                String formattedValue = value.setScale(0, RoundingMode.HALF_DOWN)
                         .toPlainString();
 
                 gen.writeNumber(formattedValue);
