@@ -72,6 +72,9 @@ public class ControllerTempAuto implements TemperatureEngineService {
 
     @Override
     public synchronized EstadoControl getTempControllerStatus() {
+        if (!active) {
+            return new EstadoControl(EstadoControl.Estado.DETENIDO, null, null, null);
+        }
         // TODO: Review this logic, make sure it works and it is easily understandable
         long tiempoRealNanos = Duration.between(startedAt, Instant.now()).toNanos();
         Instant fechaHoraActual = baseDateTime.plusNanos((long) (tiempoRealNanos * timeFactor));

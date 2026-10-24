@@ -5,7 +5,7 @@ import java.time.Instant;
 public record EstadoControl(
         Estado estado,
         Instant fechaHora,
-        int factorTiempo,
+        Integer factorTiempo,
         Instant iniciadoEn
 ) {
     public enum Estado {
