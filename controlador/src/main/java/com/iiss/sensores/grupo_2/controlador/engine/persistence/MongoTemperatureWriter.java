@@ -1,5 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine.persistence;
 
+import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -24,8 +25,13 @@ public class MongoTemperatureWriter {
         this.collection = collection;
     }
 
-    public void saveTemperature(String message) {
-        Document document = Document.parse(message);
+    public void saveTemperature(TemperatureMessage message) {
+        Document document = new Document()
+                .append("id", message.id())
+                .append("idTermostat", message.idTermostat())
+                .append("tC", message.tC())
+                .append("tF", message.tF())
+                .append("ts", message.ts());
         collection.insertOne(document);
     }
 }

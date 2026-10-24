@@ -3,7 +3,7 @@ package com.iiss.sensores.grupo_2.controlador.api.controller;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventario;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventarioService;
 import com.iiss.sensores.grupo_2.controlador.api.service.SitioNoConfiguradoException;
-import com.iiss.sensores.grupo_2.controlador.engine.service.EstadoSitioService;
+import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
 import com.iiss.sensores.grupo_2.controlador.engine.service.InventarioMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +15,12 @@ import java.util.Map;
 public class SiteController {
     private final InventarioService inventarioService;
     private final InventarioMapper inventarioMapper;
-    private final EstadoSitioService estadoSitioService;
+    private final SiteStateService siteStateService;
 
-    public SiteController(InventarioService inventarioService, InventarioMapper inventarioMapper, EstadoSitioService estadoSitioService) {
+    public SiteController(InventarioService inventarioService, InventarioMapper inventarioMapper, SiteStateService siteStateService) {
         this.inventarioService = inventarioService;
         this.inventarioMapper = inventarioMapper;
-        this.estadoSitioService = estadoSitioService;
+        this.siteStateService = siteStateService;
     }
 
     @GetMapping("/sitio")
@@ -35,7 +35,7 @@ public class SiteController {
         //validar que el inventario pueda representarse en el core antes de persistirlo.
         inventarioMapper.convertir(inventario);
         Inventario aplicado = inventarioService.reemplazar(inventario);
-        estadoSitioService.cargarEstado(inventarioMapper.convertir(aplicado));
+        siteStateService.loadSiteState(inventarioMapper.convertir(aplicado));
         return ResponseEntity.ok(Map.of("sitio", aplicado.sitio().id(), "habitaciones", aplicado.habitaciones().size()));
     }
 }

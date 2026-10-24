@@ -20,7 +20,7 @@ public class MqttSubscriptionService {
 
     private final InventarioService inventarioService;
     private final MqttSubscriber mqttSubscriber;
-    private String fallbackTopic;
+    private final String fallbackTopic;
 
     public MqttSubscriptionService(
             @Value("${MQTT_TOPIC:sensores/temperatura}") String fallbackTopic,

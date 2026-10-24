@@ -14,19 +14,19 @@ public class EstadoSitioInitializer {
     private static final Logger logger = LoggerFactory.getLogger(EstadoSitioInitializer.class);
     private final InventarioService inventarioService;
     private final InventarioMapper inventarioMapper;
-    private final EstadoSitioService estadoSitioService;
+    private final SiteStateService siteStateService;
 
-    public EstadoSitioInitializer(InventarioService inventarioService, InventarioMapper inventarioMapper, EstadoSitioService estadoSitioService) {
+    public EstadoSitioInitializer(InventarioService inventarioService, InventarioMapper inventarioMapper, SiteStateService siteStateService) {
         this.inventarioService = inventarioService;
         this.inventarioMapper = inventarioMapper;
-        this.estadoSitioService = estadoSitioService;
+        this.siteStateService = siteStateService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void inicializarEstado() {
         inventarioService.obtenerActivo().ifPresentOrElse(
                 inventario -> {
-                    estadoSitioService.cargarEstado(inventarioMapper.convertir(inventario));
+                    siteStateService.loadSiteState(inventarioMapper.convertir(inventario));
                     logger.info("Estado del sitio inicializado");
                 },
                 () -> logger.warn("No hay un inventario activo. El controlador no podrá operar hasta configurar el sitio.")

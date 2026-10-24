@@ -1,7 +1,7 @@
 package com.iiss.sensores.grupo_2.pub;
 
-import com.iiss.sensores.grupo_2.dto.MessageObject.Temperatura;
-import com.iiss.sensores.grupo_2.dto.MessageObject;
+import com.iiss.sensores.grupo_2.dto.TermostatMessageObject.Temperatura;
+import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -74,7 +74,7 @@ public class EventGenerator {
 
                 // Crea el JSON
                 Temperatura temp = new Temperatura(id, lastTemp, 0.0f, epochTime);
-                String message = MessageObject.validateJson(temp);
+                String message = TermostatMessageObject.validateJson(temp);
 
                 // Envia el mensaje
                 publisher.publish(message);

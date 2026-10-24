@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class CustomSerializer {
     public static class ThreeDecimalSerializer extends JsonSerializer<Double> {
@@ -27,6 +29,26 @@ public class CustomSerializer {
             if (value != null) {
                 String formattedValue = "%.2f".formatted(value);
                 gen.writeNumber(formattedValue.replace(',', '.'));
+            } else {
+                gen.writeNull();
+            }
+        }
+    }
+
+    public static class ThreeDecimalBigDecimalSerializer
+            extends JsonSerializer<BigDecimal> {
+
+        @Override
+        public void serialize(
+                BigDecimal value,
+                JsonGenerator gen,
+                SerializerProvider serializers
+        ) throws IOException {
+            if (value != null) {
+                String formattedValue = value.setScale(0, RoundingMode.UNNECESSARY)
+                        .toPlainString();
+
+                gen.writeNumber(formattedValue);
             } else {
                 gen.writeNull();
             }

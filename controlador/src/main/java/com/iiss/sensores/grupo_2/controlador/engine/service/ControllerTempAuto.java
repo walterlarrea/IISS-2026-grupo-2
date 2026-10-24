@@ -1,5 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine.service;
 
+import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
@@ -27,13 +28,13 @@ public class ControllerTempAuto implements TemperatureEngineService {
     private double factorTiempo;
     private final SwitchClient switchClient;
     private final ICore core;
-    private final EstadoSitioService estadoSitioService; //mantiene los datos actuales del sitio
+    private final SiteStateService siteStateService; //mantiene los datos actuales del sitio
 
-    public ControllerTempAuto(SwitchClient switchClient, ICore core, EstadoSitioService estadoSitioService) {
+    public ControllerTempAuto(SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
         //conecta el estado con el core, ejecuta los comandos calculados y controla el ciclo de ejecución.
         this.switchClient = switchClient;
         this.core = core;
-        this.estadoSitioService = estadoSitioService;
+        this.siteStateService = siteStateService;
     }
 
     @Override
@@ -92,9 +93,19 @@ public class ControllerTempAuto implements TemperatureEngineService {
         }
 
         try {
-            DataSitio dataSitio = estadoSitioService.obtenerEstado();
+            DataSitio dataSitio = siteStateService.getSiteState();
             EstadoControl estado = obtenerEstado();
+
+            // horaSimulada = horaEventoTemperatura * factor
+            // delta = horaEventoTemperatura - this.iniciadoEn
+            // horaSimulada = horaEventoTemperatura - delta + ( delta * factor )
+            // horaSimulada = horaEventoTemperatura + ( delta * factor ) - delta
+            // 5:00
+            // horaSimulada = 5:10 - 0:10 + ( 0:10 * 2 )
+
+            // hora punta del usuario = 17:00-23:00 -> 14:00-20:00
             ZonedDateTime fechaSimulada = estado.fechaHora().atZone(ZoneId.systemDefault());
+
             RespuestaCore respuesta = core.calcularComandos(fechaSimulada, dataSitio);
 
             if (respuesta == null || respuesta.comandos() == null) {
@@ -131,7 +142,7 @@ public class ControllerTempAuto implements TemperatureEngineService {
                     }
 
                     //solo se actualiza el estado local si la operación remota terminó sin lanzar una excepción.
-                    estadoSitioService.actualizarEstadoSwitch(comandoSwitch.idSwitch(), comandoSwitch.estado());
+                    siteStateService.updateSwitchState(comandoSwitch.idSwitch(), comandoSwitch.estado());
                     logger.info("Switch {} actualizado a {}", comandoSwitch.idSwitch(), comandoSwitch.estado());
 
                 } catch (Exception e) {
@@ -144,23 +155,23 @@ public class ControllerTempAuto implements TemperatureEngineService {
     }
 
     //actualiza una temperatura y ejecuta un nuevo ciclo de control.
-    public synchronized void procesarTemperatura(String topic, double temperatura) {
+    public synchronized void processTemperature(TemperatureMessage temperatureMsg) {
         if (!activo) {
-            logger.debug("Controlador detenido, ignora la temperatura del topic {}", topic);
+            logger.debug("Controller stopped, ignores temperature sent by termostat with ID {}", temperatureMsg.idTermostat());
             return;
         }
 
-        if (topic == null || topic.isBlank() || !Double.isFinite(temperatura)) {
-            logger.warn("Medición inválida. Topic: {}, temperatura: {}", topic, temperatura);
+        if (temperatureMsg.idTermostat() == null || temperatureMsg.idTermostat().isBlank() || !Double.isFinite(temperatureMsg.tC())) {
+            logger.warn("Invalid measurement data. Termostat ID: {}, temperature Cº: {}", temperatureMsg.idTermostat(), temperatureMsg.tC());
             return;
         }
 
         try {
-            estadoSitioService.actualizarTemperatura(topic, temperatura);
+            siteStateService.updateRoomTemperature(temperatureMsg.idTermostat(), temperatureMsg.tC());
             controlar();
 
         } catch (Exception e) {
-            logger.error("Error al procesar la temperatura del topic {}", topic, e);
+            logger.error("Error processing temperature change for termostat ID {}", temperatureMsg.idTermostat(), e);
         }
     }
 

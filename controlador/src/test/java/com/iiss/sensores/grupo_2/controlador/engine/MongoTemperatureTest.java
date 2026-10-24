@@ -1,11 +1,14 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -17,19 +20,16 @@ public class MongoTemperatureTest {
     void saveTemperatureMongoTest() {
         MongoCollection<Document> collectionMock = mock(MongoCollection.class);
         MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);
-        String json = """
-                {"id": 1, "tC": 24.5, "tF": 76.1, "ts": 1788006901}
-                """;
-        writer.saveTemperature(json);
-        verify(collectionMock, times(1)).insertOne(any(Document.class));
-    }
 
-    @Test
-    void invalidJsonTest() {
-        MongoCollection<Document> collectionMock = mock(MongoCollection.class);
-        MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);
-        String jsonInvalido = "{Invalid json}";
-        assertThrows(Exception.class, () -> writer.saveTemperature(jsonInvalido));
-        verify(collectionMock, never()).insertOne(any(Document.class));
+        TemperatureMessage message = new TemperatureMessage(
+                "1",
+                "ht-home1",
+                24.5,
+                76.1,
+                Instant.ofEpochMilli(1788006901000L)
+        );
+        writer.saveTemperature(message);
+
+        verify(collectionMock, times(1)).insertOne(any(Document.class));
     }
 }
