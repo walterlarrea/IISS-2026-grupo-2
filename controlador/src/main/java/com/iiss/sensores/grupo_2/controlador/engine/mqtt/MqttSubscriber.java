@@ -3,7 +3,8 @@ package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
-import com.iiss.sensores.grupo_2.dto.MessageObject;
+import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
+import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -11,7 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,7 +39,7 @@ public class MqttSubscriber {
         this.objMap = objMap;
     }
 
-    public void processMessage(String payload) {
+    public void processMessage(TemperatureMessage payload) {
         mongoWriter.saveTemperature(payload);
     }
 
@@ -91,25 +94,36 @@ public class MqttSubscriber {
                     logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
                     try {
-                        MessageObject.Temperatura temp = objMap.readValue(payload, MessageObject.Temperatura.class);
-                        String idTermostato = temp.id();
+                        TermostatMessageObject.Temperatura parsedTermostatMessage = objMap.readValue(payload, TermostatMessageObject.Temperatura.class);
 
-                        logger.info("Temperatura recibida: {} °C. Termostato: {}", temp.tC(), idTermostato);
+                        // Get the first section of the topic, eg: ht-room1/status/temperature:0
+                        // Being "ht-room1" the termostat ID
+                        String termostatId = topic.split("/")[0];
+
+                        TemperatureMessage tempMessage = new TemperatureMessage(
+                                parsedTermostatMessage.id(),
+                                termostatId,
+                                parsedTermostatMessage.tC(),
+                                parsedTermostatMessage.tF(),
+                                Instant.ofEpochMilli(parsedTermostatMessage.ts().movePointRight(3).longValueExact())
+                        );
+
+                        logger.info("Temperatura recibida: {} °C. Termostato: {}", tempMessage.tC(), termostatId);
 
                         try {
-                            processMessage(payload);
+                            processMessage(tempMessage);
                             logger.info("Medición guardada en MongoDB");
                         } catch (Exception e) {
                             logger.error("Error al guardar la medición en MongoDB", e);
                         }
 
                         try {
-                            logger.info("Procesando nueva medición del termostato {}", idTermostato);
+                            logger.info("Procesando nueva medición del termostato {}", termostatId);
 
-                            controllerTempAuto.procesarTemperatura(topic, temp.tC());
+                            controllerTempAuto.processTemperature(tempMessage);
 
                         } catch (Exception e) {
-                            logger.error("Error al procesar la temperatura del termostato {}", idTermostato, e);
+                            logger.error("Error al procesar la temperatura del termostato {}", termostatId, e);
                         }
 
                     } catch (Exception e) {

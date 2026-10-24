@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import com.iiss.sensores.grupo_2.dto.MessageObject;
+import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,9 +27,9 @@ class PublisherUnitTest {
 
     @Test
     void validateJsonSerializesTemperaturaToJson() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, new BigDecimal("1789351400.000"));
 
-        String json = MessageObject.validateJson(temperatura);
+        String json = TermostatMessageObject.validateJson(temperatura);
         JsonNode root = mapper.readTree(json);
 
         assertEquals("ht-sim-room7", root.get("id").asText());
@@ -39,9 +40,9 @@ class PublisherUnitTest {
 
     @Test
     void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, new BigDecimal("1789351400.000"));
 
-        String json = MessageObject.validateJson(temperatura);
+        String json = TermostatMessageObject.validateJson(temperatura);
 
         assertTrue(json.contains("\"tC\":12.35"));
         assertTrue(json.contains("\"tF\":54.32"));
@@ -50,9 +51,9 @@ class PublisherUnitTest {
 
     @Test
     void epochTimeIsSerializedAsAnInteger() throws Exception {
-        MessageObject.Temperatura temperatura = new MessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, 1789351400L);
+        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, new BigDecimal("1789351400.000"));
 
-        String json = MessageObject.validateJson(temperatura);
+        String json = TermostatMessageObject.validateJson(temperatura);
 
         assertTrue(json.contains("\"ts\":1789351400"));
         assertFalse(json.contains("E"));

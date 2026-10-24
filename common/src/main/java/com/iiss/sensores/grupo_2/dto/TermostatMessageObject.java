@@ -3,12 +3,15 @@ package com.iiss.sensores.grupo_2.dto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.iiss.sensores.grupo_2.serializer.CustomSerializer;
 import com.iiss.sensores.grupo_2.serializer.CustomSerializer.TwoDecimalSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageObject {
-    private static final Logger logger = LoggerFactory.getLogger(MessageObject.class);
+import java.math.BigDecimal;
+
+public class TermostatMessageObject {
+    private static final Logger logger = LoggerFactory.getLogger(TermostatMessageObject.class);
 
     public record Temperatura(
             String id,
@@ -16,7 +19,8 @@ public class MessageObject {
             double tC,
             @JsonSerialize(using = TwoDecimalSerializer.class)
             double tF,
-            long ts
+            @JsonSerialize(using = CustomSerializer.ThreeDecimalBigDecimalSerializer.class)
+            BigDecimal ts
     ){}
 
     public static <Type> String validateJson(Type object) throws Exception {

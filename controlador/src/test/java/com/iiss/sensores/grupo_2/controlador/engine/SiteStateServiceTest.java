@@ -2,7 +2,7 @@ package com.iiss.sensores.grupo_2.controlador.engine;
 
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchEstadoResponse;
-import com.iiss.sensores.grupo_2.controlador.engine.service.EstadoSitioService;
+import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
@@ -20,15 +20,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
-class EstadoSitioServiceTest {
-    private EstadoSitioService servicio;
+class SiteStateServiceTest {
+    private SiteStateService servicio;
     private SwitchClient switchClient;
 
     @BeforeEach
     void setUp() {
         switchClient = mock(SwitchClient.class);
         when(switchClient.consultarEstado(any())).thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
-        servicio = new EstadoSitioService(switchClient);
+        servicio = new SiteStateService(switchClient);
         Sitio sitio = new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null));
 
         Habitacion habitacion = new Habitacion(
@@ -37,40 +37,40 @@ class EstadoSitioServiceTest {
                 21.0,
                 1.5,
                 "termo-1",
-                "casa/living/temperatura",
+                "termo-1/living/temperatura",
                 "switch-1",
                 "http://localhost/switches/1",
                 19.0,
                 EstadoSwitch.APAGADO
         );
 
-        servicio.cargarEstado(new DataSitio(sitio, List.of(habitacion)));
+        servicio.loadSiteState(new DataSitio(sitio, List.of(habitacion)));
     }
 
     @Test
     void actualizarTemperaturaConservaElRestoDelEstado() {
-        DataSitio actualizado = servicio.actualizarTemperatura("casa/living/temperatura", 18.5);
+        DataSitio actualizado = servicio.updateRoomTemperature("termo-1", 18.5);
         Habitacion habitacion = actualizado.habitaciones().get(0);
 
-        assertEquals(18.5, habitacion.temperaturaActual());
-        assertEquals(21.0, habitacion.temperaturaEsperada());
+        assertEquals(18.5, habitacion.currentTemperatureC());
+        assertEquals(21.0, habitacion.expectedTemeprature());
         assertEquals("switch-1", habitacion.idSwitch());
-        assertEquals(EstadoSwitch.APAGADO, habitacion.estadoActualSwitch());
+        assertEquals(EstadoSwitch.APAGADO, habitacion.currentSwitchState());
     }
 
     @Test
     void actualizarTemperaturaDeTermostatoInexistenteFalla() {
-        assertThrows(IllegalArgumentException.class, () -> servicio.actualizarTemperatura("inexistente", 18.5));
+        assertThrows(IllegalArgumentException.class, () -> servicio.updateRoomTemperature("inexistente", 18.5));
     }
 
     @Test
     void actualizarEstadoSwitchConservaLaTemperatura() {
-        servicio.obtenerEstado();
-        servicio.actualizarEstadoSwitch("switch-1", EstadoSwitch.ENCENDIDO);
-        Habitacion habitacion = servicio.obtenerEstado().habitaciones().get(0);
+        servicio.getSiteState();
+        servicio.updateSwitchState("switch-1", EstadoSwitch.ENCENDIDO);
+        Habitacion habitacion = servicio.getSiteState().habitaciones().get(0);
 
-        assertEquals(EstadoSwitch.ENCENDIDO, habitacion.estadoActualSwitch());
-        assertEquals(19.0, habitacion.temperaturaActual());
+        assertEquals(EstadoSwitch.ENCENDIDO, habitacion.currentSwitchState());
+        assertEquals(19.0, habitacion.currentTemperatureC());
     }
 
     @Test
@@ -110,13 +110,13 @@ class EstadoSitioServiceTest {
                 new Sitio("sitio-2", "Casa", 5.0, new Tarifa(null)),
                 List.of(primeraHabitacion, segundaHabitacion)
         );
-        servicio.cargarEstado(nuevoEstado);
+        servicio.loadSiteState(nuevoEstado);
 
         verify(switchClient, never()).consultarEstado(any());
 
-        List<Habitacion> habitaciones = servicio.obtenerEstado().habitaciones();
-        assertEquals(EstadoSwitch.ENCENDIDO, habitaciones.get(0).estadoActualSwitch());
-        assertEquals(EstadoSwitch.APAGADO, habitaciones.get(1).estadoActualSwitch());
+        List<Habitacion> habitaciones = servicio.getSiteState().habitaciones();
+        assertEquals(EstadoSwitch.ENCENDIDO, habitaciones.get(0).currentSwitchState());
+        assertEquals(EstadoSwitch.APAGADO, habitaciones.get(1).currentSwitchState());
         verify(switchClient, times(2)).consultarEstado(any());
     }
 
@@ -124,8 +124,8 @@ class EstadoSitioServiceTest {
     void consultarEstadoDeSitioLimpiaLaMarcaDeEstadoSucio() {
         clearInvocations(switchClient);
 
-        servicio.obtenerEstado();
-        servicio.obtenerEstado();
+        servicio.getSiteState();
+        servicio.getSiteState();
 
         verify(switchClient, times(1)).consultarEstado(any());
     }
