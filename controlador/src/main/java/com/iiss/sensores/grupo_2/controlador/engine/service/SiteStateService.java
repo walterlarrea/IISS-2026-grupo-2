@@ -1,5 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine.service;
 
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
@@ -8,95 +9,117 @@ import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class SiteStateService {
     //conserva el estado actual en memoria, actualiza las temperaturas y registra los estados de los switches
     private DataSitio dataSitio;
     private final SwitchClient switchClient;
-    private boolean estadoSwitchSucio;
+    private final TemperatureReadingRepository tempReadings;
+    private boolean stateMarkedDirty;
 
-    public SiteStateService(SwitchClient switchClient) {
+    public SiteStateService(SwitchClient switchClient, TemperatureReadingRepository tempReadings) {
         this.switchClient = switchClient;
+        this.tempReadings = tempReadings;
     }
 
     //inicializa o reemplaza el estado del sitio, ejecutar: estadoSitioService.cargarEstado(dataSitioInicial);
     public synchronized void loadSiteState(DataSitio nuevoEstado) {
         if (nuevoEstado == null || nuevoEstado.sitio() == null || nuevoEstado.habitaciones() == null) {
-            throw new IllegalArgumentException("El estado del sitio no puede ser nulo");
+            throw new IllegalArgumentException("The Site state cannot be empty nor null");
         }
         this.dataSitio = new DataSitio(nuevoEstado.sitio(), List.copyOf(nuevoEstado.habitaciones()));
-        this.estadoSwitchSucio = true;
+        this.stateMarkedDirty = true;
     }
 
     private void checkInitializedSiteState() {
         if (dataSitio == null) {
-            throw new IllegalStateException("El estado del sitio todavía no fue inicializado");
+            throw new IllegalStateException("The Site state is not yet been initialized");
         }
     }
 
-    private void replaceSiteRooms(List<Habitacion> habitaciones) {
-        dataSitio = new DataSitio(dataSitio.sitio(), List.copyOf(habitaciones));
+    private void replaceSiteRooms(List<Habitacion> rooms) {
+        dataSitio = new DataSitio(dataSitio.sitio(), List.copyOf(rooms));
     }
 
     //devuelve el estado actual del sitio
     public synchronized DataSitio getSiteState() {
         if (dataSitio == null) {
-            throw new IllegalStateException("El estado del sitio todavía no fue inicializado");
+            throw new IllegalStateException("The Site state is not yet been initialized");
         }
-        if (estadoSwitchSucio) {
-            List<Habitacion> habitacionesConEstado = dataSitio.habitaciones().stream()
-                    .map(h -> new Habitacion(
-                            h.id(),
-                            h.name(),
-                            h.expectedTemeprature(),
-                            h.powerKW(),
-                            h.idTermostat(),
-                            h.topicTermostat(),
-                            h.idSwitch(),
-                            h.urlSwitch(),
-                            h.currentTemperatureC(),
-                            switchClient.consultarEstado(h).estado()
-                    ))
+        if (stateMarkedDirty) {
+            // All thermostat IDs
+            List<String> thermostatIds = dataSitio.habitaciones().stream().map(Habitacion::idThermostat).toList();
+            // Get latest temp reading for each thermostat ID
+            List<TemperatureMessage> latestReadings = tempReadings.getLastTemperatureMeasurements(thermostatIds);
+            List<Habitacion> enrichedRooms = dataSitio.habitaciones().stream()
+                    .map(room -> {
+                        Double currentTemp = latestReadings
+                                .stream()
+                                .filter(reading -> reading.idThermostat().equals(room.idThermostat()))
+                                .map(TemperatureMessage::tC)
+                                .findFirst()
+                                .orElse(null);
+
+                        // Room is excluded from the state response if not even one temperature reading was found
+                        if (currentTemp == null)
+                            return null;
+
+                        // TODO: Consider handling stale (old) temperature readings
+
+                        return new Habitacion(
+                                room.id(),
+                                room.name(),
+                                room.expectedTemeprature(),
+                                room.powerKW(),
+                                room.idThermostat(),
+                                room.topicThermostat(),
+                                room.idSwitch(),
+                                room.urlSwitch(),
+                                currentTemp,
+                                switchClient.consultarEstado(room).estado()
+                        );
+                    })
+                    .filter(Objects::nonNull)
                     .toList();
-            dataSitio = new DataSitio(dataSitio.sitio(), List.copyOf(habitacionesConEstado));
-            estadoSwitchSucio = false;
+            dataSitio = new DataSitio(dataSitio.sitio(), List.copyOf(enrichedRooms));
+            stateMarkedDirty = false;
         }
         return dataSitio;
     }
 
     //actualiza la temperatura recibida de un termostato
-    public synchronized DataSitio updateRoomTemperature(String idTermostat, double temperature) {
+    public synchronized DataSitio updateRoomTemperature(String idThermostat, double temperature) {
         checkInitializedSiteState();
         List<Habitacion> habitaciones = new ArrayList<>(dataSitio.habitaciones());
-        boolean encontrada = false;
+        boolean roomFound = false;
 
-        if (idTermostat == null || idTermostat.isBlank() || !Double.isFinite(temperature)) {
-            throw new IllegalArgumentException("El topic y la temperatura deben ser válidos");
+        if (idThermostat == null || idThermostat.isBlank() || !Double.isFinite(temperature)) {
+            throw new IllegalArgumentException("Invalid thermostat ID or temperature");
         }
 
         for (int i = 0; i < habitaciones.size(); i++) {
             Habitacion h = habitaciones.get(i);
-            if (h.idTermostat().equals(idTermostat)) {
+            if (h.idThermostat().equals(idThermostat)) {
                 habitaciones.set(i, new Habitacion(
                         h.id(),
                         h.name(),
                         h.expectedTemeprature(),
                         h.powerKW(),
-                        h.idTermostat(),
-                        h.topicTermostat(),
+                        h.idThermostat(),
+                        h.topicThermostat(),
                         h.idSwitch(),
                         h.urlSwitch(),
                         temperature,
                         h.currentSwitchState()
                 ));
-                encontrada = true;
-                break;
+                roomFound = true;
             }
         }
 
-        if (!encontrada) {
-            throw new IllegalArgumentException("No existe una habitación asociada al termostato " + idTermostat);
+        if (!roomFound) {
+            throw new IllegalArgumentException("No Room associated with the thermostat: " + idThermostat);
         }
         replaceSiteRooms(habitaciones);
         return dataSitio;
@@ -105,37 +128,37 @@ public class SiteStateService {
     //actualiza el estado conocido de un switch
     public synchronized DataSitio updateSwitchState(String idSwitch, EstadoSwitch newSwitchState) {
         checkInitializedSiteState();
-        List<Habitacion> habitaciones = new ArrayList<>(dataSitio.habitaciones());
-        boolean encontrado = false;
+        List<Habitacion> rooms = new ArrayList<>(dataSitio.habitaciones());
+        boolean roomFound = false;
 
         if (idSwitch == null || idSwitch.isBlank() || newSwitchState == null) {
-            throw new IllegalArgumentException("El switch y su nuevo estado deben ser válidos");
+            throw new IllegalArgumentException("Invalid switch ID or new switch state");
         }
 
-        for (int i = 0; i < habitaciones.size(); i++) {
-            Habitacion h = habitaciones.get(i);
+        for (int i = 0; i < rooms.size(); i++) {
+            Habitacion h = rooms.get(i);
             if (h.idSwitch().equals(idSwitch)) {
-                habitaciones.set(i, new Habitacion(
+                rooms.set(i, new Habitacion(
                         h.id(),
                         h.name(),
                         h.expectedTemeprature(),
                         h.powerKW(),
-                        h.idTermostat(),
-                        h.topicTermostat(),
+                        h.idThermostat(),
+                        h.topicThermostat(),
                         h.idSwitch(),
                         h.urlSwitch(),
                         h.currentTemperatureC(),
                         newSwitchState
                 ));
-                encontrado = true;
+                roomFound = true;
                 break;
             }
         }
 
-        if (!encontrado) {
-            throw new IllegalArgumentException("No existe una habitación asociada al switch " + idSwitch);
+        if (!roomFound) {
+            throw new IllegalArgumentException("No Room associated with the switch:  " + idSwitch);
         }
-        replaceSiteRooms(habitaciones);
+        replaceSiteRooms(rooms);
         return dataSitio;
     }
 }

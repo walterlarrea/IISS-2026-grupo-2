@@ -8,7 +8,7 @@
 
 **ES** un componente de una solución de domótica para la gestión inteligente de la calefacción
 
-**QUE** permite gestionar sensores y switches para controlar la temperatura de las habitaciones y optimizar el funcionamiento del sistema de calefacción.
+**QUE** permite gestionar sensores y switches para controlar la temperature de las habitaciones y optimizar el funcionamiento del sistema de calefacción.
 
 **A DIFERENCIA DE** otras soluciones de domótica que automatizan acciones sin considerar el costo del consumo eléctrico
 

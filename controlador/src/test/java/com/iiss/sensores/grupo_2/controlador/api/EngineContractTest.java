@@ -103,10 +103,10 @@ class EngineContractTest {
     @Test
     void comandosSincronizanYExponenEstadoDelControl() throws Exception {
         Instant fechaHora = Instant.parse("2026-10-01T09:15:03.120Z");
-        when(engineService.obtenerEstado()).thenReturn(new EstadoControl(
+        when(engineService.getTempControllerStatus()).thenReturn(new EstadoControl(
                 EstadoControl.Estado.EN_EJECUCION,
                 fechaHora,
-                10.0,
+                10,
                 Instant.parse("2026-10-01T09:15:00Z")
         ));
 
@@ -118,9 +118,9 @@ class EngineContractTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("EN_EJECUCION"))
-                .andExpect(jsonPath("$.factorTiempo").value(10.0));
+                .andExpect(jsonPath("$.factorTiempo").value(10));
 
-        verify(engineService).iniciar(fechaHora, 10.0);
+        verify(engineService).start(fechaHora, 10);
 
         mockMvc.perform(post("/control/comandos")
                         .header("X-API-KEY", "test-api-key")

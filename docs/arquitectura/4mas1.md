@@ -1,6 +1,6 @@
 # Arquitectura 4+1 — EcoWarm Iteración 4
 
-**Proyecto:** EcoWarm — Sistema de control de temperatura domótico  
+**Proyecto:** EcoWarm — Sistema de control de temperature domótico  
 **Grupo:** Grupo 2  
 **Iteración:** 4
 
@@ -37,7 +37,7 @@ ICore.calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio): RespuestaC
 
 **Reglas implementadas en `Core`:**
 1. Si el horario es **punta**, apaga todos los switches activos.
-2. Apaga las habitaciones que ya alcanzaron su temperatura objetivo (liberando potencia).
+2. Apaga las habitaciones que ya alcanzaron su temperature objetivo (liberando potencia).
 3. Enciende las habitaciones con mayor déficit primero, respetando el límite de potencia contratada del sitio.
 
 ### Engine (`com.iiss.sensores.grupo_2.controlador`)
@@ -49,24 +49,24 @@ Capa de infraestructura Spring Boot que conecta el Core con el mundo exterior. S
 | API REST | `.api` | Exposición HTTP: CRUD de habitaciones, inventario del sitio, control del engine |
 | MQTT | `.engine.mqtt` | Suscripción al broker y despacho a `ControllerTempAuto` |
 | Switch Client | `.engine.client` | Envío de comandos ON/OFF a los switches via HTTP |
-| Writer | `.engine.writer` | Persistencia de mediciones de temperatura en MongoDB |
+| Writer | `.engine.writer` | Persistencia de mediciones de temperature en MongoDB |
 | Integration | `.integration` | Registro en el simulador y configuración automática del broker MQTT |
 | Shared | `.shared` | Interfaces transversales (`RoomProvider`, `TemperatureEngineService`) |
 
-El `ControllerTempAuto` implementa `TemperatureEngineService` y actúa como puente: recibe la temperatura por termostato desde el `MqttSubscriber`, consulta la habitación asociada vía `RoomProvider` y decide encender o apagar el switch.
+El `ControllerTempAuto` implementa `TemperatureEngineService` y actúa como puente: recibe la temperature por termostato desde el `MqttSubscriber`, consulta la habitación asociada vía `RoomProvider` y decide encender o apagar el switch.
 
-> **Nota sobre el Core en la iteración actual:** `ControllerTempAuto.controlarHab()` aplica directamente la lógica de comparación temperatura actual vs. esperada. La integración completa con `ICore.calcularComandos()` (que evalúa potencia contratada, tarifa punta y priorización por déficit) queda como tarea pendiente para conectar ambas capas.
+> **Nota sobre el Core en la iteración actual:** `ControllerTempAuto.controlarHab()` aplica directamente la lógica de comparación temperature actual vs. esperada. La integración completa con `ICore.calcularComandos()` (que evalúa potencia contratada, tarifa punta y priorización por déficit) queda como tarea pendiente para conectar ambas capas.
 
 ---
 
 ## 2. Vista de Procesos
 
-Flujo principal al recibir un evento de temperatura por MQTT:
+Flujo principal al recibir un evento de temperature por MQTT:
 
 ```
 [Simulador / Sensor]       [Engine - MqttSubscriber]     [Core]        [Switch REST]
         │                           │                        │                │
-        │── pub. temperatura ──────>│                        │                │
+        │── pub. temperature ──────>│                        │                │
         │                           │── saveTemperature() ──────> MongoDB     │
         │                           │                        │                │
         │                           │── controlarHab(tC, id) │                │
@@ -168,11 +168,11 @@ En modo de integración con el simulador de la cátedra, `mosquitto` y `switches
 
 ## 5. Escenario (+1)
 
-**Control automático de temperatura por habitación**
+**Control automático de temperature por habitación**
 
-1. El simulador publica una lectura de temperatura vía MQTT (ej. `{"id": "ht-sim-room1", "tC": 18.5}`).
+1. El simulador publica una lectura de temperature vía MQTT (ej. `{"id": "ht-sim-room1", "tC": 18.5}`).
 2. `MqttSubscriber` recibe el mensaje, persiste la medición en MongoDB y llama a `ControllerTempAuto.controlarHab()`.
-3. El engine consulta qué habitación corresponde al termostato y compara la temperatura recibida con la esperada.
+3. El engine consulta qué habitación corresponde al termostato y compara la temperature recibida con la esperada.
 4. Si `tC < tEsperada`: envía `POST /ON` al switch de esa habitación.  
    Si `tC ≥ tEsperada`: envía `POST /OFF`.
 5. El switch (del simulador o del stub) actualiza su estado.

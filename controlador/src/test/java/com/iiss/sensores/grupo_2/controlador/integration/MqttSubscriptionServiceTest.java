@@ -28,7 +28,7 @@ class MqttSubscriptionServiceTest {
 
         service.conectar("tcp://broker:1883", "subscriber");
 
-        verify(mqttSubscriber).conectar(
+        verify(mqttSubscriber).connect(
                 "tcp://broker:1883",
                 "subscriber",
                 Set.of("sensors/room1", "sensors/room2")
@@ -51,7 +51,7 @@ class MqttSubscriptionServiceTest {
                 habitacion("room3", "sensors/room3")
         )));
 
-        verify(mqttSubscriber).actualizarSuscripciones(
+        verify(mqttSubscriber).updateSubscriptions(
                 Set.of("sensors/room2", "sensors/room3")
         );
     }

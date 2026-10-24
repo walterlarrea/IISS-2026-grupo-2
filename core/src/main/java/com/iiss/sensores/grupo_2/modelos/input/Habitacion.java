@@ -7,8 +7,8 @@ public record Habitacion(
         String name,
         double expectedTemeprature,
         double powerKW,
-        String idTermostat,
-        String topicTermostat,
+        String idThermostat,
+        String topicThermostat,
         String idSwitch,
         String urlSwitch,
 

@@ -4,6 +4,6 @@
 
  2) Como técnico de mantenimiento, quiero simular el encendido simultáneo de diferentes zonas, para determinar cuántas pueden funcionar sin superar la potencia disponible.
 
- 3) Como usuario con horarios variables, quiero indicar la hora estimada de llegada a mi casa y la temperatura deseada, para que EcoWarm prepare las habitaciones antes de mi llegada.
+ 3) Como usuario con horarios variables, quiero indicar la hora estimada de llegada a mi casa y la temperature deseada, para que EcoWarm prepare las habitaciones antes de mi llegada.
 
 

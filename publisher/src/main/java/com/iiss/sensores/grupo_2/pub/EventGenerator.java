@@ -1,7 +1,7 @@
 package com.iiss.sensores.grupo_2.pub;
 
-import com.iiss.sensores.grupo_2.dto.TermostatMessageObject.Temperatura;
-import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
+import com.iiss.sensores.grupo_2.dto.ThermostatMessageObject.Temperature;
+import com.iiss.sensores.grupo_2.dto.ThermostatMessageObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class EventGenerator {
     private static final Logger logger = LoggerFactory.getLogger(EventGenerator.class);
 
-    // Temperatura inicial de todos los publicadores
+    // Temperature inicial de todos los publicadores
     private final float startingTemp = 24.0f;
 
     // Diferencia maxima (- y +) del cambio de temperatura entre eventos
@@ -74,8 +74,8 @@ public class EventGenerator {
                 BigDecimal epochTime = new BigDecimal(java.time.Instant.now().toEpochMilli());
 
                 // Crea el JSON
-                Temperatura temp = new Temperatura(id, lastTemp, 0.0f, epochTime.movePointLeft(3));
-                String message = TermostatMessageObject.validateJson(temp);
+                Temperature temp = new Temperature(id, lastTemp, 0.0f, epochTime.movePointLeft(3));
+                String message = ThermostatMessageObject.validateJson(temp);
 
                 // Envia el mensaje
                 publisher.publish(message);

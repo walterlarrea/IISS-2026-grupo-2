@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 
-public class TermostatMessageObject {
-    private static final Logger logger = LoggerFactory.getLogger(TermostatMessageObject.class);
+public class ThermostatMessageObject {
+    private static final Logger logger = LoggerFactory.getLogger(ThermostatMessageObject.class);
 
-    public record Temperatura(
+    public record Temperature(
             String id,
             @JsonSerialize(using = TwoDecimalSerializer.class)
             double tC,

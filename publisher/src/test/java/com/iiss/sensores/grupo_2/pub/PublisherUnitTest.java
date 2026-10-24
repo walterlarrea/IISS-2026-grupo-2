@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
+import com.iiss.sensores.grupo_2.dto.ThermostatMessageObject;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 
@@ -27,9 +27,9 @@ class PublisherUnitTest {
 
     @Test
     void validateJsonSerializesTemperaturaToJson() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room7", 24.0f, 75.5f, new BigDecimal("1789351400.000"));
+        ThermostatMessageObject.Temperature temperature = new ThermostatMessageObject.Temperature("ht-sim-room7", 24.0f, 75.5f, new BigDecimal("1789351400.000"));
 
-        String json = TermostatMessageObject.validateJson(temperatura);
+        String json = ThermostatMessageObject.validateJson(temperature);
         JsonNode root = mapper.readTree(json);
 
         assertEquals("ht-sim-room7", root.get("id").asText());
@@ -40,9 +40,9 @@ class PublisherUnitTest {
 
     @Test
     void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room3", 12.345f, 54.321f, new BigDecimal("1789351400.000"));
+        ThermostatMessageObject.Temperature temperature = new ThermostatMessageObject.Temperature("ht-sim-room3", 12.345f, 54.321f, new BigDecimal("1789351400.000"));
 
-        String json = TermostatMessageObject.validateJson(temperatura);
+        String json = ThermostatMessageObject.validateJson(temperature);
 
         assertTrue(json.contains("\"tC\":12.35"));
         assertTrue(json.contains("\"tF\":54.32"));
@@ -51,9 +51,9 @@ class PublisherUnitTest {
 
     @Test
     void epochTimeIsSerializedAsAnInteger() throws Exception {
-        TermostatMessageObject.Temperatura temperatura = new TermostatMessageObject.Temperatura("ht-sim-room1", 24.65f, 0.0f, new BigDecimal("1789351400.000"));
+        ThermostatMessageObject.Temperature temperature = new ThermostatMessageObject.Temperature("ht-sim-room1", 24.65f, 0.0f, new BigDecimal("1789351400.000"));
 
-        String json = TermostatMessageObject.validateJson(temperatura);
+        String json = ThermostatMessageObject.validateJson(temperature);
 
         assertTrue(json.contains("\"ts\":1789351400"));
         assertFalse(json.contains("E"));
