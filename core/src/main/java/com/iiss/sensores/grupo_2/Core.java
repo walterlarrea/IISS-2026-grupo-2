@@ -46,15 +46,15 @@ class Core implements ICore {
 
         // Lista de habitaciones que alcanzaron o están por encima de la temperatura esperada
         List<Habitacion> habitacionesSobreTemperaturaEsperada = dataSitio.habitaciones().stream()
-            .filter(habitacion -> habitacion.currentTemperatureC() >= habitacion.expectedTemeprature())
+            .filter(habitacion -> habitacion.currentTemperatureC() >= habitacion.expectedTemperature())
             .toList();
 
         // Lista de habitaciones que están por debajo de la temperatura esperada,
         // ordenadas por la diferencia entre la temperatura esperada y la actual (de mayor a menor)
         List<Habitacion> habitacionesBajoTemperaturaEsperada = dataSitio.habitaciones().stream()
-            .filter(habitacion -> habitacion.currentTemperatureC() < habitacion.expectedTemeprature())
+            .filter(habitacion -> habitacion.currentTemperatureC() < habitacion.expectedTemperature())
             .sorted(Comparator.comparingDouble((Habitacion habitacion) ->
-                    habitacion.expectedTemeprature() - habitacion.currentTemperatureC()).reversed())
+                    habitacion.expectedTemperature() - habitacion.currentTemperatureC()).reversed())
             .toList();
         logger.debug("Habitaciones en o sobre temperatura esperada: {}; bajo temperatura esperada: {}",
                 habitacionesSobreTemperaturaEsperada.size(), habitacionesBajoTemperaturaEsperada.size());
@@ -76,7 +76,7 @@ class Core implements ICore {
                 comandos.add(new ComandoSwitch(habitacion.idSwitch(), EstadoSwitch.APAGADO));
                 potenciaUtilizada -= habitacion.powerKW();
                 logger.debug("Se apaga el switch {}: temperatura actual {} °C, esperada {} °C; potencia liberada {} kW",
-                        habitacion.idSwitch(), habitacion.currentTemperatureC(), habitacion.expectedTemeprature(),
+                        habitacion.idSwitch(), habitacion.currentTemperatureC(), habitacion.expectedTemperature(),
                         habitacion.powerKW());
             }
         }
@@ -95,7 +95,7 @@ class Core implements ICore {
                     potenciaUtilizada += habitacion.powerKW();
                     logger.debug("Se enciende el switch {}: déficit de temperatura {} °C; potencia utilizada {}/{} kW",
                             habitacion.idSwitch(),
-                            habitacion.expectedTemeprature() - habitacion.currentTemperatureC(),
+                            habitacion.expectedTemperature() - habitacion.currentTemperatureC(),
                             potenciaUtilizada, dataSitio.sitio().potenciaContratadaKW());
                 } else {
                     logger.debug("No se enciende el switch {}: potencia requerida {} kW supera el límite contratado de {} kW",

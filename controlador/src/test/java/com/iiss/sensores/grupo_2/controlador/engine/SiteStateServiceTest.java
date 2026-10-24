@@ -65,7 +65,7 @@ class SiteStateServiceTest {
         Habitacion habitacion = actualizado.habitaciones().get(0);
 
         assertEquals(18.5, habitacion.currentTemperatureC());
-        assertEquals(21.0, habitacion.expectedTemeprature());
+        assertEquals(21.0, habitacion.expectedTemperature());
         assertEquals("switch-1", habitacion.idSwitch());
         assertEquals(EstadoSwitch.APAGADO, habitacion.currentSwitchState());
     }
