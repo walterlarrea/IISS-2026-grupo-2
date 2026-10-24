@@ -13,8 +13,8 @@ public class ReevaluacionControlService {
 
     @Scheduled(fixedDelayString = "${controlador.reevaluacion-ms:5000}")
     public void reevaluar() {
-        if (controllerTempAuto.isActivo()) {
-            controllerTempAuto.controlar();
+        if (controllerTempAuto.isActive()) {
+            controllerTempAuto.execute();
         }
     }
 }

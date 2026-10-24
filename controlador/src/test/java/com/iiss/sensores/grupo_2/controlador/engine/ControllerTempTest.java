@@ -1,5 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
@@ -20,6 +21,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,13 +29,19 @@ class ControllerTempAutoTest {
     @Mock
     private SwitchClient switchClient;
     @Mock
+    private TemperatureReadingRepository tempReadingsRepository;
+    @Mock
     private ICore core;
     private ControllerTempAuto controller;
 
     @Test
     void temperaturaActualizadaLlegaAlCore() {
+        List<TemperatureMessage> tempReadings = new ArrayList<>();
+        tempReadings.add(new TemperatureMessage("0", "termo-1", 18.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
+
         when(switchClient.consultarEstado(any())).thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
-        SiteStateService estadoService = new SiteStateService(switchClient);
+        SiteStateService estadoService = new SiteStateService(switchClient, tempReadingsRepository);
 
         estadoService.loadSiteState(new DataSitio(
                 new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null)),
@@ -63,7 +71,7 @@ class ControllerTempAutoTest {
 
         when(core.calcularComandos(any(), any())).thenReturn(new RespuestaCore(List.of()));
 
-        controller.iniciar(Instant.now(), 1.0);
+        controller.start(Instant.now(), 1);
         controller.processTemperature(tempMsg);
 
         ArgumentCaptor<DataSitio> captor = ArgumentCaptor.forClass(DataSitio.class);

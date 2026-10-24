@@ -2,9 +2,9 @@ package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
-import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
-import com.iiss.sensores.grupo_2.dto.TermostatMessageObject;
+import com.iiss.sensores.grupo_2.dto.ThermostatMessageObject;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collection;
@@ -22,7 +21,7 @@ import java.util.Set;
 @Service
 public class MqttSubscriber {
     private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
-    private final MongoTemperatureWriter mongoWriter;
+    private final TemperatureReadingRepository tempMeasurements;
     private final ControllerTempAuto controllerTempAuto;
     private final ObjectMapper objMap;
     private final Set<String> desiredTopics = new HashSet<>();
@@ -30,34 +29,22 @@ public class MqttSubscriber {
     private MqttClient client;
 
     public MqttSubscriber(
-        MongoTemperatureWriter mongoWriter,
+        TemperatureReadingRepository mongoWriter,
         ControllerTempAuto controllerTempAuto,
         ObjectMapper objMap
     ) {
-        this.mongoWriter = mongoWriter;
+        this.tempMeasurements = mongoWriter;
         this.controllerTempAuto = controllerTempAuto;
         this.objMap = objMap;
     }
 
-    public void processMessage(TemperatureMessage payload) {
-        mongoWriter.saveTemperature(payload);
-    }
-
-    public synchronized void conectar(
-            String broker,
-            String clientId,
-            String topic
-    ) {
-        conectar(broker, clientId, Set.of(topic));
-    }
-
-    public synchronized void conectar(
+    public synchronized void connect(
             String broker,
             String clientId,
             Collection<String> topics
     ) {
-        Set<String> topicsToSubscribe = validarTopics(topics);
-        desconectar();
+        Set<String> topicsToSubscribe = validateTopics(topics);
+        disconnect();
         desiredTopics.clear();
         desiredTopics.addAll(topicsToSubscribe);
         try {
@@ -80,7 +67,7 @@ public class MqttSubscriber {
                     synchronized (MqttSubscriber.this) {
                         subscribedTopics.clear();
                         try {
-                            aplicarSuscripciones();
+                            applySubscriptions();
                         } catch (RuntimeException exception) {
                             logger.error("No se pudieron restaurar las suscripciones MQTT tras conectar", exception);
                         }
@@ -94,36 +81,36 @@ public class MqttSubscriber {
                     logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
                     try {
-                        TermostatMessageObject.Temperatura parsedTermostatMessage = objMap.readValue(payload, TermostatMessageObject.Temperatura.class);
+                        ThermostatMessageObject.Temperature parsedThermostatMessage = objMap.readValue(payload, ThermostatMessageObject.Temperature.class);
 
                         // Get the first section of the topic, eg: ht-room1/status/temperature:0
-                        // Being "ht-room1" the termostat ID
-                        String termostatId = topic.split("/")[0];
+                        // Being "ht-room1" the thermostat ID
+                        String thermostatId = topic.split("/")[0];
 
                         TemperatureMessage tempMessage = new TemperatureMessage(
-                                parsedTermostatMessage.id(),
-                                termostatId,
-                                parsedTermostatMessage.tC(),
-                                parsedTermostatMessage.tF(),
-                                Instant.ofEpochMilli(parsedTermostatMessage.ts().movePointRight(3).longValueExact())
+                                parsedThermostatMessage.id(),
+                                thermostatId,
+                                parsedThermostatMessage.tC(),
+                                parsedThermostatMessage.tF(),
+                                Instant.ofEpochMilli(parsedThermostatMessage.ts().movePointRight(3).longValueExact())
                         );
 
-                        logger.info("Temperatura recibida: {} °C. Termostato: {}", tempMessage.tC(), termostatId);
+                        logger.info("Temperature received: {} °C. Thermostat: {}", tempMessage.tC(), thermostatId);
 
                         try {
-                            processMessage(tempMessage);
+                            tempMeasurements.saveTemperature(tempMessage);
                             logger.info("Medición guardada en MongoDB");
                         } catch (Exception e) {
                             logger.error("Error al guardar la medición en MongoDB", e);
                         }
 
                         try {
-                            logger.info("Procesando nueva medición del termostato {}", termostatId);
+                            logger.info("Procesando nueva medición del termostato {}", thermostatId);
 
                             controllerTempAuto.processTemperature(tempMessage);
 
                         } catch (Exception e) {
-                            logger.error("Error al procesar la temperatura del termostato {}", termostatId, e);
+                            logger.error("Error al procesar la temperatura del termostato {}", thermostatId, e);
                         }
 
                     } catch (Exception e) {
@@ -145,32 +132,32 @@ public class MqttSubscriber {
             client.connect(connOpts);
             logger.info("Connected to MQTT broker");
 
-            aplicarSuscripciones();
+            applySubscriptions();
 
         } catch (MqttException me) {
-            desconectar();
+            disconnect();
             throw new IllegalStateException("No se pudo conectar o suscribir al broker MQTT " + broker, me);
         } catch (RuntimeException exception) {
-            desconectar();
+            disconnect();
             throw exception;
         }
     }
 
-    public synchronized void actualizarSuscripciones(Collection<String> topics) {
-        Set<String> topicsToSubscribe = validarTopics(topics);
+    public synchronized void updateSubscriptions(Collection<String> topics) {
+        Set<String> topicsToSubscribe = validateTopics(topics);
         desiredTopics.clear();
         desiredTopics.addAll(topicsToSubscribe);
-        aplicarSuscripciones();
+        applySubscriptions();
     }
 
-    private Set<String> validarTopics(Collection<String> topics) {
+    private Set<String> validateTopics(Collection<String> topics) {
         if (topics == null || topics.stream().anyMatch(topic -> topic == null || topic.isBlank())) {
             throw new IllegalArgumentException("Los topics MQTT deben ser una colección de valores no vacíos");
         }
         return new HashSet<>(topics);
     }
 
-    private void aplicarSuscripciones() {
+    private void applySubscriptions() {
         if (client == null || !client.isConnected()) {
             return;
         }
@@ -200,7 +187,7 @@ public class MqttSubscriber {
         }
     }
 
-    private void desconectar() {
+    private void disconnect() {
         if (client == null) {
             return;
         }
@@ -218,7 +205,7 @@ public class MqttSubscriber {
     }
 
     @PreDestroy
-    public synchronized void cerrar() {
-        desconectar();
+    public synchronized void close() {
+        disconnect();
     }
 }

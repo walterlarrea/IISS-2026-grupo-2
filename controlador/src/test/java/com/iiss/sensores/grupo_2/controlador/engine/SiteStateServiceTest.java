@@ -2,7 +2,9 @@ package com.iiss.sensores.grupo_2.controlador.engine;
 
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchEstadoResponse;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
+import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
 import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
 import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
@@ -10,6 +12,9 @@ import com.iiss.sensores.grupo_2.modelos.input.Sitio;
 import com.iiss.sensores.grupo_2.modelos.input.Tarifa;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -21,14 +26,21 @@ import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SiteStateServiceTest {
-    private SiteStateService servicio;
+    private SiteStateService siteStateService;
     private SwitchClient switchClient;
+    private TemperatureReadingRepository tempReadingsRepository;
 
     @BeforeEach
     void setUp() {
         switchClient = mock(SwitchClient.class);
+        tempReadingsRepository = mock(TemperatureReadingRepository.class);
+
         when(switchClient.consultarEstado(any())).thenReturn(new SwitchEstadoResponse("switch-1", EstadoSwitch.APAGADO, null));
-        servicio = new SiteStateService(switchClient);
+        List<TemperatureMessage> tempReadings = new ArrayList<>();
+        tempReadings.add(new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
+
+        siteStateService = new SiteStateService(switchClient, tempReadingsRepository);
         Sitio sitio = new Sitio("sitio-1", "Casa", 5.0, new Tarifa(null));
 
         Habitacion habitacion = new Habitacion(
@@ -44,12 +56,12 @@ class SiteStateServiceTest {
                 EstadoSwitch.APAGADO
         );
 
-        servicio.loadSiteState(new DataSitio(sitio, List.of(habitacion)));
+        siteStateService.loadSiteState(new DataSitio(sitio, List.of(habitacion)));
     }
 
     @Test
     void actualizarTemperaturaConservaElRestoDelEstado() {
-        DataSitio actualizado = servicio.updateRoomTemperature("termo-1", 18.5);
+        DataSitio actualizado = siteStateService.updateRoomTemperature("termo-1", 18.5);
         Habitacion habitacion = actualizado.habitaciones().get(0);
 
         assertEquals(18.5, habitacion.currentTemperatureC());
@@ -60,14 +72,14 @@ class SiteStateServiceTest {
 
     @Test
     void actualizarTemperaturaDeTermostatoInexistenteFalla() {
-        assertThrows(IllegalArgumentException.class, () -> servicio.updateRoomTemperature("inexistente", 18.5));
+        assertThrows(IllegalArgumentException.class, () -> siteStateService.updateRoomTemperature("inexistente", 18.5));
     }
 
     @Test
     void actualizarEstadoSwitchConservaLaTemperatura() {
-        servicio.getSiteState();
-        servicio.updateSwitchState("switch-1", EstadoSwitch.ENCENDIDO);
-        Habitacion habitacion = servicio.getSiteState().habitaciones().get(0);
+        siteStateService.getSiteState();
+        siteStateService.updateSwitchState("switch-1", EstadoSwitch.ENCENDIDO);
+        Habitacion habitacion = siteStateService.getSiteState().habitaciones().get(0);
 
         assertEquals(EstadoSwitch.ENCENDIDO, habitacion.currentSwitchState());
         assertEquals(19.0, habitacion.currentTemperatureC());
@@ -76,6 +88,12 @@ class SiteStateServiceTest {
     @Test
     void cargarEstadoConsultaYMapeaElEstadoDeCadaSwitch() {
         clearInvocations(switchClient);
+
+        List<TemperatureMessage> tempReadings = new ArrayList<>();
+        tempReadings.add(new TemperatureMessage("0", "termo-2", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        tempReadings.add(new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
+
         when(switchClient.consultarEstado(any()))
                 .thenReturn(
                         new SwitchEstadoResponse("switch-1", EstadoSwitch.ENCENDIDO, null),
@@ -110,11 +128,11 @@ class SiteStateServiceTest {
                 new Sitio("sitio-2", "Casa", 5.0, new Tarifa(null)),
                 List.of(primeraHabitacion, segundaHabitacion)
         );
-        servicio.loadSiteState(nuevoEstado);
+        siteStateService.loadSiteState(nuevoEstado);
 
         verify(switchClient, never()).consultarEstado(any());
 
-        List<Habitacion> habitaciones = servicio.getSiteState().habitaciones();
+        List<Habitacion> habitaciones = siteStateService.getSiteState().habitaciones();
         assertEquals(EstadoSwitch.ENCENDIDO, habitaciones.get(0).currentSwitchState());
         assertEquals(EstadoSwitch.APAGADO, habitaciones.get(1).currentSwitchState());
         verify(switchClient, times(2)).consultarEstado(any());
@@ -124,8 +142,8 @@ class SiteStateServiceTest {
     void consultarEstadoDeSitioLimpiaLaMarcaDeEstadoSucio() {
         clearInvocations(switchClient);
 
-        servicio.getSiteState();
-        servicio.getSiteState();
+        siteStateService.getSiteState();
+        siteStateService.getSiteState();
 
         verify(switchClient, times(1)).consultarEstado(any());
     }

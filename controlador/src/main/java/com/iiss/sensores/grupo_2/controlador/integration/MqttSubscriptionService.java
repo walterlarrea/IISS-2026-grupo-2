@@ -33,13 +33,13 @@ public class MqttSubscriptionService {
     }
 
     public synchronized void conectar(String broker, String clientId) {
-        mqttSubscriber.conectar(broker, clientId, obtenerTopicsDeseados());
+        mqttSubscriber.connect(broker, clientId, obtenerTopicsDeseados());
     }
 
     @EventListener
     public synchronized void alActualizarInventario(InventarioActualizadoEvent event) {
         try {
-            mqttSubscriber.actualizarSuscripciones(obtenerTopicsDeseados());
+            mqttSubscriber.updateSubscriptions(obtenerTopicsDeseados());
         } catch (RuntimeException exception) {
             logger.error("No se pudieron sincronizar los topics MQTT del Inventario actualizado", exception);
         }

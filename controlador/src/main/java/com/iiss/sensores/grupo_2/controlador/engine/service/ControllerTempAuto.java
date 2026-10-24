@@ -22,13 +22,13 @@ import java.time.ZonedDateTime;
 @Service
 public class ControllerTempAuto implements TemperatureEngineService {
     private static final Logger logger = LoggerFactory.getLogger(ControllerTempAuto.class);
-    private volatile boolean activo = false;
-    private Instant fechaHoraBase;
-    private Instant iniciadoEn;
-    private double factorTiempo;
     private final SwitchClient switchClient;
     private final ICore core;
     private final SiteStateService siteStateService; //mantiene los datos actuales del sitio
+    private volatile boolean active = false;
+    private Instant baseDateTime;
+    private Instant startedAt;
+    private int timeFactor;
 
     public ControllerTempAuto(SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
         //conecta el estado con el core, ejecuta los comandos calculados y controla el ciclo de ejecución.
@@ -38,63 +38,58 @@ public class ControllerTempAuto implements TemperatureEngineService {
     }
 
     @Override
-    public synchronized void iniciar() {
-        iniciar(Instant.now(), 1.0);
-    }
-
-    @Override
-    public synchronized void iniciar(Instant fechaHora, double factorTiempo) {
+    public synchronized void start(Instant fechaHora, int timeFactor) {
         if (fechaHora == null) {
             throw new IllegalArgumentException("La fecha y hora de inicio es obligatoria");
         }
 
-        if (!Double.isFinite(factorTiempo) || factorTiempo <= 0) {
-            throw new IllegalArgumentException("El factor de tiempo debe ser positivo y finito");
+        if (timeFactor <= 0) {
+            throw new IllegalArgumentException("Time factor must be a positive number");
         }
 
-        this.fechaHoraBase = fechaHora;
-        this.iniciadoEn = Instant.now();
-        this.factorTiempo = factorTiempo;
-        this.activo = true;
+        this.baseDateTime = fechaHora;
+        this.startedAt = Instant.now();
+        this.timeFactor = timeFactor;
+        this.active = true;
 
-        logger.info("Controlador iniciado. Fecha simulada: {}, factor: {}", fechaHora, factorTiempo);
+        logger.info("Controlador iniciado. Fecha simulada: {}, factor: {}", fechaHora, timeFactor);
     }
 
     @Override
-    public synchronized void detener() {
-        activo = false;
-        fechaHoraBase = null;
-        iniciadoEn = null;
-        factorTiempo = 0.0;
+    public synchronized void stop() {
+        active = false;
+        baseDateTime = null;
+        startedAt = null;
+        timeFactor = 1;
 
         logger.info("Controlador detenido");
     }
 
     @Override
-    public boolean isActivo() {
-        return activo;
+    public boolean isActive() {
+        return active;
     }
 
     @Override
-    public synchronized EstadoControl obtenerEstado() {
-        if (!activo) {
-            return new EstadoControl(EstadoControl.Estado.DETENIDO, null, null, null);
-        }
-        long tiempoRealNanos = Duration.between(iniciadoEn, Instant.now()).toNanos();
-        Instant fechaHoraActual = fechaHoraBase.plusNanos((long) (tiempoRealNanos * factorTiempo));
-        return new EstadoControl(EstadoControl.Estado.EN_EJECUCION, fechaHoraActual, factorTiempo, iniciadoEn);
+    public synchronized EstadoControl getTempControllerStatus() {
+        // TODO: Review this logic, make sure it works and it is easily understandable
+        long tiempoRealNanos = Duration.between(startedAt, Instant.now()).toNanos();
+        Instant fechaHoraActual = baseDateTime.plusNanos((long) (tiempoRealNanos * timeFactor));
+        return new EstadoControl(EstadoControl.Estado.EN_EJECUCION, fechaHoraActual, timeFactor, startedAt);
     }
 
-    //solicita las decisiones al core y ejecuta sus comandos, todo el ciclo se serializa para evitar decisiones simultáneas.
-    public synchronized void controlar() {
-        if (!activo) {
-            logger.debug("Controlador detenido");
+    // solicita las decisiones al core y ejecuta sus comandos, todo el ciclo se serializa para evitar decisiones simultáneas.
+    public synchronized void execute() {
+        if (!active) {
+            logger.debug("Controller is stopped");
             return;
         }
 
         try {
+            // Site state
             DataSitio dataSitio = siteStateService.getSiteState();
-            EstadoControl estado = obtenerEstado();
+            // Temperature Controller Engine status
+            EstadoControl estado = getTempControllerStatus();
 
             // horaSimulada = horaEventoTemperatura * factor
             // delta = horaEventoTemperatura - this.iniciadoEn
@@ -132,46 +127,46 @@ public class ControllerTempAuto implements TemperatureEngineService {
                 try {
                     if (comandoSwitch.estado() == EstadoSwitch.ENCENDIDO) {
                         switchClient.encender(habitacion);
-                        logger.info("Estado: encendido");
+                        logger.info("Controller status: running");
                     } else if (comandoSwitch.estado() == EstadoSwitch.APAGADO) {
                         switchClient.apagar(habitacion);
-                        logger.info("Estado: apagado");
+                        logger.info("Controller status: stopped");
                     } else {
-                        logger.warn("Estado de switch no reconocido: {}", comandoSwitch.estado());
+                        logger.warn("Switch state not recognized: {}", comandoSwitch.estado());
                         continue;
                     }
 
                     //solo se actualiza el estado local si la operación remota terminó sin lanzar una excepción.
                     siteStateService.updateSwitchState(comandoSwitch.idSwitch(), comandoSwitch.estado());
-                    logger.info("Switch {} actualizado a {}", comandoSwitch.idSwitch(), comandoSwitch.estado());
+                    logger.info("Switch {} state updated to {}", comandoSwitch.idSwitch(), comandoSwitch.estado());
 
                 } catch (Exception e) {
-                    logger.error("Error al ejecutar el comando del switch {} con url {}", comandoSwitch.idSwitch(), habitacion.urlSwitch(), e);
+                    logger.error("Error executing a command to the switch {}, with url {}", comandoSwitch.idSwitch(), habitacion.urlSwitch(), e);
                 }
             }
         } catch (Exception e) {
-            logger.error("Error durante el ciclo de control", e);
+            logger.error("Error in the automatic temperature control cycle", e);
         }
     }
 
     //actualiza una temperatura y ejecuta un nuevo ciclo de control.
     public synchronized void processTemperature(TemperatureMessage temperatureMsg) {
-        if (!activo) {
-            logger.debug("Controller stopped, ignores temperature sent by termostat with ID {}", temperatureMsg.idTermostat());
+        if (!active) {
+            logger.debug("Controller stopped, ignores temperature sent by thermostat with ID {}", temperatureMsg.idThermostat());
             return;
         }
 
-        if (temperatureMsg.idTermostat() == null || temperatureMsg.idTermostat().isBlank() || !Double.isFinite(temperatureMsg.tC())) {
-            logger.warn("Invalid measurement data. Termostat ID: {}, temperature Cº: {}", temperatureMsg.idTermostat(), temperatureMsg.tC());
+        if (temperatureMsg.idThermostat() == null || temperatureMsg.idThermostat().isBlank() || !Double.isFinite(temperatureMsg.tC())) {
+            logger.warn("Invalid measurement data. Thermostat ID: {}, temperature Cº: {}", temperatureMsg.idThermostat(), temperatureMsg.tC());
             return;
         }
 
         try {
-            siteStateService.updateRoomTemperature(temperatureMsg.idTermostat(), temperatureMsg.tC());
-            controlar();
+            siteStateService.updateRoomTemperature(temperatureMsg.idThermostat(), temperatureMsg.tC());
+            execute();
 
         } catch (Exception e) {
-            logger.error("Error processing temperature change for termostat ID {}", temperatureMsg.idTermostat(), e);
+            logger.error("Error processing temperature change for thermostat ID {}", temperatureMsg.idThermostat(), e);
         }
     }
 

@@ -1,6 +1,6 @@
 package com.iiss.sensores.grupo_2.controlador.engine;
 
-import com.iiss.sensores.grupo_2.controlador.engine.persistence.MongoTemperatureWriter;
+import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
@@ -19,7 +19,7 @@ public class MongoTemperatureTest {
     @Test
     void saveTemperatureMongoTest() {
         MongoCollection<Document> collectionMock = mock(MongoCollection.class);
-        MongoTemperatureWriter writer = new MongoTemperatureWriter(collectionMock);
+        TemperatureReadingRepository writer = new TemperatureReadingRepository(collectionMock);
 
         TemperatureMessage message = new TemperatureMessage(
                 "1",
