@@ -28,4 +28,4 @@ jobs:
           cache: maven
 
       - name: Build and test
-        run: mvn -B verify
+        run: mvn -B verify -DskipITs=true

@@ -40,6 +40,7 @@ public class TemperatureReadingRepository {
     }
 
     private void createIndexes() {
+        // Create an index on the "idThermostat" field for efficient querying
         try {
             collection.createIndex(new Document("idThermostat", 1).append("ts", -1));
         } catch (RuntimeException e) {
