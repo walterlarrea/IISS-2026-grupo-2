@@ -41,9 +41,9 @@ public class TemperatureReadingRepository {
     }
 
     private void createIndexes() {
-        // Create an index on the "thermostatId" field for efficient querying
+        // Create an index on the "idThermostat" field for efficient querying
         try {
-            collection.createIndex(new Document("thermostatId", 1).append("ts", -1));
+            collection.createIndex(new Document("idThermostat", 1).append("ts", -1));
         } catch (RuntimeException e) {
             logger.debug("Error creating indexes on " + this.collection.getNamespace() + " collection");
         }
@@ -63,13 +63,13 @@ public class TemperatureReadingRepository {
         // Implement the logic to retrieve the last temperature measurements associated to each thermostat ID in the list.
         List<Bson> pipeline = List.of(
                 Aggregates.match(
-                        Filters.in("thermostatId", thermostatIds)
+                        Filters.in("idThermostat", thermostatIds)
                 ),
                 Aggregates.sort(
                         Sorts.descending("ts")
                 ),
                 Aggregates.group(
-                        "$thermostatId",
+                        "$idThermostat",
                         Accumulators.first("lastRecord", "$$ROOT")
                 ),
                 Aggregates.replaceRoot("$lastRecord")
