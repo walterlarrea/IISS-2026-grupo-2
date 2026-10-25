@@ -9,7 +9,6 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -31,8 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @Testcontainers
-@Tag("Layer1")
-class MqttResilienceL1Test {
+class MqttResilienceIT {
     private static final int MQTT_PORT = 1883;
     private static final String MOSQUITTO_CONFIG = "/mosquitto/config/mosquitto.conf";
     private static final String SUPERVISOR_COMMAND =
@@ -72,7 +70,7 @@ class MqttResilienceL1Test {
                         .pollInterval(Duration.ofMillis(500))
                         .untilAsserted(() -> {
                             publish(publisher, topic, "recovered-message");
-                            verify(repository).saveTemperature(
+                            verify(repository, atLeastOnce()).saveTemperature(
                                     argThat(message -> "recovered-message".equals(message.id())));
                         });
             } finally {
@@ -108,7 +106,7 @@ class MqttResilienceL1Test {
                     .pollInterval(Duration.ofMillis(250))
                     .untilAsserted(() -> {
                         publish(publisher, topic, "message-after-reconnect");
-                        verify(repository).saveTemperature(
+                        verify(repository, atLeastOnce()).saveTemperature(
                                 argThat(message -> "message-after-reconnect".equals(message.id())));
                     });
             verify(repository, atLeastOnce()).saveTemperature(argThat(

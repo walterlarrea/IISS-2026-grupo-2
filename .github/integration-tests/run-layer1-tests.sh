@@ -15,7 +15,7 @@ set +e
 mvn -pl controlador -am -DskipTests install
 test_exit=$?
 if [ "$test_exit" -eq 0 ]; then
-  mvn -pl controlador verify -Dgroups=Layer1
+  mvn -pl controlador failsafe:integration-test failsafe:verify
   test_exit=$?
 fi
 set -e

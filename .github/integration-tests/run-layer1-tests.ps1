@@ -14,7 +14,7 @@ Set-Location (Join-Path $PSScriptRoot "..\..")
 mvn -pl controlador -am -DskipTests install
 $testExit = $LASTEXITCODE
 if ($testExit -eq 0) {
-    mvn -pl controlador verify -Dgroups=Layer1
+    mvn -pl controlador failsafe:integration-test failsafe:verify
     $testExit = $LASTEXITCODE
 }
 

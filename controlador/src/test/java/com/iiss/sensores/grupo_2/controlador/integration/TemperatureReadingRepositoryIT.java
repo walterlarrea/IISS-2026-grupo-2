@@ -4,7 +4,6 @@ import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadi
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -18,8 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
-@Tag("Layer1")
-class TemperatureReadingRepositoryL1Test {
+class TemperatureReadingRepositoryIT {
     private static final int MONGO_PORT = 27017;
 
     @Container
