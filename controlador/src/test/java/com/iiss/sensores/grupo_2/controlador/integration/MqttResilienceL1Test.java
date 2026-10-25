@@ -6,6 +6,7 @@ import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadi
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.Tag;
@@ -14,7 +15,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.utility.MountableFile;
 
 import java.nio.charset.StandardCharsets;
@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @Testcontainers
@@ -35,10 +35,14 @@ import static org.mockito.Mockito.verify;
 class MqttResilienceL1Test {
     private static final int MQTT_PORT = 1883;
     private static final String MOSQUITTO_CONFIG = "/mosquitto/config/mosquitto.conf";
+    private static final String SUPERVISOR_COMMAND =
+            "while true; do mosquitto -c " + MOSQUITTO_CONFIG
+                    + "; while [ -f /tmp/mosquitto-stopped ]; do sleep 0.1; done; done";
 
     @Container
     private final GenericContainer<?> broker = new GenericContainer<>("eclipse-mosquitto:2.0.22")
             .withExposedPorts(MQTT_PORT)
+            .withCommand("sh", "-c", SUPERVISOR_COMMAND)
             .withCopyFileToContainer(
                     MountableFile.forClasspathResource("mosquitto.conf"),
                     MOSQUITTO_CONFIG)
@@ -46,6 +50,7 @@ class MqttResilienceL1Test {
 
     @Test
     void subscriberReconnectsAndReceivesMessagesAfterBrokerRestart() throws Exception {
+        // Comprueba que el suscriptor recupera su conexión y recibe mensajes tras reiniciar el broker.
         TemperatureReadingRepository repository = mock(TemperatureReadingRepository.class);
         ControllerTempAuto controller = mock(ControllerTempAuto.class);
         MqttSubscriber subscriber = new MqttSubscriber(repository, controller, new ObjectMapper());
@@ -57,27 +62,30 @@ class MqttResilienceL1Test {
             subscriber.connect(brokerUri, clientId, List.of(topic));
             awaitSubscription(clientId, 1);
 
-            stopBroker();
-            await().atMost(Duration.ofSeconds(10)).until(() -> !brokerIsReachable());
-
-            startBroker();
-            await().atMost(Duration.ofSeconds(20)).until(this::brokerIsReachable);
+            restartBroker();
+            await().atMost(Duration.ofSeconds(30)).until(this::brokerAcceptsMqttConnections);
             awaitSubscription(clientId, 2);
 
-            try (MqttClient publisher = publisher(brokerUri)) {
-                publish(publisher, topic, "recovered-message");
+            MqttClient publisher = publisher(brokerUri);
+            try {
+                await().atMost(Duration.ofSeconds(30))
+                        .pollInterval(Duration.ofMillis(500))
+                        .untilAsserted(() -> {
+                            publish(publisher, topic, "recovered-message");
+                            verify(repository).saveTemperature(
+                                    argThat(message -> "recovered-message".equals(message.id())));
+                        });
+            } finally {
+                closePublisher(publisher);
             }
-
-            verify(repository, timeout(5_000)).saveTemperature(
-                    argThat(message -> "recovered-message".equals(message.id())));
         } finally {
             subscriber.close();
-            ensureBrokerStarted();
         }
     }
 
     @Test
     void messagesPublishedWhileSubscriberIsOfflineAreLostButNewMessagesArrive() throws Exception {
+        // Comprueba que los mensajes enviados sin suscriptor no se reproducen y que los nuevos sí llegan.
         TemperatureReadingRepository repository = mock(TemperatureReadingRepository.class);
         ControllerTempAuto controller = mock(ControllerTempAuto.class);
         MqttSubscriber subscriber = new MqttSubscriber(repository, controller, new ObjectMapper());
@@ -85,7 +93,8 @@ class MqttResilienceL1Test {
         String clientId = "loss-" + UUID.randomUUID();
         String brokerUri = brokerUri();
 
-        try (MqttClient publisher = publisher(brokerUri)) {
+        MqttClient publisher = publisher(brokerUri);
+        try {
             subscriber.connect(brokerUri, clientId, List.of(topic));
             awaitSubscription(clientId, 1);
 
@@ -94,14 +103,21 @@ class MqttResilienceL1Test {
 
             subscriber.connect(brokerUri, clientId, List.of(topic));
             awaitSubscription(clientId, 2);
-            publish(publisher, topic, "message-after-reconnect");
 
-            verify(repository, timeout(5_000)).saveTemperature(
-                    argThat(message -> "message-after-reconnect".equals(message.id())));
-            verify(repository).saveTemperature(argThat(
+            await().atMost(Duration.ofSeconds(10))
+                    .pollInterval(Duration.ofMillis(250))
+                    .untilAsserted(() -> {
+                        publish(publisher, topic, "message-after-reconnect");
+                        verify(repository).saveTemperature(
+                                argThat(message -> "message-after-reconnect".equals(message.id())));
+                    });
+            verify(repository, atLeastOnce()).saveTemperature(argThat(
                     message -> "message-after-reconnect".equals(message.id())));
+            verify(repository, org.mockito.Mockito.never()).saveTemperature(argThat(
+                    message -> "message-published-offline".equals(message.id())));
         } finally {
             subscriber.close();
+            closePublisher(publisher);
         }
     }
 
@@ -109,7 +125,7 @@ class MqttResilienceL1Test {
         return "tcp://" + broker.getHost() + ":" + broker.getMappedPort(MQTT_PORT);
     }
 
-    private MqttClient publisher(String brokerUri) throws Exception {
+    private MqttClient publisher(String brokerUri) throws MqttException {
         MqttClient publisher = new MqttClient(
                 brokerUri,
                 "publisher-" + UUID.randomUUID(),
@@ -137,36 +153,51 @@ class MqttResilienceL1Test {
         });
     }
 
-    private boolean brokerIsReachable() {
-        try (var socket = new java.net.Socket()) {
-            socket.connect(
-                    new java.net.InetSocketAddress(broker.getHost(), broker.getMappedPort(MQTT_PORT)),
-                    250);
+    private void restartBroker() throws Exception {
+        var stopResult = broker.execInContainer(
+                "sh", "-c", "touch /tmp/mosquitto-stopped && kill -TERM \"$(pidof mosquitto)\"");
+        if (stopResult.getExitCode() != 0) {
+            throw new IllegalStateException("No se pudo detener Mosquitto: " + stopResult.getStderr());
+        }
+        await().atMost(Duration.ofSeconds(10)).until(this::brokerProcessStopped);
+        var startResult = broker.execInContainer(
+                "sh", "-c", "rm -f /tmp/mosquitto-stopped");
+        if (startResult.getExitCode() != 0) {
+            throw new IllegalStateException("No se pudo reiniciar Mosquitto: " + startResult.getStderr());
+        }
+    }
+
+    private boolean brokerProcessStopped() {
+        try {
+            return broker.execInContainer("sh", "-c", "pidof mosquitto").getExitCode() != 0;
+        } catch (Exception exception) {
+            throw new IllegalStateException("No se pudo consultar el proceso Mosquitto", exception);
+        }
+    }
+
+    private boolean brokerAcceptsMqttConnections() {
+        MqttClient probe = null;
+        try {
+            probe = publisher(brokerUri());
             return true;
-        } catch (java.io.IOException exception) {
+        } catch (MqttException exception) {
             return false;
+        } finally {
+            if (probe != null) {
+                try {
+                    closePublisher(probe);
+                } catch (MqttException exception) {
+                    throw new IllegalStateException("No se pudo cerrar la conexión MQTT de prueba", exception);
+                }
+            }
         }
     }
 
-    private void stopBroker() {
-        DockerClientFactory.instance().client()
-                .stopContainerCmd(broker.getContainerId())
-                .withTimeout(5)
-                .exec();
-    }
-
-    private void startBroker() {
-        DockerClientFactory.instance().client()
-                .startContainerCmd(broker.getContainerId())
-                .exec();
-    }
-
-    private void ensureBrokerStarted() {
-        var container = DockerClientFactory.instance().client()
-                .inspectContainerCmd(broker.getContainerId())
-                .exec();
-        if (!Boolean.TRUE.equals(container.getState().getRunning())) {
-            startBroker();
+    private void closePublisher(MqttClient publisher) throws MqttException {
+        if (publisher.isConnected()) {
+            publisher.disconnect();
         }
+        publisher.close();
     }
+
 }

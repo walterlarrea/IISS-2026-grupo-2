@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class SwitchClientRestFailureL1Test {
     @Test
     void reportsConnectionFailureWhenRemoteSwitchApiIsOffline() throws Exception {
+        // Comprueba que el cliente REST informa el fallo cuando la API remota no está disponible.
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.start();
         int port = server.getAddress().getPort();
@@ -44,6 +45,7 @@ class SwitchClientRestFailureL1Test {
 
     @Test
     void reportsServiceUnavailableWhenRemoteSwitchApiFails() throws Exception {
+        // Comprueba que el cliente propaga HTTP 503 cuando la API de switches falla.
         AtomicInteger receivedRequests = new AtomicInteger();
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/switches/switch-1/comandos", exchange -> {

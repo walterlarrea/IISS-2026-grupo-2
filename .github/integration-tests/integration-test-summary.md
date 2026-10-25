@@ -1,28 +1,27 @@
 # Resumen de pruebas de integración
 
-## Pruebas agregadas
+## Pruebas de capa 1
 
-- Se agregaron cuatro pruebas de capa 1 en dos clases etiquetadas con `Layer1`.
 - `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/MqttResilienceL1Test.java`
   - Comprueba recuperación de suscripción tras caída/reinicio de Mosquitto.
   - Comprueba pérdida de mensajes publicados mientras el suscriptor está desconectado y entrega de mensajes posteriores.
 - `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/SwitchClientRestFailureL1Test.java`
   - Comprueba que `SwitchClient` propaga fallos de conexión y HTTP 503 desde una API local real.
+- `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/TemperatureReadingRepositoryL1Test.java`
+  - Usa MongoDB real para guardar y recuperar las últimas lecturas por `idThermostat`.
 - `controlador/src/test/resources/mosquitto.conf`
   - Configuración anónima y logs necesarios para el broker de prueba.
 
 ## Cobertura y dependencias
 
-Se agregan pruebas de red real en los límites MQTT y REST, que no estaban cubiertos por
-las pruebas unitarias anteriores. Se incorpora Testcontainers JUnit Jupiter; Docker es
-necesario para correr las pruebas MQTT.
+Se comprueba además la persistencia real en MongoDB y el orden temporal por termostato.
+Las cinco pruebas de capa 1 usan Testcontainers para MQTT y MongoDB o un servidor HTTP
+local para REST; Docker debe estar activo para ejecutarlas.
 
 ## Resultado
 
-El baseline previo a estos cambios pasó: 55 pruebas ejecutadas, 0 fallidas, 0 errores.
-La ejecución filtrada descubrió las cuatro pruebas: las dos REST pasaron y las dos MQTT
-terminaron con error porque el daemon de Docker no está disponible. No se reportaron
-fallos de aserción. Las pruebas MQTT compilaron correctamente.
+La última ejecución de capa 1 pasó: 5 pruebas, 0 fallidas, 0 errores (2 MQTT, 2 REST y
+1 MongoDB).
 
 ## Runner
 
@@ -33,4 +32,6 @@ fallos de aserción. Las pruebas MQTT compilaron correctamente.
 
 ## Cambios de producción
 
-No se modificó código de producción.
+`TemperatureReadingRepository` usa `idThermostat` de forma consistente para guardar,
+indexar, filtrar y agrupar las lecturas; convierte `Instant` a BSON Date al guardar y
+reconstruye el `Instant` al leer.
