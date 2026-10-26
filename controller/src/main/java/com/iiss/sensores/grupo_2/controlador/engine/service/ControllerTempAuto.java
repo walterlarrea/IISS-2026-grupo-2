@@ -22,6 +22,7 @@ import java.time.ZonedDateTime;
 @Service
 public class ControllerTempAuto implements TemperatureEngineService {
     private static final Logger logger = LoggerFactory.getLogger(ControllerTempAuto.class);
+    private static final ZoneId ZONA_MONTEVIDEO = ZoneId.of("America/Montevideo");
     private final SwitchClient switchClient;
     private final ICore core;
     private final SiteStateService siteStateService; //mantiene los datos actuales del site
@@ -102,7 +103,7 @@ public class ControllerTempAuto implements TemperatureEngineService {
             // horaSimulada = 5:10 - 0:10 + ( 0:10 * 2 )
 
             // hora rushHour del usuario = 17:00-23:00 -> 14:00-20:00
-            ZonedDateTime fechaSimulada = estado.fechaHora().atZone(ZoneId.systemDefault());
+            ZonedDateTime fechaSimulada = estado.fechaHora().atZone(ZONA_MONTEVIDEO);
 
             CoreAnswer respuesta = core.calcularComandos(fechaSimulada, dataSite);
 

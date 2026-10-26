@@ -1,14 +1,14 @@
 package com.iiss.sensores.grupo_2.switches;
 
-import java.time.LocalDate;
+import java.time.Instant;
 
 public class Switch {
 
     private final String id;
     private EstadoSwitch estado;
-    private LocalDate aplicadoEn;
+    private Instant aplicadoEn;
 
-    public Switch(String id, EstadoSwitch estado, LocalDate aplicadoEn) {
+    public Switch(String id, EstadoSwitch estado, Instant aplicadoEn) {
         this.id = id;
         this.estado = estado;
         this.aplicadoEn = aplicadoEn;
@@ -26,11 +26,11 @@ public class Switch {
         this.estado = estado;
     }
 
-    public LocalDate getAplicadoEn() {
+    public Instant getAplicadoEn() {
         return aplicadoEn;
     }
 
-    public void setAplicadoEn(LocalDate aplicadoEn) {
+    public void setAplicadoEn(Instant aplicadoEn) {
         this.aplicadoEn = aplicadoEn;
     }
 }
