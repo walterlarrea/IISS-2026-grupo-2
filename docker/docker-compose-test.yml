@@ -25,7 +25,7 @@ services:
     # container_name: switches-api-test
     environment:
       SPRING_PROFILES_ACTIVE: development
-      LOGGING_LEVEL_ROOT: INFO
+      APP_LOG_LEVEL_ROOT: INFO
       SWITCHES_API_KEY: test-switch-key
     ports:
       - "8090"
@@ -45,7 +45,7 @@ services:
         condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: development
-      LOGGING_LEVEL_ROOT: INFO
+      APP_LOG_LEVEL_ROOT: INFO
 
       MQTT_BROKER_URL: tcp://mosquitto:1883
       MQTT_CLIENT_ID: TestControlador
