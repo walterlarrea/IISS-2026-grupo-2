@@ -12,13 +12,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CoreTest {
-    private final ICore core = new Core();
+  private final ICore core = new Core();
 
     @Test
     void calcularComandos_apagaTodoCuandoHayHorarioPunta() throws Exception {
@@ -56,7 +57,7 @@ class CoreTest {
         );
         DataSite config = new DataSite(site, habitaciones);
 
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T18:00:00Z");
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T18:00:00Z");
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
@@ -107,8 +108,8 @@ class CoreTest {
 
         CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse(fechaHora), config);
 
-        assertComandosIguales(respuesta);
-    }
+    assertComandosIguales(respuesta);
+  }
 
     @Test
     void calcularComandos_apagaHabitacionesPorEncimaDeLaTemperaturaEsperada() throws Exception {
@@ -158,7 +159,7 @@ class CoreTest {
         );
         DataSite config = new DataSite(site, habitaciones);
 
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
@@ -204,7 +205,7 @@ class CoreTest {
         );
         DataSite config = new DataSite(site, habitaciones);
 
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
@@ -249,12 +250,12 @@ class CoreTest {
         );
         DataSite config = new DataSite(site, habitaciones);
 
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta);
-    }
+    assertComandosIguales(respuesta);
+  }
 
     @Test
     void calcularComandos_noGeneraAccionCuandoLaTemperaturaEstaDentroDelRangoEsperado() throws Exception {
@@ -292,12 +293,12 @@ class CoreTest {
         );
         DataSite config = new DataSite(site, habitaciones);
 
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta);
-    }
+    assertComandosIguales(respuesta);
+  }
 
     @Test
     void calcularComandos_apagaAntesDeEncenderYSeleccionaVariasHabitacionesHastaElLimiteDePotencia() {
@@ -401,8 +402,8 @@ class CoreTest {
 
         CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse("2026-10-07T12:00:00Z"), config);
 
-        assertComandosIguales(respuesta);
-    }
+    assertComandosIguales(respuesta);
+  }
 
     @Test
     void calcularComandos_reanudaControlNormalCuandoTerminaElHorarioPunta() {
@@ -439,10 +440,50 @@ class CoreTest {
 
         CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta,
-            new CommandSwitch("sw-sim-room1", SwitchState.ENCENDIDO)
-        );
-    }
+    assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room1", SwitchState.ENCENDIDO));
+  }
+
+  @Test
+  void calcularComandos_devuelveUnaListaVaciaCuandoSitioEsNull() {
+    DataSite config = null;
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
+
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+
+    assertComandosIguales(respuesta);
+  }
+
+  @Test
+  void calcularComandos_devuelveUnaListaVaciaCuandoHabitacionesEsNull() {
+    Site site =
+        new Site(
+            "casa-rodriguez",
+            "Casa Rodríguez",
+            3.7,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    DataSite config = new DataSite(site, null);
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
+
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+
+    assertComandosIguales(respuesta);
+  }
+
+  @Test
+  void calcularComandos_devuelveUnaListaVaciaCuandoHabitacionesEsUnaListaVacia() {
+    Site site =
+        new Site(
+            "casa-rodriguez",
+            "Casa Rodríguez",
+            3.7,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    DataSite config = new DataSite(site, new ArrayList<>());
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
+
+    RespuestaCore respuesta = core.calcularComandos(fechaHora, config);
+
+    assertComandosIguales(respuesta);
+  }
 
     private void assertComandosIguales(CoreAnswer respuesta, CommandSwitch... esperados) {
         assertEquals(esperados.length, respuesta.commands().size(),

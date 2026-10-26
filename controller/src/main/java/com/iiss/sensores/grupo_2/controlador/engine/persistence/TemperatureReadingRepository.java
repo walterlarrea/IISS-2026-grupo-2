@@ -1,14 +1,9 @@
 package com.iiss.sensores.grupo_2.controlador.engine.persistence;
 
-import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -20,6 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class TemperatureReadingRepository {
@@ -55,15 +54,15 @@ public class TemperatureReadingRepository {
                 .append("idThermostat", message.idThermostat())
                 .append("tC", message.tC())
                 .append("tF", message.tF())
-                .append("ts", message.ts());
+                .append("ts", Date.from(message.ts()));
         collection.insertOne(document);
     }
 
-    public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> idThermostats) {
-        // Implement the logic to retrieve the last temperature measurements associated to each thermostat ID in the list.
+    public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> thermostatIds) {
+        // Retrieve the last temperature measurements associated to each thermostat ID in the list.
         List<Bson> pipeline = List.of(
                 Aggregates.match(
-                        Filters.in("idThermostat", idThermostats)
+                        Filters.in("idThermostat", thermostatIds)
                 ),
                 Aggregates.sort(
                         Sorts.descending("ts")
@@ -75,7 +74,19 @@ public class TemperatureReadingRepository {
                 Aggregates.replaceRoot("$lastRecord")
         );
 
-        return this.collection.aggregate(pipeline, TemperatureMessage.class)
-                .into(new ArrayList<>());
+        return this.collection.aggregate(pipeline, Document.class)
+                .into(new ArrayList<>())
+                .stream()
+                .map(this::toTemperatureMessage)
+                .toList();
+    }
+
+    private TemperatureMessage toTemperatureMessage(Document document) {
+        return new TemperatureMessage(
+                document.getString("id"),
+                document.getString("idThermostat"),
+                document.getDouble("tC"),
+                document.getDouble("tF"),
+                document.getDate("ts").toInstant());
     }
 }

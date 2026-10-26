@@ -158,46 +158,37 @@ Es una alternativa más sencilla y fácil de visualizar que los ejemplos curl.
 ## 9. TEST UNITARIOS
 
 Se crearon test para probar tramos del programa y confirmar el funcionamiento de envío y recibimiento de mensajes y datos.
+```bash
+mvn clean test
+```
 
 **controlador**
 
 - **controlador/api**
-  - ApiKeyTest
-  - EngineContractTest
-  - HabitacionControllerTest
-  - HabitacionServiceTest
-  - InventarioServiceTest
-  - RoomServiceTest
-
 - **controlador/engine**
-  - ControllerTempAutoTest
-  - EstadoSitioServiceTest
-  - MongoTemperatureTest
-  - MqttSubscriberTest
-  - SwitchClientTest
-
 - **controlador/integration**
-  - IntegrationServiceTest
-  - MqttSubscriberTest
 
 **core**
-- CoreTest
-- PuntaTest
 
 **publisher**
-- PublisherUnitTest
 
 **switches-api**
-- SwitchControllerTest
 
-## 10. MONGO DB
+## 10. TEST DE INTEGRACIÓN
+
+> Corre la suite entera de Tests Unitarios + Integración
+```bash
+mvn -B verify
+```
+
+## 11. MONGO DB
 
 Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
 
 - inventory: contiene sitios y sus datos. Cada site contiene una lista de habitaciones con sus respectivos datos.
 - Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y marca de tiempo Epoch en milisegundos.
 
-## 11. JIRA
+## 12. JIRA
 
 Acá se encuentra la organización y seguimiento del proyecto.
 
