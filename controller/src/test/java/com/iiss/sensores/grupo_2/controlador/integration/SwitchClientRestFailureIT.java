@@ -5,14 +5,11 @@ import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadi
 import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
-import com.iiss.sensores.grupo_2.enums.EstadoSwitch;
+import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.interfaces.ICore;
-import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
-import com.iiss.sensores.grupo_2.modelos.input.Habitacion;
-import com.iiss.sensores.grupo_2.modelos.input.Sitio;
-import com.iiss.sensores.grupo_2.modelos.input.Tarifa;
-import com.iiss.sensores.grupo_2.modelos.output.ComandoSwitch;
-import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
+import com.iiss.sensores.grupo_2.modelos.input.*;
+import com.iiss.sensores.grupo_2.modelos.output.CommandSwitch;
+import com.iiss.sensores.grupo_2.modelos.output.CoreAnswer;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.ResourceAccessException;
@@ -41,7 +38,7 @@ class SwitchClientRestFailureIT {
         server.stop(0);
 
         SwitchClient client = new SwitchClient(RestClient.builder().build(), "integration-key");
-        Habitacion habitacion = new Habitacion(
+        Room habitacion = new Room(
                 "room-1",
                 "Room 1",
                 21.0,
@@ -51,7 +48,7 @@ class SwitchClientRestFailureIT {
                 "switch-1",
                 "http://127.0.0.1:" + port,
                 20.0,
-                EstadoSwitch.APAGADO);
+                SwitchState.APAGADO);
 
         assertThrows(ResourceAccessException.class, () -> client.encender(habitacion));
     }
@@ -75,7 +72,7 @@ class SwitchClientRestFailureIT {
 
         try {
             SwitchClient client = new SwitchClient(RestClient.builder().build(), "integration-key");
-            Habitacion habitacion = new Habitacion(
+            Room habitacion = new Room(
                     "room-1",
                     "Room 1",
                     21.0,
@@ -85,7 +82,7 @@ class SwitchClientRestFailureIT {
                     "switch-1",
                     "http://127.0.0.1:" + server.getAddress().getPort(),
                     20.0,
-                    EstadoSwitch.APAGADO);
+                    SwitchState.APAGADO);
 
             HttpServerErrorException.ServiceUnavailable error = assertThrows(
                     HttpServerErrorException.ServiceUnavailable.class,
@@ -132,7 +129,7 @@ class SwitchClientRestFailureIT {
             TemperatureReadingRepository readings = mock(TemperatureReadingRepository.class);
             ICore core = mock(ICore.class);
             SiteStateService siteState = new SiteStateService(switchClient, readings);
-            Habitacion room = new Habitacion(
+            Room room = new Room(
                     "room-1",
                     "Room 1",
                     21.0,
@@ -142,9 +139,9 @@ class SwitchClientRestFailureIT {
                     "switch-1",
                     switchUrl,
                     null,
-                    EstadoSwitch.APAGADO);
-            siteState.loadSiteState(new DataSitio(
-                    new Sitio("site-1", "Site", 5.0, new Tarifa(null)),
+                    SwitchState.APAGADO);
+            siteState.loadSiteState(new DataSite(
+                    new Site("site-1", "Site", 5.0, new Fee(null)),
                     List.of(room)));
 
             when(readings.getLastTemperatureMeasurements(any())).thenReturn(List.of(
@@ -154,8 +151,9 @@ class SwitchClientRestFailureIT {
                             22.0,
                             71.6,
                             Instant.parse("2026-10-25T10:00:00Z"))));
-            when(core.calcularComandos(any(), any())).thenReturn(new RespuestaCore(List.of(
-                    new ComandoSwitch("switch-1", EstadoSwitch.ENCENDIDO))));
+      when(core.calcularComandos(any(), any()))
+          .thenReturn(
+              new CoreAnswer(List.of(new CommandSwitch("switch-1", SwitchState.ENCENDIDO))));
             ControllerTempAuto controller = new ControllerTempAuto(switchClient, core, siteState);
             controller.start(Instant.parse("2026-10-25T10:00:00Z"), 1);
 
@@ -168,7 +166,7 @@ class SwitchClientRestFailureIT {
 
             assertEquals(1, commandRequests.get(), "The controller should attempt the switch command");
             assertEquals(
-                    EstadoSwitch.APAGADO,
+                    SwitchState.APAGADO,
                     siteState.getSiteState().habitaciones().get(0).currentSwitchState(),
                     "A failed remote command must not update the locally known switch state");
         } finally {

@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BigBangSystemIntegrationIT {
 
-  private static final String CTRL_SERVICE = "controlador";
+  private static final String CTRL_SERVICE = "controller";
   private static final String SWITCHES_SERVICE = "switches-api";
   private static final String MOSQUITTO_SERVICE = "mosquitto";
 
@@ -56,7 +56,7 @@ public class BigBangSystemIntegrationIT {
 
   private RestClient restClient;
   private ObjectMapper objectMapper;
-  private String controladorBaseUrl;
+  private String controllerBaseUrl;
   private String switchesBaseUrl;
   private String mqttBrokerUrl;
 
@@ -67,7 +67,7 @@ public class BigBangSystemIntegrationIT {
 
     String ctrlHost = environment.getServiceHost(CTRL_SERVICE, CTRL_PORT);
     int ctrlPort = environment.getServicePort(CTRL_SERVICE, CTRL_PORT);
-    controladorBaseUrl = "http://" + ctrlHost + ":" + ctrlPort;
+    controllerBaseUrl = "http://" + ctrlHost + ":" + ctrlPort;
 
     String switchHost = environment.getServiceHost(SWITCHES_SERVICE, SWITCH_PORT);
     int switchPort = environment.getServicePort(SWITCHES_SERVICE, SWITCH_PORT);
@@ -83,7 +83,7 @@ public class BigBangSystemIntegrationIT {
   @DisplayName(
       "Big-Bang E2E Flow: Configure Site -> Emit MQTT Telemetry -> Automatic Core Evaluation -> Switch Actuated")
   void fullSystemEndToEndFlowIT() throws Exception {
-    // 1. CONFIGURE ROOM & SITE via Controlador REST API
+    // 1. CONFIGURE ROOM & SITE via Controller REST API
     String sitePayload =
         """
         {
@@ -118,7 +118,7 @@ public class BigBangSystemIntegrationIT {
     ResponseEntity<Void> configResponse =
         restClient
             .put()
-            .uri(controladorBaseUrl + "/sitio")
+            .uri(controllerBaseUrl + "/sitio")
             .header("X-API-KEY", "test-ctrl-key")
             .contentType(MediaType.APPLICATION_JSON)
             .body(sitePayload)
@@ -130,7 +130,7 @@ public class BigBangSystemIntegrationIT {
     // 2. START THE AUTOMATIC ENGINE CONTROLLER
     restClient
         .post()
-        .uri(controladorBaseUrl + "/control/comandos")
+        .uri(controllerBaseUrl + "/control/comandos")
         .header("X-API-KEY", "test-ctrl-key")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
@@ -161,8 +161,8 @@ public class BigBangSystemIntegrationIT {
     testMqttPublisher.disconnect();
     testMqttPublisher.close();
 
-    // 4. AWAITILITY ASSERTION: Validate that Switches-API was triggered by the Controlador
-    // The flow crosses: Mosquitto -> Controlador Subscriber -> Mongo -> Core -> SwitchClient ->
+    // 4. AWAITILITY ASSERTION: Validate that Switches-API was triggered by the Controller
+    // The flow crosses: Mosquitto -> Controller Subscriber -> Mongo -> Core -> SwitchClient ->
     // Switches-API
     await()
         .atMost(Duration.ofSeconds(10))

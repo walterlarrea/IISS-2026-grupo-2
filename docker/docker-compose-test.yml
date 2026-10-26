@@ -30,12 +30,12 @@ services:
     ports:
       - "8090"
 
-  controlador:
+  controller:
     build:
       context: ..
       dockerfile: Dockerfile
-      target: controlador
-    # container_name: controlador-test
+      target: controller
+    # container_name: controller-test
     depends_on:
       mongodb:
         condition: service_started

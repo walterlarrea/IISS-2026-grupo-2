@@ -21,15 +21,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CoreTest {
   private final ICore core = new Core();
 
-    @Test
-    void calcularComandos_apagaTodoCuandoHayHorarioPunta() throws Exception {
-        Site site = new Site(
+  @Test
+  void calcularComandos_apagaTodoCuandoHayHorarioPunta() throws Exception {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -40,8 +41,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 19.51,
-                SwitchState.ENCENDIDO
-            ),
+                SwitchState.ENCENDIDO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -52,33 +52,27 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 22.48,
-                SwitchState.APAGADO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
 
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T18:00:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta,
-            new CommandSwitch("sw-sim-room1", SwitchState.APAGADO)
-        );
-    }
+    assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room1", SwitchState.APAGADO));
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "2026-10-10T18:00:00Z",
-        "2026-10-11T18:00:00Z"
-    })
-    void calcularComandos_noApagaSwitchesEnFinDeSemanaConTarifaDeDiasHabiles(String fechaHora) {
-        Site site = new Site(
+  @ParameterizedTest
+  @ValueSource(strings = {"2026-10-10T18:00:00Z", "2026-10-11T18:00:00Z"})
+  void calcularComandos_noApagaSwitchesEnFinDeSemanaConTarifaDeDiasHabiles(String fechaHora) {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -89,8 +83,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 19.51,
-                SwitchState.ENCENDIDO
-            ),
+                SwitchState.ENCENDIDO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -101,25 +94,24 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 22.48,
-                SwitchState.APAGADO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
 
-        CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse(fechaHora), config);
+    CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse(fechaHora), config);
 
     assertComandosIguales(respuesta);
   }
 
-    @Test
-    void calcularComandos_apagaHabitacionesPorEncimaDeLaTemperaturaEsperada() throws Exception {
-        Site site = new Site(
+  @Test
+  void calcularComandos_apagaHabitacionesPorEncimaDeLaTemperaturaEsperada() throws Exception {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -130,8 +122,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 21.62,
-                SwitchState.ENCENDIDO
-            ),
+                SwitchState.ENCENDIDO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -142,8 +133,7 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 20.14,
-                SwitchState.ENCENDIDO
-            ),
+                SwitchState.ENCENDIDO),
             new Room(
                 "room3",
                 "Dormitorio principal",
@@ -154,30 +144,30 @@ class CoreTest {
                 "sw-sim-room3",
                 "http://switches:8081/sw-sim-room3",
                 19.14,
-                SwitchState.ENCENDIDO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.ENCENDIDO));
+    DataSite config = new DataSite(site, habitaciones);
 
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta,
-            new CommandSwitch("sw-sim-room1", SwitchState.APAGADO),
-            new CommandSwitch("sw-sim-room2", SwitchState.APAGADO)
-        );
-    }
+    assertComandosIguales(
+        respuesta,
+        new CommandSwitch("sw-sim-room1", SwitchState.APAGADO),
+        new CommandSwitch("sw-sim-room2", SwitchState.APAGADO));
+  }
 
-    @Test
-    void calcularComandos_enciendeLaHabitacionConMayorDeficitSiHayPotenciaDisponible() throws Exception {
-        Site site = new Site(
+  @Test
+  void calcularComandos_enciendeLaHabitacionConMayorDeficitSiHayPotenciaDisponible()
+      throws Exception {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             1.5,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -188,8 +178,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 21.12,
-                SwitchState.APAGADO
-            ),
+                SwitchState.APAGADO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -200,29 +189,26 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 17.00,
-                SwitchState.APAGADO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
 
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
-        assertComandosIguales(respuesta,
-                new CommandSwitch("sw-sim-room2", SwitchState.ENCENDIDO)
-        );
-    }
+    assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room2", SwitchState.ENCENDIDO));
+  }
 
-    @Test
-    void calcularComandos_noEnciendeNadaCuandoNoHayPotenciaDisponible() throws Exception {
-        Site site = new Site(
+  @Test
+  void calcularComandos_noEnciendeNadaCuandoNoHayPotenciaDisponible() throws Exception {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             1.5,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -233,8 +219,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 20.12,
-                SwitchState.APAGADO
-            ),
+                SwitchState.APAGADO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -245,27 +230,27 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 18.00,
-                SwitchState.ENCENDIDO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.ENCENDIDO));
+    DataSite config = new DataSite(site, habitaciones);
 
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
     assertComandosIguales(respuesta);
   }
 
-    @Test
-    void calcularComandos_noGeneraAccionCuandoLaTemperaturaEstaDentroDelRangoEsperado() throws Exception {
-        Site site = new Site(
+  @Test
+  void calcularComandos_noGeneraAccionCuandoLaTemperaturaEstaDentroDelRangoEsperado()
+      throws Exception {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -276,8 +261,7 @@ class CoreTest {
                 "sw-sim-room1",
                 "http://switches:8081/sw-sim-room1",
                 23.12,
-                SwitchState.APAGADO
-            ),
+                SwitchState.APAGADO),
             new Room(
                 "room2",
                 "Dormitorio principal",
@@ -288,28 +272,22 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 21.00,
-                SwitchState.APAGADO
-            )
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
 
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
     assertComandosIguales(respuesta);
   }
 
-    @Test
-    void calcularComandos_apagaAntesDeEncenderYSeleccionaVariasHabitacionesHastaElLimiteDePotencia() {
-        Site site = new Site(
-            "casa",
-            "Casa",
-            2.0,
-            new Fee(new RushHour("17:00",
-            "23:00",
-            RushDays.HABILES)));
-        List<Room> habitaciones = List.of(
+  @Test
+  void calcularComandos_apagaAntesDeEncenderYSeleccionaVariasHabitacionesHastaElLimiteDePotencia() {
+    Site site =
+        new Site("casa", "Casa", 2.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "mayor",
                 "Mayor deficit",
@@ -331,7 +309,7 @@ class CoreTest {
                 "sw-siguiente",
                 "http://switches:8081/sw-siguiente",
                 18.0,
-            SwitchState.APAGADO),
+                SwitchState.APAGADO),
             new Room(
                 "ultima",
                 "No cabe",
@@ -353,28 +331,29 @@ class CoreTest {
                 "sw-sobre",
                 "http://switches:8081/sw-sobre",
                 22.0,
-                SwitchState.ENCENDIDO)
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.ENCENDIDO));
+    DataSite config = new DataSite(site, habitaciones);
 
-        CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse("2026-10-07T12:00:00Z"), config);
+    CoreAnswer respuesta =
+        core.calcularComandos(ZonedDateTime.parse("2026-10-07T12:00:00Z"), config);
 
-        assertComandosEnOrden(respuesta,
-            new CommandSwitch("sw-sobre", SwitchState.APAGADO),
-            new CommandSwitch("sw-mayor", SwitchState.ENCENDIDO),
-            new CommandSwitch("sw-siguiente", SwitchState.ENCENDIDO)
-        );
-    }
+    assertComandosEnOrden(
+        respuesta,
+        new CommandSwitch("sw-sobre", SwitchState.APAGADO),
+        new CommandSwitch("sw-mayor", SwitchState.ENCENDIDO),
+        new CommandSwitch("sw-siguiente", SwitchState.ENCENDIDO));
+  }
 
-    @Test
-    void calcularComandos_noEmiteComandosCuandoLosSwitchesYaTienenElEstadoObjetivo() {
-        Site site = new Site(
+  @Test
+  void calcularComandos_noEmiteComandosCuandoLosSwitchesYaTienenElEstadoObjetivo() {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
             new Room(
                 "room1",
                 "Living",
@@ -396,49 +375,51 @@ class CoreTest {
                 "sw-sim-room2",
                 "http://switches:8081/sw-sim-room2",
                 22.0,
-                SwitchState.APAGADO)
-        );
-        DataSite config = new DataSite(site, habitaciones);
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
 
-        CoreAnswer respuesta = core.calcularComandos(ZonedDateTime.parse("2026-10-07T12:00:00Z"), config);
+    CoreAnswer respuesta =
+        core.calcularComandos(ZonedDateTime.parse("2026-10-07T12:00:00Z"), config);
 
     assertComandosIguales(respuesta);
   }
 
-    @Test
-    void calcularComandos_reanudaControlNormalCuandoTerminaElHorarioPunta() {
-        Site site = new Site(
+  @Test
+  void calcularComandos_reanudaControlNormalCuandoTerminaElHorarioPunta() {
+    Site site =
+        new Site(
             "casa-rodriguez",
             "Casa Rodríguez",
             3.7,
-            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES))
-        );
-        List<Room> habitaciones = List.of(
-            new Room("room1",
-            "Living",
-            21.5,
-            1.2,
-            "t1",
-            "t1",
-            "sw-sim-room1",
-            "http://switches:8081/sw-sim-room1",
-            19.0,
-            SwitchState.APAGADO),
-            new Room("room2",
-            "Dormitorio",
-            20.0,
-            0.8,
-            "t2",
-            "t2",
-            "sw-sim-room2",
-            "http://switches:8081/sw-sim-room2",
-            22.0,
-            SwitchState.APAGADO)
-        );
-        DataSite config = new DataSite(site, habitaciones);
-        ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    List<Room> habitaciones =
+        List.of(
+            new Room(
+                "room1",
+                "Living",
+                21.5,
+                1.2,
+                "t1",
+                "t1",
+                "sw-sim-room1",
+                "http://switches:8081/sw-sim-room1",
+                19.0,
+                SwitchState.APAGADO),
+            new Room(
+                "room2",
+                "Dormitorio",
+                20.0,
+                0.8,
+                "t2",
+                "t2",
+                "sw-sim-room2",
+                "http://switches:8081/sw-sim-room2",
+                22.0,
+                SwitchState.APAGADO));
+    DataSite config = new DataSite(site, habitaciones);
+    ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
 
-        CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
     assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room1", SwitchState.ENCENDIDO));
   }
@@ -480,40 +461,58 @@ class CoreTest {
     DataSite config = new DataSite(site, new ArrayList<>());
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T23:01:00Z");
 
-    RespuestaCore respuesta = core.calcularComandos(fechaHora, config);
+    CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
     assertComandosIguales(respuesta);
   }
 
-    private void assertComandosIguales(CoreAnswer respuesta, CommandSwitch... esperados) {
-        assertEquals(esperados.length, respuesta.commands().size(),
-                "La respuesta debe devolver la misma cantidad de commands que los esperados");
+  private void assertComandosIguales(CoreAnswer respuesta, CommandSwitch... esperados) {
+    assertEquals(
+        esperados.length,
+        respuesta.commands().size(),
+        "La respuesta debe devolver la misma cantidad de commands que los esperados");
 
-        for (CommandSwitch esperado : esperados) {
-            assertTrue(respuesta.commands().stream().anyMatch(actual ->
-                switch(actual) {
-                    case CommandSwitch actualSwitch when
-                        actualSwitch.idSwitch().equals(esperado.idSwitch()) &&
-                        actualSwitch.estado() == esperado.estado() -> true;
-                    default -> false;
-                }
-            ), "No se encontró el comando esperado: " + esperado.idSwitch() + " -> " + esperado.estado());
-        }
+    for (CommandSwitch esperado : esperados) {
+      assertTrue(
+          respuesta.commands().stream()
+              .anyMatch(
+                  actual ->
+                      switch (actual) {
+                        case CommandSwitch actualSwitch
+                            when actualSwitch.idSwitch().equals(esperado.idSwitch())
+                                && actualSwitch.estado() == esperado.estado() ->
+                            true;
+                        default -> false;
+                      }),
+          "No se encontró el comando esperado: "
+              + esperado.idSwitch()
+              + " -> "
+              + esperado.estado());
     }
+  }
 
-    private void assertComandosEnOrden(CoreAnswer respuesta, CommandSwitch... esperados) {
-        assertEquals(esperados.length, respuesta.commands().size(),
-                "La respuesta debe devolver la misma cantidad de commands que los esperados");
+  private void assertComandosEnOrden(CoreAnswer respuesta, CommandSwitch... esperados) {
+    assertEquals(
+        esperados.length,
+        respuesta.commands().size(),
+        "La respuesta debe devolver la misma cantidad de commands que los esperados");
 
-        for (int indice = 0; indice < esperados.length; indice++) {
-            CommandSwitch esperado = esperados[indice];
-            assertTrue(switch (respuesta.commands().get(indice)) {
-                case CommandSwitch actualSwitch when
-                    actualSwitch.idSwitch().equals(esperado.idSwitch()) &&
-                    actualSwitch.estado() == esperado.estado() -> true;
-                default -> false;
-            }, "El comando en la posición " + indice + " no coincide con el esperado: " +
-                    esperado.idSwitch() + " -> " + esperado.estado());
-        }
+    for (int indice = 0; indice < esperados.length; indice++) {
+      CommandSwitch esperado = esperados[indice];
+      assertTrue(
+          switch (respuesta.commands().get(indice)) {
+            case CommandSwitch actualSwitch
+                when actualSwitch.idSwitch().equals(esperado.idSwitch())
+                    && actualSwitch.estado() == esperado.estado() ->
+                true;
+            default -> false;
+          },
+          "El comando en la posición "
+              + indice
+              + " no coincide con el esperado: "
+              + esperado.idSwitch()
+              + " -> "
+              + esperado.estado());
     }
+  }
 }
