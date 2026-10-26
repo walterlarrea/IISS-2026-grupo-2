@@ -63,7 +63,7 @@
     </build>
 
     <modules>
-        <module>controlador</module>
+        <module>controller</module>
         <module>publisher</module>
         <module>switches-api</module>
         <module>core</module>

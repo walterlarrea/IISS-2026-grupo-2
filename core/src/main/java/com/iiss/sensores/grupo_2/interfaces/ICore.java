@@ -1,10 +1,10 @@
 package com.iiss.sensores.grupo_2.interfaces;
 
-import com.iiss.sensores.grupo_2.modelos.output.RespuestaCore;
-import com.iiss.sensores.grupo_2.modelos.input.DataSitio;
+import com.iiss.sensores.grupo_2.modelos.output.CoreAnswer;
+import com.iiss.sensores.grupo_2.modelos.input.DataSite;
 import java.time.ZonedDateTime;
 
 public interface ICore {
-    RespuestaCore calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio);
+    CoreAnswer calcularComandos(ZonedDateTime fechaHora, DataSite dataSite);
 }
 
