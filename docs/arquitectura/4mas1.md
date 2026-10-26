@@ -12,33 +12,33 @@ El sistema se divide en dos módulos conceptuales bien diferenciados:
 
 ### Core (`com.iiss.sensores.grupo_2`)
 
-Lógica de decisión pura, sin dependencias de frameworks ni red. Recibe un snapshot del estado del sitio y devuelve una lista de comandos a ejecutar.
+Lógica de decisión pura, sin dependencias de frameworks ni red. Recibe un snapshot del estado del site y devuelve una lista de commands a ejecutar.
 
 Interfaz principal:
 ```java,
-ICore.calcularComandos(ZonedDateTime fechaHora, DataSitio dataSitio): RespuestaCore
+ICore.calcularComandos(ZonedDateTime fechaHora, DataSitio dataSite): RespuestaCore
 ```
 
 **Modelos de entrada (`modelos/input`):**
 
 | Clase | Responsabilidad |
 |---|---|
-| `DataSitio` | Agrupa el sitio y la lista de habitaciones |
+| `DataSitio` | Agrupa el site y la lista de habitaciones |
 | `Sitio` | Nombre, potencia contratada (kW) y tarifa |
 | `Habitacion` | Temperatura actual/esperada, potencia, id del termostato y URL del switch |
-| `Tarifa` / `Punta` | Franja horaria punta (ej. 17:00–23:00, días hábiles) |
+| `Tarifa` / `Punta` | Franja horaria rushHour (ej. 17:00–23:00, días hábiles) |
 
 **Modelos de salida (`modelos/output`):**
 
 | Clase | Responsabilidad |
 |---|---|
-| `RespuestaCore` | Lista de comandos calculados |
+| `RespuestaCore` | Lista de commands calculados |
 | `ComandoSwitch` | Switch a accionar con estado destino (ENCENDIDO / APAGADO) |
 
 **Reglas implementadas en `Core`:**
-1. Si el horario es **punta**, apaga todos los switches activos.
+1. Si el horario es **rushHour**, apaga todos los switches activos.
 2. Apaga las habitaciones que ya alcanzaron su temperature objetivo (liberando potencia).
-3. Enciende las habitaciones con mayor déficit primero, respetando el límite de potencia contratada del sitio.
+3. Enciende las habitaciones con mayor déficit primero, respetando el límite de potencia contratada del site.
 
 ### Engine (`com.iiss.sensores.grupo_2.controlador`)
 
@@ -46,16 +46,16 @@ Capa de infraestructura Spring Boot que conecta el Core con el mundo exterior. S
 
 | Subcapa | Paquete | Responsabilidad |
 |---|---|---|
-| API REST | `.api` | Exposición HTTP: CRUD de habitaciones, inventario del sitio, control del engine |
+| API REST | `.api` | Exposición HTTP: CRUD de habitaciones, inventory del site, control del engine |
 | MQTT | `.engine.mqtt` | Suscripción al broker y despacho a `ControllerTempAuto` |
-| Switch Client | `.engine.client` | Envío de comandos ON/OFF a los switches via HTTP |
+| Switch Client | `.engine.client` | Envío de commands ON/OFF a los switches via HTTP |
 | Writer | `.engine.writer` | Persistencia de mediciones de temperature en MongoDB |
 | Integration | `.integration` | Registro en el simulador y configuración automática del broker MQTT |
 | Shared | `.shared` | Interfaces transversales (`RoomProvider`, `TemperatureEngineService`) |
 
 El `ControllerTempAuto` implementa `TemperatureEngineService` y actúa como puente: recibe la temperature por termostato desde el `MqttSubscriber`, consulta la habitación asociada vía `RoomProvider` y decide encender o apagar el switch.
 
-> **Nota sobre el Core en la iteración actual:** `ControllerTempAuto.controlarHab()` aplica directamente la lógica de comparación temperature actual vs. esperada. La integración completa con `ICore.calcularComandos()` (que evalúa potencia contratada, tarifa punta y priorización por déficit) queda como tarea pendiente para conectar ambas capas.
+> **Nota sobre el Core en la iteración actual:** `ControllerTempAuto.controlarHab()` aplica directamente la lógica de comparación temperature actual vs. esperada. La integración completa con `ICore.calcularComandos()` (que evalúa potencia contratada, tarifa rushHour y priorización por déficit) queda como tarea pendiente para conectar ambas capas.
 
 ---
 
@@ -82,7 +82,7 @@ Flujo principal al recibir un evento de temperature por MQTT:
 
 **Flujo de inicio (integración con simulador):**
 
-Al arrancar, `SimulatorIntegrationService` se registra en el simulador vía REST, obtiene el inventario del sitio (habitaciones, termostatos, switches), lo persiste, y conecta el `MqttSubscriber` al broker indicado por el simulador. Si el simulador no está disponible, reintenta cada 5 segundos.
+Al arrancar, `SimulatorIntegrationService` se registra en el simulador vía REST, obtiene el inventory del site (habitaciones, termostatos, switches), lo persiste, y conecta el `MqttSubscriber` al broker indicado por el simulador. Si el simulador no está disponible, reintenta cada 5 segundos.
 
 ---
 
@@ -121,7 +121,7 @@ Estructura de módulos Maven en el repositorio:
 - `publisher` y `switches-api` son auxiliares independientes.
 
 **Cobertura de tests:**
-- `core`: `CoreTest.java` — prueba todas las reglas (horario punta, priorización por déficit, límite de potencia).
+- `core`: `CoreTest.java` — prueba todas las reglas (horario rushHour, priorización por déficit, límite de potencia).
 - `controlador`: tests de API Key, controllers, services, MQTT subscriber, Switch client e integración con simulador.
 
 ---
@@ -177,4 +177,4 @@ En modo de integración con el simulador de la cátedra, `mosquitto` y `switches
    Si `tC ≥ tEsperada`: envía `POST /OFF`.
 5. El switch (del simulador o del stub) actualiza su estado.
 
-El sistema responde evento a evento, sin ciclos de polling. Cada mensaje MQTT dispara una decisión independiente en el Engine, delegando al Core la lógica de negocio compleja (tarifa punta, potencia máxima) cuando está integrado.
+El sistema responde evento a evento, sin ciclos de polling. Cada mensaje MQTT dispara una decisión independiente en el Engine, delegando al Core la lógica de negocio compleja (tarifa rushHour, potencia máxima) cuando está integrado.

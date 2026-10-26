@@ -26,7 +26,7 @@ El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras qu
 
 ## 2. SCRIPTS y CONF
 
-1. docker --help, en consola para ver sus respectivos comandos.
+1. docker --help, en consola para ver sus respectivos commands.
 2. Para ejecutar los scripts .sh en la consola. Ej: **./up.sh** o **bash up.sh** o **sh up.sh**
 3. Para ejecutar el script build. sh, se puede usar: build.sh local (para .env.local) o build.sh dev (para .env.dev). Si no se escribe nada posterior al .sh, tomará a dev por defecto.
 
@@ -57,8 +57,8 @@ El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras qu
     - **rooms-validar.sh** validar todas las habitaciones de la coleccion (detecta inválidas o duplicadas).
 
   - **curl-site**
-    - **site-replace.sh** reemplaza el inventario.
-    - **site-status.sh** obtiene el inventario del sitio.
+    - **site-replace.sh** reemplaza el inventory.
+    - **site-status.sh** obtiene el inventory del site.
 
   - **curl-switch**
     - **switch-off.sh** apaga el switch.
@@ -108,13 +108,13 @@ Este manda mensajes al broker cada 3 segundos, con una id del dispositivo que lo
 
 **Se juntaron los módulos subscriber y rooms-api en uno solo.**
 
-El módulo engine integra los componentes necesarios para ejecutar el sistema de control automático de temperatura. Actúa como intermediario entre las mediciones recibidas, la configuración del sitio, la lógica de control del core y los dispositivos que se deben accionar.
+El módulo engine integra los componentes necesarios para ejecutar el sistema de control automático de temperatura. Actúa como intermediario entre las mediciones recibidas, la configuración del site, la lógica de control del core y los dispositivos que se deben accionar.
 
 Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST para comunicarse con los demás componentes.
 ### Endpoints principales
 - **EngineController**
   - GET /control: consulta y devuelve el estado actual del controlador.
-  - POST /control/comandos: permite iniciar o detener el controlador.
+  - POST /control/commands: permite iniciar o detener el controlador.
 
 - **RoomController**
   - GET /habitaciones: obtiene todas las habitaciones.
@@ -127,8 +127,8 @@ Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST pa
   - DELETE /habitaciones/{id}: elimina una habitación.
 
 - **SiteController**
-  - GET /sitio: consulta la configuración actual del sitio.
-  - PUT /sitio: reemplaza y actualiza el estado del sitio.
+  - GET /site: consulta la configuración actual del site.
+  - PUT /site: reemplaza y actualiza el estado del site.
 
 ## 6. MÓDULO: CORE
 
@@ -140,7 +140,7 @@ El core recibe la información necesaria para evaluar las condiciones del sistem
 
 - **Reglas de negocio** concentra las decisiones del sistema sin depender directamente de MQTT, MongoDB o los controladores REST.
 
-- **Evaluación de condiciones de operación** permite modelar las reglas que correspondan al funcionamiento del sistema, como las relacionadas con las tarifas, horarios punta, etc.
+- **Evaluación de condiciones de operación** permite modelar las reglas que correspondan al funcionamiento del sistema, como las relacionadas con las tarifas, horarios rushHour, etc.
 
 Esta separación permite mantener el core enfocado en las decisiones del sistema y el engine encargado de integrarlas con el entorno real.
 
@@ -194,7 +194,7 @@ Se crearon test para probar tramos del programa y confirmar el funcionamiento de
 
 Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
 
-- inventario: contiene sitios y sus datos. Cada sitio contiene una lista de habitaciones con sus respectivos datos.
+- inventory: contiene sitios y sus datos. Cada site contiene una lista de habitaciones con sus respectivos datos.
 - Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y marca de tiempo Epoch en milisegundos.
 
 ## 11. JIRA

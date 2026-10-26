@@ -10,7 +10,7 @@
         <module name="core-controlador" />
         <module name="core" />
         <module name="publisher" />
-        <module name="controlador" />
+        <module name="controller" />
         <module name="common" />
       </profile>
     </annotationProcessing>
@@ -22,7 +22,7 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="common" options="-parameters -parameters" />
-      <module name="controlador" options="-parameters -parameters" />
+      <module name="controller" options="-parameters -parameters" />
       <module name="core" options="-parameters -parameters" />
       <module name="publisher" options="-parameters -parameters" />
       <module name="sensores-parent" options="-parameters" />
