@@ -1,6 +1,5 @@
 package com.iiss.sensores.grupo_2.controlador.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -54,14 +53,12 @@ public class BigBangSystemIntegrationIT {
           .withExposedService(MOSQUITTO_SERVICE, MQTT_PORT, Wait.forListeningPort());
 
   private RestClient restClient;
-  private ObjectMapper objectMapper;
   private String controladorBaseUrl;
   private String switchesBaseUrl;
   private String mqttBrokerUrl;
 
   @BeforeEach
   void setup() {
-    objectMapper = new ObjectMapper();
     restClient = RestClient.builder().build();
 
     String ctrlHost = environment.getServiceHost(CTRL_SERVICE, CTRL_PORT);
