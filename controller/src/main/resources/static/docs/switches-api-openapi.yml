@@ -69,8 +69,8 @@ components:
           example: "OFF"
         aplicadoEn:
           type: string
-          format: date
-          example: "2026-10-14"
+          format: date-time
+          example: "2026-10-14T12:00:00Z"
     SwitchRequest:
       type: object
       required: [accion]

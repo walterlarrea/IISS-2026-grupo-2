@@ -11,7 +11,7 @@ import com.iiss.sensores.grupo_2.enums.SwitchState;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Service
 public class SwitchClient {
@@ -84,6 +84,6 @@ public class SwitchClient {
         ON, OFF, DESCONOCIDO
     }
     private record SwitchRequest(EstadoAccionSwitch accion) {}
-    private record SwitchResponse(String idSwitch, EstadoRespuestaSwitch estado, LocalDate aplicadoEn) {}
+    private record SwitchResponse(String idSwitch, EstadoRespuestaSwitch estado, Instant aplicadoEn) {}
 }
     

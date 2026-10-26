@@ -86,7 +86,7 @@ class SwitchClientTest {
         .andRespond(
             withSuccess(
                 """
-                        {"idSwitch":"sw-sim-room1","estado":"ON","aplicadoEn":"2026-10-12"}
+                        {"idSwitch":"sw-sim-room1","estado":"ON","aplicadoEn":"2026-10-12T00:00:00Z"}
                         """,
                 MediaType.APPLICATION_JSON));
     server
@@ -96,7 +96,7 @@ class SwitchClientTest {
         .andRespond(
             withSuccess(
                 """
-                        {"idSwitch":"sw-sim-room1","estado":"OFF","aplicadoEn":"2026-10-12"}
+                        {"idSwitch":"sw-sim-room1","estado":"OFF","aplicadoEn":"2026-10-12T00:00:00Z"}
                         """,
                 MediaType.APPLICATION_JSON));
 

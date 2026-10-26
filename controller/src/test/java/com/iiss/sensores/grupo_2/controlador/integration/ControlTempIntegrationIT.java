@@ -166,7 +166,7 @@ class ControllerTempAutoIntegrationIT {
                         {
                           "idSwitch": "%s",
                           "estado": "%s",
-                          "aplicadoEn": "2026-10-26"
+                          "aplicadoEn": "2026-10-26T00:00:00Z"
                         }
                         """.formatted(idSwitch, initialState))));
 
@@ -176,7 +176,7 @@ class ControllerTempAutoIntegrationIT {
                         {
                           "idSwitch": "%s",
                           "estado": "%s",
-                          "aplicadoEn": "2026-10-26"
+                          "aplicadoEn": "2026-10-26T00:00:00Z"
                         }
                         """.formatted(
                         idSwitch,

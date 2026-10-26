@@ -6,7 +6,7 @@ import com.iiss.sensores.grupo_2.switches.dto.SwitchAccionResponse;
 import com.iiss.sensores.grupo_2.switches.dto.SwitchResponse;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -16,7 +16,7 @@ public class SwitchService {
     private final ConcurrentMap<String, Switch> switches = new ConcurrentHashMap<>();
 
     public SwitchResponse obtener(String id) {
-        Switch switchActual = switches.computeIfAbsent(id, ignored -> new Switch(id, EstadoSwitch.OFF, LocalDate.now()));
+        Switch switchActual = switches.computeIfAbsent(id, ignored -> new Switch(id, EstadoSwitch.OFF, Instant.now()));
         return new SwitchResponse(switchActual.getId(), switchActual.getEstado(), switchActual.getAplicadoEn());
     }
 
@@ -26,7 +26,7 @@ public class SwitchService {
         Switch switchActual = switches.compute(id, (clave, existente) -> {
             if (existente == null) {
                 cambio[0] = true;
-                return new Switch(clave, accion, LocalDate.now());
+                return new Switch(clave, accion, Instant.now());
             }
 
             if (existente.getEstado() != accion) {
@@ -34,7 +34,7 @@ public class SwitchService {
             }
 
             existente.setEstado(accion);
-            existente.setAplicadoEn(LocalDate.now());
+            existente.setAplicadoEn(Instant.now());
             return existente;
         });
 
