@@ -257,7 +257,7 @@ public class BigBangSystemIntegrationIT {
     ResponseEntity<Void> configResponse =
         restClient
             .put()
-            .uri(controladorBaseUrl + "/sitio")
+            .uri(controllerBaseUrl + "/sitio")
             .header("X-API-KEY", "test-ctrl-key")
             .contentType(MediaType.APPLICATION_JSON)
             .body(sitePayload)
@@ -301,7 +301,7 @@ public class BigBangSystemIntegrationIT {
     // 3. START THE AUTOMATIC ENGINE CONTROLLER
     restClient
         .post()
-        .uri(controladorBaseUrl + "/control/comandos")
+        .uri(controllerBaseUrl + "/control/comandos")
         .header("X-API-KEY", "test-ctrl-key")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
@@ -368,7 +368,7 @@ public class BigBangSystemIntegrationIT {
   void restartContainers() {
     restClient
         .post()
-        .uri(controladorBaseUrl + "/control/comandos")
+        .uri(controllerBaseUrl + "/control/comandos")
         .header("X-API-KEY", "test-ctrl-key")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
