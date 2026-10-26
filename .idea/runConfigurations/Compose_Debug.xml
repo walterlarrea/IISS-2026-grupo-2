@@ -19,7 +19,7 @@
         <option name="commandLineOptions" value="--build" />
         <option name="services">
           <list>
-            <option value="controlador" />
+            <option value="controller" />
             <option value="mongodb" />
             <option value="mosquitto" />
             <option value="publisher" />

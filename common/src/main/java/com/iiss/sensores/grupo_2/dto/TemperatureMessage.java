@@ -1,6 +1,5 @@
 package com.iiss.sensores.grupo_2.dto;
 
-
 import java.time.Instant;
 
 public record TemperatureMessage(
