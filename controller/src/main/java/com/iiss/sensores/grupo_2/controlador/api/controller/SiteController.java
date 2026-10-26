@@ -13,29 +13,35 @@ import java.util.Map;
 
 @RestController
 public class SiteController {
-    private final InventoryService inventoryService;
-    private final InventoryMapper inventoryMapper;
-    private final SiteStateService siteStateService;
+  private final InventoryService inventoryService;
+  private final InventoryMapper inventoryMapper;
+  private final SiteStateService siteStateService;
 
-    public SiteController(InventoryService inventoryService, InventoryMapper inventoryMapper, SiteStateService siteStateService) {
-        this.inventoryService = inventoryService;
-        this.inventoryMapper = inventoryMapper;
-        this.siteStateService = siteStateService;
-    }
+  public SiteController(
+      InventoryService inventoryService,
+      InventoryMapper inventoryMapper,
+      SiteStateService siteStateService) {
+    this.inventoryService = inventoryService;
+    this.inventoryMapper = inventoryMapper;
+    this.siteStateService = siteStateService;
+  }
 
-    @GetMapping("/site")
-    public ResponseEntity<Inventory> obtenerSitio() {
-        return inventoryService.obtenerActivo()
-                .map(ResponseEntity::ok)
-                .orElseThrow(SiteNotConfigException::new);
-    }
+  @GetMapping("/sitio")
+  public ResponseEntity<Inventory> obtenerSitio() {
+    return inventoryService
+        .obtenerActivo()
+        .map(ResponseEntity::ok)
+        .orElseThrow(SiteNotConfigException::new);
+  }
 
-    @PutMapping("/site")
-    public ResponseEntity<Map<String, Object>> reemplazarSitio(@Valid @RequestBody Inventory inventory) {
-        //validar que el inventory pueda representarse en el core antes de persistirlo.
-        inventoryMapper.convertir(inventory);
-        Inventory aplicado = inventoryService.reemplazar(inventory);
-        siteStateService.loadSiteState(inventoryMapper.convertir(aplicado));
-        return ResponseEntity.ok(Map.of("site", aplicado.sitio().id(), "rooms", aplicado.habitaciones().size()));
-    }
+  @PutMapping("/sitio")
+  public ResponseEntity<Map<String, Object>> reemplazarSitio(
+      @Valid @RequestBody Inventory inventory) {
+    // validar que el inventory pueda representarse en el core antes de persistirlo.
+    inventoryMapper.convertir(inventory);
+    Inventory aplicado = inventoryService.reemplazar(inventory);
+    siteStateService.loadSiteState(inventoryMapper.convertir(aplicado));
+    return ResponseEntity.ok(
+        Map.of("site", aplicado.sitio().id(), "rooms", aplicado.habitaciones().size()));
+  }
 }

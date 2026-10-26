@@ -70,7 +70,7 @@ public class SwitchClient {
 
     private String componerUrlPostSwitch(Room room) {
         //construye la URL completa del switch a partir de la información de la habitación
-        return room.urlSwitch() + "/switches/" + room.idSwitch() + "/commands";
+        return room.urlSwitch() + "/switches/" + room.idSwitch() + "/comandos";
     }
 
     private String componerUrlGetSwitch(Room room) {

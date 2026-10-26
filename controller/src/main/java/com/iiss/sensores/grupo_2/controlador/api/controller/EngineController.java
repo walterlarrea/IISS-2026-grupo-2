@@ -14,42 +14,42 @@ import java.util.Optional;
 
 @RestController
 public class EngineController {
-    private final TemperatureEngineService engineService;
+  private final TemperatureEngineService engineService;
 
-    public EngineController(TemperatureEngineService engineService) {
-        this.engineService = engineService;
-    }
+  public EngineController(TemperatureEngineService engineService) {
+    this.engineService = engineService;
+  }
 
-    @GetMapping("/control")
-    public StateControl obtenerControl() {
-        return engineService.getTempControllerStatus();
-    }
+  @GetMapping("/control")
+  public StateControl obtenerControl() {
+    return engineService.getTempControllerStatus();
+  }
 
-    @PostMapping("/control/commands")
-    public StateControl comandarControl(@RequestBody CommandControl comando) {
-        if (comando.accion() == null) {
-            throw comandoInvalido("accion es obligatoria");
-        }
-        switch (comando.accion()) {
-            case "INICIAR" -> start(comando);
-            case "DETENER" -> engineService.stop();
-            default -> throw comandoInvalido("accion desconocida: " + comando.accion());
-        }
-        return engineService.getTempControllerStatus();
+  @PostMapping("/control/comandos")
+  public StateControl comandarControl(@RequestBody CommandControl comando) {
+    if (comando.accion() == null) {
+      throw comandoInvalido("accion es obligatoria");
     }
+    switch (comando.accion()) {
+      case "INICIAR" -> start(comando);
+      case "DETENER" -> engineService.stop();
+      default -> throw comandoInvalido("accion desconocida: " + comando.accion());
+    }
+    return engineService.getTempControllerStatus();
+  }
 
-    private void start(CommandControl comando) {
-        if (comando.fechaHora() == null) {
-            throw comandoInvalido("INICIAR requiere fechaHora");
-        }
-        int timeFactor = Optional.ofNullable(comando.factorTiempo()).orElse(1);
-        if (timeFactor <= 0) {
-            throw comandoInvalido("factorTiempo must be a positive number");
-        }
-        engineService.start(comando.fechaHora(), timeFactor);
+  private void start(CommandControl comando) {
+    if (comando.fechaHora() == null) {
+      throw comandoInvalido("INICIAR requiere fechaHora");
     }
+    int timeFactor = Optional.ofNullable(comando.factorTiempo()).orElse(1);
+    if (timeFactor <= 0) {
+      throw comandoInvalido("factorTiempo must be a positive number");
+    }
+    engineService.start(comando.fechaHora(), timeFactor);
+  }
 
-    private InvalidRequestException comandoInvalido(String error) {
-        return new InvalidRequestException("comando inválido", List.of(error));
-    }
+  private InvalidRequestException comandoInvalido(String error) {
+    return new InvalidRequestException("comando inválido", List.of(error));
+  }
 }

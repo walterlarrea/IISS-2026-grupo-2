@@ -114,7 +114,7 @@ Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST pa
 ### Endpoints principales
 - **EngineController**
   - GET /control: consulta y devuelve el estado actual del controlador.
-  - POST /control/commands: permite iniciar o detener el controlador.
+  - POST /control/comandos: permite iniciar o detener el controlador.
 
 - **RoomController**
   - GET /habitaciones: obtiene todas las habitaciones.
@@ -127,8 +127,8 @@ Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST pa
   - DELETE /habitaciones/{id}: elimina una habitación.
 
 - **SiteController**
-  - GET /site: consulta la configuración actual del site.
-  - PUT /site: reemplaza y actualiza el estado del site.
+  - GET /sitio: consulta la configuración actual del site.
+  - PUT /sitio: reemplaza y actualiza el estado del site.
 
 ## 6. MÓDULO: CORE
 

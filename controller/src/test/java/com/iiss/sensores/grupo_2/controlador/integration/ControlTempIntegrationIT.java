@@ -123,19 +123,19 @@ class ControllerTempAutoIntegrationIT {
         controller.execute();
 
         switchesApi.verify(1, postRequestedFor(
-                urlEqualTo("/switches/sw-sim-room1/commands"))
+                urlEqualTo("/switches/sw-sim-room1/comandos"))
                 .withRequestBody(matchingJsonPath(
                         "$.accion", equalTo("ON")))
         );
 
         switchesApi.verify(1, postRequestedFor(
-                urlEqualTo("/switches/sw-sim-room2/commands"))
+                urlEqualTo("/switches/sw-sim-room2/comandos"))
                 .withRequestBody(matchingJsonPath(
                         "$.accion", equalTo("ON")))
         );
 
         switchesApi.verify(1, postRequestedFor(
-                urlEqualTo("/switches/sw-sim-room3/commands"))
+                urlEqualTo("/switches/sw-sim-room3/comandos"))
                 .withRequestBody(matchingJsonPath(
                         "$.accion", equalTo("OFF")))
         );
@@ -171,7 +171,7 @@ class ControllerTempAutoIntegrationIT {
                         """.formatted(idSwitch, initialState))));
 
         switchesApi.stubFor(post(
-                urlEqualTo("/switches/" + idSwitch + "/commands"))
+                urlEqualTo("/switches/" + idSwitch + "/comandos"))
                 .willReturn(okJson("""
                         {
                           "idSwitch": "%s",

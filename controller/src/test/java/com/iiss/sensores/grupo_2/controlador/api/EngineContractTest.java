@@ -51,7 +51,7 @@ class EngineContractTest {
     void obtieneSitioYDevuelve404CuandoAunNoFueConfigurado() throws Exception {
         when(inventoryService.obtenerActivo()).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/site").header("X-API-KEY", "test-api-key"))
+        mockMvc.perform(get("/sitio").header("X-API-KEY", "test-api-key"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
@@ -84,7 +84,7 @@ class EngineContractTest {
         when(switchClient.consultarEstado(any()))
                 .thenReturn(new SwitchStateResponse("switch1", SwitchState.APAGADO, null));
 
-        mockMvc.perform(put("/site")
+        mockMvc.perform(put("/sitio")
                         .header("X-API-KEY", "test-api-key")
                         .contentType("application/json")
                         .content(payload))
@@ -92,7 +92,7 @@ class EngineContractTest {
                 .andExpect(jsonPath("$.site").value("casa"))
                 .andExpect(jsonPath("$.rooms").value(1));
 
-        mockMvc.perform(put("/site")
+        mockMvc.perform(put("/sitio")
                         .header("X-API-KEY", "test-api-key")
                         .contentType("application/json")
                         .content(payload.replace("\"schemaVersion\": \"2.0\"", "\"schemaVersion\": \"1.0\"")))
@@ -110,7 +110,7 @@ class EngineContractTest {
                 Instant.parse("2026-10-01T09:15:00Z")
         ));
 
-        mockMvc.perform(post("/control/commands")
+        mockMvc.perform(post("/control/comandos")
                         .header("X-API-KEY", "test-api-key")
                         .contentType("application/json")
                         .content("""
@@ -122,7 +122,7 @@ class EngineContractTest {
 
         verify(engineService).start(fechaHora, 10);
 
-        mockMvc.perform(post("/control/commands")
+        mockMvc.perform(post("/control/comandos")
                         .header("X-API-KEY", "test-api-key")
                         .contentType("application/json")
                         .content("{\"accion\":\"INICIAR\",\"factorTiempo\":0}"))

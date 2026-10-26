@@ -20,74 +20,89 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SwitchClientTest {
 
-    @Test
-    void sendsSimulatorCommandWithApiKeyAndContractPayload() throws Exception {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
+  @Test
+  void sendsSimulatorCommandWithApiKeyAndContractPayload() throws Exception {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
 
-        server.expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/commands"))
-                .andExpect(method(POST))
-                .andExpect(header("X-API-Key", "simulator-key"))
-                .andExpect(content().json("""
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andExpect(method(POST))
+        .andExpect(header("X-API-Key", "simulator-key"))
+        .andExpect(
+            content()
+                .json(
+                    """
                         {"accion":"ON"}
                         """))
-                .andRespond(withSuccess("""
+        .andRespond(
+            withSuccess(
+                """
                         {"idSwitch":"sw-sim-room1","estado":"ON","cambio":true,"aplicadoEn":"2026-10-12T20:00:00Z"}
-                        """, MediaType.APPLICATION_JSON));
+                        """,
+                MediaType.APPLICATION_JSON));
 
-        Room room = new Room(
-                "room1",
-                "Room 1",
-                22.0,
-                1.5,
-                "thermostat-room1",
-                "topic-room1",
-                "sw-sim-room1",
-                "http://iiss-simulator:9090",
-                21.0,
-                SwitchState.APAGADO
-        );
+    Room room =
+        new Room(
+            "room1",
+            "Room 1",
+            22.0,
+            1.5,
+            "thermostat-room1",
+            "topic-room1",
+            "sw-sim-room1",
+            "http://iiss-simulator:9090",
+            21.0,
+            SwitchState.APAGADO);
 
-        client.encender(room);
+    client.encender(room);
 
-        server.verify();
-    }
+    server.verify();
+  }
 
-    @Test
-    void readsAndMapsTheSwitchStateWithApiKey() {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
-        Room room = new Room(
-                "room1",
-                "Room 1",
-                22.0,
-                1.5,
-                "thermostat-room1",
-                "topic-room1",
-                "sw-sim-room1",
-                "http://iiss-simulator:9090",
-                21.0,
-                SwitchState.APAGADO
-        );
+  @Test
+  void readsAndMapsTheSwitchStateWithApiKey() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
+    Room room =
+        new Room(
+            "room1",
+            "Room 1",
+            22.0,
+            1.5,
+            "thermostat-room1",
+            "topic-room1",
+            "sw-sim-room1",
+            "http://iiss-simulator:9090",
+            21.0,
+            SwitchState.APAGADO);
 
-        server.expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
-                .andExpect(method(GET))
-                .andExpect(header("X-API-Key", "simulator-key"))
-                .andRespond(withSuccess("""
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andExpect(header("X-API-Key", "simulator-key"))
+        .andRespond(
+            withSuccess(
+                """
                         {"idSwitch":"sw-sim-room1","estado":"ON","aplicadoEn":"2026-10-12"}
-                        """, MediaType.APPLICATION_JSON));
-        server.expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
-                .andExpect(method(GET))
-                .andExpect(header("X-API-Key", "simulator-key"))
-                .andRespond(withSuccess("""
+                        """,
+                MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andExpect(header("X-API-Key", "simulator-key"))
+        .andRespond(
+            withSuccess(
+                """
                         {"idSwitch":"sw-sim-room1","estado":"OFF","aplicadoEn":"2026-10-12"}
-                        """, MediaType.APPLICATION_JSON));
+                        """,
+                MediaType.APPLICATION_JSON));
 
-        assertEquals(SwitchState.ENCENDIDO, client.consultarEstado(room).estado());
-        assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
+    assertEquals(SwitchState.ENCENDIDO, client.consultarEstado(room).estado());
+    assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
 
-        server.verify();
-    }
+    server.verify();
+  }
 }

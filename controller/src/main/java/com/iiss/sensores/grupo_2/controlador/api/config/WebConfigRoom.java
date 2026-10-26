@@ -15,7 +15,7 @@ public class WebConfigRoom implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(apiKeyInterceptor)
-                .addPathPatterns("/habitaciones/**", "/controller/**", "/site", "/control/**")
+                .addPathPatterns("/habitaciones/**", "/controller/**", "/sitio", "/control/**")
                 .excludePathPatterns("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/docs/**");
     }
 }
