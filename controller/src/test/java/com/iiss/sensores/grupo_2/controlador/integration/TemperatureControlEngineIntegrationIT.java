@@ -1,30 +1,29 @@
 package com.iiss.sensores.grupo_2.controlador.integration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.when;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventoryService;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
-import com.iiss.sensores.grupo_2.controlador.engine.service.TemperatureControlEngine;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
+import com.iiss.sensores.grupo_2.controlador.engine.service.TemperatureControlEngine;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.enums.RushDays;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.modelos.input.*;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-import java.time.Instant;
-import java.util.List;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class TemperatureControlEngineIntegrationIT {
