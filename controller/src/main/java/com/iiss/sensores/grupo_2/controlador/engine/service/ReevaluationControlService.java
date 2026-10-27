@@ -5,16 +5,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ReevaluationControlService {
-    private final ControllerTempAuto controllerTempAuto;
+  private final TemperatureControlEngine temperatureControlEngine;
 
-    public ReevaluationControlService(ControllerTempAuto controllerTempAuto) {
-        this.controllerTempAuto = controllerTempAuto;
-    }
+  public ReevaluationControlService(TemperatureControlEngine temperatureControlEngine) {
+    this.temperatureControlEngine = temperatureControlEngine;
+  }
 
-    @Scheduled(fixedDelayString = "${controlador.reevaluacion-ms:5000}")
-    public void reevaluar() {
-        if (controllerTempAuto.isActive()) {
-            controllerTempAuto.execute();
-        }
+  @Scheduled(fixedDelayString = "${controlador.reevaluacion-ms:5000}")
+  public void reevaluar() {
+    if (temperatureControlEngine.isActive()) {
+      temperatureControlEngine.execute();
     }
+  }
 }

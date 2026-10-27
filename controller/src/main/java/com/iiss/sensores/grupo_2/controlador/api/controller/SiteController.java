@@ -3,7 +3,6 @@ package com.iiss.sensores.grupo_2.controlador.api.controller;
 import com.iiss.sensores.grupo_2.controlador.api.model.Inventory;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventoryService;
 import com.iiss.sensores.grupo_2.controlador.api.service.SiteNotConfigException;
-import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
 import com.iiss.sensores.grupo_2.controlador.engine.service.InventoryMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -15,15 +14,10 @@ import java.util.Map;
 public class SiteController {
   private final InventoryService inventoryService;
   private final InventoryMapper inventoryMapper;
-  private final SiteStateService siteStateService;
 
-  public SiteController(
-      InventoryService inventoryService,
-      InventoryMapper inventoryMapper,
-      SiteStateService siteStateService) {
+  public SiteController(InventoryService inventoryService, InventoryMapper inventoryMapper) {
     this.inventoryService = inventoryService;
     this.inventoryMapper = inventoryMapper;
-    this.siteStateService = siteStateService;
   }
 
   @GetMapping("/sitio")
@@ -37,11 +31,13 @@ public class SiteController {
   @PutMapping("/sitio")
   public ResponseEntity<Map<String, Object>> reemplazarSitio(
       @Valid @RequestBody Inventory inventory) {
-    // validar que el inventory pueda representarse en el core antes de persistirlo.
+    // Validate the payload shape
     inventoryMapper.convertir(inventory);
-    Inventory aplicado = inventoryService.reemplazar(inventory);
-    siteStateService.loadSiteState(inventoryMapper.convertir(aplicado));
+    // TODO: validation error -> response handling?
+
+    Inventory savedInventory = inventoryService.reemplazar(inventory);
+
     return ResponseEntity.ok(
-        Map.of("site", aplicado.sitio().id(), "rooms", aplicado.habitaciones().size()));
+        Map.of("site", savedInventory.sitio().id(), "rooms", savedInventory.habitaciones().size()));
   }
 }

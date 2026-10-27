@@ -15,113 +15,128 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Logic to take decisions based on site data config, temperature readings and domain requirements
+ */
 class Core implements ICore {
-    private static final Logger logger = LoggerFactory.getLogger(Core.class);
+  private static final Logger logger = LoggerFactory.getLogger(Core.class);
 
-    public Core() {
-        // Constructor de la clase Core
+  public Core() {}
+
+  @Override
+  public CoreAnswer calcularComandos(ZonedDateTime dateTime, DataSite siteData) {
+    logger.debug(
+        "Calculating commands for {}. Received site config.: {}", dateTime, siteData != null);
+    if (siteData == null || siteData.habitaciones() == null || siteData.habitaciones().isEmpty()) {
+      logger.debug("No rooms found for evaluation; Not generating commands");
+      return new CoreAnswer(List.of());
+    }
+    logger.debug("Evaluating {} rooms", siteData.habitaciones().size());
+
+    // Turn OFF all switches during the configured rush hour period
+    if (siteData.site() != null
+        && siteData.site().fee() != null
+        && siteData.site().fee().isRushHour(dateTime)) {
+      logger.debug("Rush hour period active; all switches currently turned ON will be turned OFF");
+      List<Command> commands = new ArrayList<>();
+      for (Room room : siteData.habitaciones()) {
+        appendCommandoSiNecessary(commands, room, SwitchState.APAGADO);
+      }
+      logger.debug("Finished calculating rush hour: {} commands", commands.size());
+      return new CoreAnswer(commands);
     }
 
-    @Override
-    public CoreAnswer calcularComandos(ZonedDateTime fechaHora, DataSite dataSite) {
-        logger.debug("Calculando commands para {}. Site recibido: {}", fechaHora, dataSite != null);
-        if (dataSite == null || dataSite.habitaciones() == null || dataSite.habitaciones().isEmpty()) {
-            logger.debug("No hay habitaciones para evaluar; no se generan commands");
-            return new CoreAnswer(List.of());
-        }
-        logger.debug("Se evaluarán {} habitaciones", dataSite.habitaciones().size());
-
-        // Apaga todos los switches durante el horario rushHour
-        if (dataSite.site() != null
-                && dataSite.site().fee() != null
-                && dataSite.site().fee().esHorarioPunta(fechaHora)) {
-            logger.debug("Horario rushHour activo; se apagarán los switches que estén encendidos");
-            List<Command> commands = new ArrayList<>();
-            for (Room room : dataSite.habitaciones()) {
-                agregarComandoSiNecesario(commands, room, SwitchState.APAGADO);
-            }
-            logger.debug("Cálculo en horario rushHour finalizado: {} commands", commands.size());
-            return new CoreAnswer(commands);
-        }
-
-        // Lista de habitaciones que alcanzaron o están por encima de la temperatura esperada
-        List<Room> habitacionesSobreTemperaturaEsperada = dataSite.habitaciones().stream()
-            .filter(habitacion -> habitacion.currentTemperatureC() >= habitacion.expectedTemperature())
+    // Set of rooms at or over expected temperature
+    List<Room> roomsOverTheExpectedTemperature =
+        siteData.habitaciones().stream()
+            .filter(room -> room.currentTemperatureC() >= room.expectedTemperature())
             .toList();
 
-        // Lista de habitaciones que están por debajo de la temperatura esperada,
-        // ordenadas por la diferencia entre la temperatura esperada y la actual (de mayor a menor)
-        List<Room> habitacionesBajoTemperaturaEsperada = dataSite.habitaciones().stream()
-            .filter(habitacion -> habitacion.currentTemperatureC() < habitacion.expectedTemperature())
-            .sorted(Comparator.comparingDouble((Room habitacion) ->
-                    habitacion.expectedTemperature() - habitacion.currentTemperatureC()).reversed())
+    // Set of rooms below their expected temperature,
+    // ordered by temperature deficit DESC
+    List<Room> roomsBelowExpectedTemperature =
+        siteData.habitaciones().stream()
+            .filter(room -> room.currentTemperatureC() < room.expectedTemperature())
+            .sorted(
+                Comparator.comparingDouble(
+                        (Room room) -> room.expectedTemperature() - room.currentTemperatureC())
+                    .reversed())
             .toList();
-        logger.debug("Habitaciones en o sobre temperatura esperada: {}; bajo temperatura esperada: {}",
-                habitacionesSobreTemperaturaEsperada.size(), habitacionesBajoTemperaturaEsperada.size());
+    logger.debug(
+        "Rooms at or over the expected temperature: {}; Below the expected temperature: {}",
+        roomsOverTheExpectedTemperature.size(),
+        roomsBelowExpectedTemperature.size());
 
-        // Calcula la potencia utilizada sumando la potencia de las habitaciones cuyo switch está encendido
-        double potenciaUtilizada = dataSite.habitaciones().stream()
-            .filter(habitacion -> habitacion.currentSwitchState() == SwitchState.ENCENDIDO)
+    // Calculate power used by rooms whose switch is turned ON
+    double utilizedPower =
+        siteData.habitaciones().stream()
+            .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
             .mapToDouble(Room::powerKW)
             .sum();
-        logger.debug("Potencia utilizada inicialmente: {} kW", potenciaUtilizada);
+    logger.debug("Power utilized initially: {} kW", utilizedPower);
 
-        List<Command> commands = new ArrayList<>();
+    List<Command> commands = new ArrayList<>();
 
-        /* - Agrega los commands para apagar los switches de las habitaciones que están por encima de la temperatura esperada y está encendido
-         * -Libera potencia para poder encender las habitaciones que están por debajo de la temperatura esperada
-         */
-        for (Room room : habitacionesSobreTemperaturaEsperada) {
-            if (room.currentSwitchState() != SwitchState.APAGADO) {
-                commands.add(new CommandSwitch(room.idSwitch(), SwitchState.APAGADO));
-                potenciaUtilizada -= room.powerKW();
-                logger.debug("Se apaga el switch {}: temperatura actual {} °C, esperada {} °C; potencia liberada {} kW",
-                        room.idSwitch(), room.currentTemperatureC(), room.expectedTemperature(),
-                        room.powerKW());
-            }
-        }
-
-        /* - Agrega los commands para encender los switches de las habitaciones que están por debajo de la temperatura esperada y cuyo switch está apagado.
-         * - Solo enciende la habitación si no supera la potencia contratada.
-         * - Si la habitación con mayor déficit de temperatura no puede encenderse por superar la potencia contratada,
-         *     se intenta encender la siguiente habitación con menor déficit de temperatura, y así sucesivamente.
-        */
-        for (Room room : habitacionesBajoTemperaturaEsperada) {
-            if (room.currentSwitchState() != SwitchState.ENCENDIDO) {
-                assert dataSite.site() != null;
-                // Solo enciende la habitación si no supera la potencia contratada
-                if (potenciaUtilizada + room.powerKW() <= dataSite.site().potenciaContratadaKW()) {
-                    commands.add(new CommandSwitch(room.idSwitch(), SwitchState.ENCENDIDO));
-                    potenciaUtilizada += room.powerKW();
-                    logger.debug("Se enciende el switch {}: déficit de temperatura {} °C; potencia utilizada {}/{} kW",
-                            room.idSwitch(),
-                            room.expectedTemperature() - room.currentTemperatureC(),
-                            potenciaUtilizada, dataSite.site().potenciaContratadaKW());
-                } else {
-                    logger.debug("No se enciende el switch {}: potencia requerida {} kW supera el límite contratado de {} kW",
-                            room.idSwitch(), potenciaUtilizada + room.powerKW(),
-                            dataSite.site().potenciaContratadaKW());
-                }
-            }
-        }
-
-        logger.debug("Cálculo finalizado: {} commands; potencia utilizada final: {} kW",
-                commands.size(), potenciaUtilizada);
-        return new CoreAnswer(commands);
+    // - Appends the commands for turning OFF switches of rooms that are at or over their expected
+    // temperature and are currently ON.
+    // - Frees power before trying to turn ON switches for rooms that are below expected temperature
+    for (Room room : roomsOverTheExpectedTemperature) {
+      if (room.currentSwitchState() != SwitchState.APAGADO) {
+        commands.add(new CommandSwitch(room.idSwitch(), SwitchState.APAGADO));
+        utilizedPower -= room.powerKW();
+        logger.debug(
+            "Turning OFF switch {}: current temperature {} °C, expected {} °C; power freed {} kW",
+            room.idSwitch(),
+            room.currentTemperatureC(),
+            room.expectedTemperature(),
+            room.powerKW());
+      }
     }
 
-    private void agregarComandoSiNecesario(
-            List<Command> commands,
-            Room room,
-            SwitchState estadoDeseado
-    ) {
-        if (room.currentSwitchState() != estadoDeseado) {
-            commands.add(new CommandSwitch(room.idSwitch(), estadoDeseado));
-            logger.debug("Se agrega comando para el switch {}: estado {}", room.idSwitch(), estadoDeseado);
+    // - Appends the commands for turning ON the switches of rooms that are below their expected
+    // temperature and are currently OFF.
+    // - Switches are turned ON only if enough power is available.
+    // - If the room with greater deficit can't be turned ON because of lack of power,
+    //    the system attempts to turn ON the next room in order (deficit DESC).
+    for (Room room : roomsBelowExpectedTemperature) {
+      if (room.currentSwitchState() != SwitchState.ENCENDIDO) {
+        assert siteData.site() != null;
+        // Room is turned ON only when it won't surpass the available power.
+        if (utilizedPower + room.powerKW() <= siteData.site().potenciaContratadaKW()) {
+          commands.add(new CommandSwitch(room.idSwitch(), SwitchState.ENCENDIDO));
+          utilizedPower += room.powerKW();
+          logger.debug(
+              "Turning ON switch {}: temperature deficit {} °C; power utilized {}/{} kW",
+              room.idSwitch(),
+              room.expectedTemperature() - room.currentTemperatureC(),
+              utilizedPower,
+              siteData.site().potenciaContratadaKW());
         } else {
-            logger.debug("El switch {} ya está en estado {}; no se genera comando",
-                    room.idSwitch(), estadoDeseado);
+          logger.debug(
+              "Can't turn ON switch {}: required power {} kW exceeds the established limit of {} kW",
+              room.idSwitch(),
+              utilizedPower + room.powerKW(),
+              siteData.site().potenciaContratadaKW());
         }
+      }
     }
 
+    logger.debug(
+        "Finished calculating commands: {} commands; final utilized power: {} kW",
+        commands.size(),
+        utilizedPower);
+    return new CoreAnswer(commands);
+  }
+
+  private void appendCommandoSiNecessary(List<Command> commands, Room room, SwitchState newStatus) {
+    if (room.currentSwitchState() != newStatus) {
+      commands.add(new CommandSwitch(room.idSwitch(), newStatus));
+      logger.debug("Adding command for switch {}: status {}", room.idSwitch(), newStatus);
+    } else {
+      logger.debug(
+          "Switch {} is already on status {}; not generating a command",
+          room.idSwitch(),
+          newStatus);
+    }
+  }
 }
