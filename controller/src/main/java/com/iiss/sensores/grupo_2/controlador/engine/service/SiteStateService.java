@@ -10,27 +10,36 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Keeps a complete in-memory copy of the site state (with temperatures and switch status) */
 @Service
 public class SiteStateService {
-  // conserva el estado actual en memoria, actualiza las temperaturas y registra los estados de los
-  // switches
   private DataSite dataSite;
   private final SwitchClient switchClient;
   private final TemperatureReadingRepository tempReadings;
-  private boolean stateMarkedDirty;
+
+  /** Initialize dirty state as true to trigger a full load of temperatures and switch states */
+  private boolean stateMarkedDirty = true;
 
   public SiteStateService(SwitchClient switchClient, TemperatureReadingRepository tempReadings) {
     this.switchClient = switchClient;
     this.tempReadings = tempReadings;
   }
 
-  // inicializa o reemplaza el estado del site, ejecutar:
-  // estadoSitioService.cargarEstado(dataSitioInicial);
-  public synchronized void loadSiteState(DataSite nuevoEstado) {
-    if (nuevoEstado == null || nuevoEstado.site() == null || nuevoEstado.habitaciones() == null) {
+  /**
+   * Initializes or replaces the entire site config state.
+   *
+   * <p>Side effects: Will hydrate with lastest temperature readings from DB and switch statuses
+   * from switches APIs.
+   *
+   * @param newSiteState the complete new config for the site
+   */
+  public synchronized void loadSiteState(DataSite newSiteState) {
+    if (newSiteState == null
+        || newSiteState.site() == null
+        || newSiteState.habitaciones() == null) {
       throw new IllegalArgumentException("The Site state cannot be empty nor null");
     }
-    this.dataSite = new DataSite(nuevoEstado.site(), List.copyOf(nuevoEstado.habitaciones()));
+    this.dataSite = new DataSite(newSiteState.site(), List.copyOf(newSiteState.habitaciones()));
     this.stateMarkedDirty = true;
   }
 
@@ -44,7 +53,12 @@ public class SiteStateService {
     dataSite = new DataSite(dataSite.site(), List.copyOf(rooms));
   }
 
-  // devuelve el estado actual del site
+  /**
+   * Gets the entire site config state.
+   *
+   * @return The complete config for the site, with latest temperature readings and switches
+   *     statuses
+   */
   public synchronized DataSite getSiteState() {
     if (dataSite == null) {
       throw new IllegalStateException("The Site state is not yet been initialized");

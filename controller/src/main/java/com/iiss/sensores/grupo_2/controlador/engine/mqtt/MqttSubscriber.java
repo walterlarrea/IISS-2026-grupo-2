@@ -1,7 +1,7 @@
 package com.iiss.sensores.grupo_2.controlador.engine.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iiss.sensores.grupo_2.controlador.engine.service.ControllerTempAuto;
+import com.iiss.sensores.grupo_2.controlador.engine.service.TemperatureControlEngine;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.dto.ThermostatMessageObject;
@@ -22,7 +22,7 @@ import java.util.Set;
 public class MqttSubscriber {
   private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
   private final TemperatureReadingRepository tempMeasurements;
-  private final ControllerTempAuto controllerTempAuto;
+  private final TemperatureControlEngine temperatureControlEngine;
   private final ObjectMapper objMap;
   private final Set<String> desiredTopics = new HashSet<>();
   private final Set<String> subscribedTopics = new HashSet<>();
@@ -30,10 +30,10 @@ public class MqttSubscriber {
 
   public MqttSubscriber(
       TemperatureReadingRepository mongoWriter,
-      ControllerTempAuto controllerTempAuto,
+      TemperatureControlEngine temperatureControlEngine,
       ObjectMapper objMap) {
     this.tempMeasurements = mongoWriter;
-    this.controllerTempAuto = controllerTempAuto;
+    this.temperatureControlEngine = temperatureControlEngine;
     this.objMap = objMap;
   }
 
@@ -88,7 +88,7 @@ public class MqttSubscriber {
                 TemperatureMessage tempMessage =
                     new TemperatureMessage(
                         parsedThermostatMessage.id(),
-                            idThermostat,
+                        idThermostat,
                         parsedThermostatMessage.tC(),
                         parsedThermostatMessage.tF(),
                         Instant.ofEpochMilli(
@@ -107,7 +107,7 @@ public class MqttSubscriber {
                 try {
                   logger.info("Procesando nueva medición del termostato {}", idThermostat);
 
-                  controllerTempAuto.processTemperature(tempMessage);
+                  temperatureControlEngine.processTemperature(tempMessage);
 
                 } catch (Exception e) {
                   logger.error(

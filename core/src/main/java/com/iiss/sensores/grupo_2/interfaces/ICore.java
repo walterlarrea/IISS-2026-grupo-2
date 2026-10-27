@@ -5,6 +5,5 @@ import com.iiss.sensores.grupo_2.modelos.input.DataSite;
 import java.time.ZonedDateTime;
 
 public interface ICore {
-    CoreAnswer calcularComandos(ZonedDateTime fechaHora, DataSite dataSite);
+  CoreAnswer calcularComandos(ZonedDateTime dateTime, DataSite siteData);
 }
-
