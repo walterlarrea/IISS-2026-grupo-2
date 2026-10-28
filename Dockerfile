@@ -13,7 +13,7 @@ RUN mvn dependency:go-offline -B
 
 COPY . .
 
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipITs=true
 
 
 # ===============================
