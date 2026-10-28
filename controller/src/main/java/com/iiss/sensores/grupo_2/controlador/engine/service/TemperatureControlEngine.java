@@ -14,6 +14,7 @@ import com.iiss.sensores.grupo_2.controlador.api.model.StateControl;
 import com.iiss.sensores.grupo_2.controlador.shared.TemperatureEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Instant;
@@ -24,7 +25,6 @@ import java.util.Objects;
 @Service
 public class TemperatureControlEngine implements TemperatureEngineService {
   private static final Logger logger = LoggerFactory.getLogger(TemperatureControlEngine.class);
-  //  private static final ZoneId ZONA_MONTEVIDEO = ZoneId.of("America/Montevideo");
   private final SwitchClient switchClient;
   private final ICore core;
   private final SiteStateService siteStateService;
@@ -32,6 +32,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   private volatile boolean active = false;
   private CustomClock clock;
 
+  @Autowired
   public TemperatureControlEngine(
       SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
     this(switchClient, core, siteStateService, Clock.systemUTC());
