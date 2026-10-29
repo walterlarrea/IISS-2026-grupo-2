@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/** Register ApiKeyRoom interceptor as a auth handler */
 @Configuration
 public class WebConfigRoom implements WebMvcConfigurer {
   private final ApiKeyRoom apiKeyInterceptor;

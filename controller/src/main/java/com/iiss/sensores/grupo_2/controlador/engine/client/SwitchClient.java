@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 
+/** Communicates with Api Switch, sends commands and retrieves switch state */
 @Service
 public class SwitchClient {
   private final RestClient restClient;

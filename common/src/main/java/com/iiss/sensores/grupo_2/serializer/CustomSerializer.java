@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/** Custom Json Serializer for the thermostat message */
 public class CustomSerializer {
   public static class ThreeDecimalSerializer extends JsonSerializer<Double> {
     @Override

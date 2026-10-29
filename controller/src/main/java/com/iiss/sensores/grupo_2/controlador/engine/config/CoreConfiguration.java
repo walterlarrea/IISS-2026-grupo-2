@@ -5,6 +5,7 @@ import com.iiss.sensores.grupo_2.interfaces.ICore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/** Creates an instance for Core and Spring Boot manages it */
 @Configuration
 public class CoreConfiguration {
   @Bean

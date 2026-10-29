@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/** Saves temperatures in mongoDB */
 @Service
 public class TemperatureReadingRepository {
   private static final Logger logger = LoggerFactory.getLogger(TemperatureReadingRepository.class);
@@ -60,8 +61,8 @@ public class TemperatureReadingRepository {
     collection.insertOne(document);
   }
 
+  /** Retrieve the last temperature measurements associated to each thermostat ID in the list. */
   public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> thermostatIds) {
-    // Retrieve the last temperature measurements associated to each thermostat ID in the list.
     List<Bson> pipeline =
         List.of(
             Aggregates.match(Filters.in("idThermostat", thermostatIds)),
