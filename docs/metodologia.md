@@ -14,7 +14,7 @@
 ### Persistencia y Base de DatosMongoDB:
 * Base de datos NoSQL orientada a documentos. Se descartaron bases relacionales (como MySQL o PostgreSQL) porque los datos de telemetría de los sensores de las habitaciones pueden cambiar de estructura, y MongoDB nos da la flexibilidad necesaria sin requerir migraciones complejas de esquema. 
 ### Mensajería IoTMQTT (Broker Mosquitto):
-* Protocolo de comunicación ligero. Se eligió por sobre HTTP/REST porque MQTT funciona bajo un modelo publicador/suscriptor de baja latencia, ideal para los eventos de temperatura, ahorrando ancho de banda.
+* Protocolo de comunicación ligero. Se eligió por sobre HTTP/REST porque MQTT funciona bajo un modelo publicador/suscriptor de baja latencia, ideal para los eventos de temperature, ahorrando ancho de banda.
 ### Eclipse Paho:
 * Cliente MQTT para Java. Es el estándar de la industria, maduro y estable, lo que evita que tengamos que programar la gestión de sockets TCP desde cero o lidiar con reconexiones manuales.
 ### Despliegue y ContenedoresDocker y Docker Compose:

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.22
+    # container_name: mosquitto-test
+    ports:
+      - "1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  mongodb:
+    image: mongo:8
+    # container_name: mongodb-test
+    ports:
+      - "27017"
+    environment:
+      MONGO_INITDB_DATABASE: SensoresTest
+
+  switches-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: switches-api
+    # container_name: switches-api-test
+    environment:
+      SPRING_PROFILES_ACTIVE: development
+      APP_LOG_LEVEL_ROOT: INFO
+      SWITCHES_API_KEY: test-switch-key
+    ports:
+      - "8090"
+
+  controller:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: controller
+    # container_name: controller-test
+    depends_on:
+      mongodb:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+      switches-api:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: development
+      APP_LOG_LEVEL_ROOT: INFO
+
+      MQTT_BROKER_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: TestControlador
+      MQTT_TOPIC: "#"
+      CONECTAR_CON_SIMULADOR: "false"
+      SIMULATOR_API_URL: "-"
+      SIMULATOR_API_KEY: "-"
+      REGISTRATION_RETRY_MS: 5000
+      CONTROLADOR_ETIQUETA: controlador
+      CONTROLADOR_API_URL: http://controlador:8080
+      MONGODB_DATABASE: SensoresTest
+      MONGODB_URI: mongodb://mongodb:27017/SensoresTest
+      MONGODB_COLLECTION_HABITACIONES: inventario
+      MONGODB_COLLECTION_MEDICIONES: mediciones
+      CONTROLADOR_API_KEY: test-ctrl-key
+      CONTROLADOR_API_PORT: 8080
+      SWITCHES_API_KEY: test-switch-key
+    ports:
+      - "8080"

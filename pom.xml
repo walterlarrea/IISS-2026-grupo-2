@@ -37,12 +37,33 @@
                         <parameters>true</parameters>
                     </configuration>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.15</version>
+                    <executions>
+                        <execution>
+                            <id>jacoco-initialize</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>jacoco-report</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
 
     <modules>
-        <module>controlador</module>
+        <module>controller</module>
         <module>publisher</module>
         <module>switches-api</module>
         <module>core</module>

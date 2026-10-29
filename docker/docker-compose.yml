@@ -24,12 +24,12 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  controlador:
+  controller:
     build:
       context: ..
       dockerfile: Dockerfile
-      target: controlador
-    container_name: controlador
+      target: controller
+    container_name: controller
     depends_on:
       mongodb:
         condition: service_started
@@ -38,7 +38,7 @@ services:
         required: false
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      APP_LOG_LEVEL: ${LOGGING_LEVEL:-INFO}
 
       MQTT_BROKER_URL: ${MQTT_BROKER_URL}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID}
@@ -47,8 +47,8 @@ services:
       SIMULATOR_API_URL: ${SIMULATOR_API_URL:-}
       SIMULATOR_API_KEY: ${SIMULATOR_API_KEY:-}
       REGISTRATION_RETRY_MS: ${REGISTRATION_RETRY_MS:-5000}
-      CONTROLADOR_ETIQUETA: ${CONTROLADOR_ETIQUETA:-controlador}
-      CONTROLADOR_API_URL: ${CONTROLADOR_API_URL:-http://controlador:8080}
+      CONTROLADOR_ETIQUETA: ${CONTROLADOR_ETIQUETA:-controller}
+      CONTROLADOR_API_URL: ${CONTROLADOR_API_URL:-http://controller:8080}
 
       MONGODB_DATABASE: ${MONGODB_DATABASE}
       MONGODB_URI: ${MONGODB_URI}
@@ -90,7 +90,7 @@ services:
     container_name: switches-api
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      APP_LOG_LEVEL: ${LOGGING_LEVEL:-INFO}
       SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
       - '${SWITCHES_API_PORT:-8090}:${SWITCHES_API_PORT:-8090}'

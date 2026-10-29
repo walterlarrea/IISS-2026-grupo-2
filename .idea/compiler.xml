@@ -10,11 +10,12 @@
         <module name="core-controlador" />
         <module name="core" />
         <module name="publisher" />
-        <module name="controlador" />
+        <module name="controller" />
         <module name="common" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="controlador" target="25" />
       <module name="rooms-api" target="25" />
       <module name="subscriber" target="25" />
     </bytecodeTargetLevel>
@@ -22,8 +23,9 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="common" options="-parameters -parameters" />
-      <module name="controlador" options="-parameters -parameters" />
+      <module name="controller" options="-parameters -parameters" />
       <module name="core" options="-parameters -parameters" />
+      <module name="iot_este" options="-parameters" />
       <module name="publisher" options="-parameters -parameters" />
       <module name="sensores-parent" options="-parameters" />
       <module name="switches-api" options="-parameters -parameters" />
