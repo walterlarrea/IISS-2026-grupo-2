@@ -40,7 +40,7 @@ class Core implements ICore {
       logger.debug("Rush hour period active; all switches currently turned ON will be turned OFF");
       List<Command> commands = new ArrayList<>();
       for (Room room : siteData.habitaciones()) {
-        appendCommandoSiNecessary(commands, room, SwitchState.APAGADO);
+        appendCommandIfNecessary(commands, room, SwitchState.APAGADO);
       }
       logger.debug("Finished calculating rush hour: {} commands", commands.size());
       return new CoreAnswer(commands);
@@ -128,7 +128,7 @@ class Core implements ICore {
     return new CoreAnswer(commands);
   }
 
-  private void appendCommandoSiNecessary(List<Command> commands, Room room, SwitchState newStatus) {
+  private void appendCommandIfNecessary(List<Command> commands, Room room, SwitchState newStatus) {
     if (room.currentSwitchState() != newStatus) {
       commands.add(new CommandSwitch(room.idSwitch(), newStatus));
       logger.debug("Adding command for switch {}: status {}", room.idSwitch(), newStatus);

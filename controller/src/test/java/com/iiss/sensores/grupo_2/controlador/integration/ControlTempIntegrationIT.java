@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class TemperatureControlEngineIntegrationIT {
-  // Simulates API Switch
+  /** Simulates API Switch */
   private static WireMockServer switchesApi;
 
   @Autowired private TemperatureControlEngine controller;
@@ -52,7 +52,7 @@ class TemperatureControlEngineIntegrationIT {
 
   @Test
   void controlTemperatureWhenEnoughPower() {
-    // Simulated APi with each initial state.
+    /** Simulated APi with each initial state. */
     switchConfig("sw-sim-room1", "OFF");
     switchConfig("sw-sim-room2", "OFF");
     switchConfig("sw-sim-room3", "ON");

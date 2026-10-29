@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CoreConfiguration {
-    @Bean
-    public ICore core() {
-        return CoreFactory.getCore();
-    }
+  @Bean
+  public ICore core() {
+    return CoreFactory.getCore();
+  }
 }

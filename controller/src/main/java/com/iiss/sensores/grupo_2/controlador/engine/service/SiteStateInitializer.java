@@ -36,7 +36,6 @@ public class SiteStateInitializer {
             },
             () ->
                 logger.warn(
-                    "No hay un inventory activo. El controlador no podrá operar hasta configurar el site.")
-        );
+                    "No hay un inventory activo. El controlador no podrá operar hasta configurar el site."));
   }
 }

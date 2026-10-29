@@ -37,7 +37,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   }
 
   @Override
-  public synchronized void start(Instant setDateTime, int timeFactor) {
+  public void start(Instant setDateTime, int timeFactor) {
     if (setDateTime == null) {
       throw new IllegalArgumentException("La fecha y hora de inicio es obligatoria");
     }
@@ -55,7 +55,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   }
 
   @Override
-  public synchronized void stop() {
+  public void stop() {
     active = false;
     this.clock = null;
 
@@ -68,7 +68,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   }
 
   @Override
-  public synchronized StateControl getTempControllerStatus() {
+  public StateControl getTempControllerStatus() {
     if (!active) {
       return new StateControl(StateControl.Estado.DETENIDO, null, null, null);
     }
@@ -80,8 +80,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
         this.clock.getStartedAt());
   }
 
-  // solicita las decisiones al core y ejecuta sus commands
-  /** */
+  /** Request decisions from Core and executes it's commands */
   public synchronized void execute() {
     if (!active) {
       logger.debug("Controller is stopped");
@@ -151,7 +150,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
    *
    * @param temperatureMsg Parsed temperature reading from MQTT
    */
-  public synchronized void processTemperature(TemperatureMessage temperatureMsg) {
+  public void processTemperature(TemperatureMessage temperatureMsg) {
     if (!active) {
       logger.debug(
           "Controller is stopped, ignores temperature sent by thermostat with ID {}",

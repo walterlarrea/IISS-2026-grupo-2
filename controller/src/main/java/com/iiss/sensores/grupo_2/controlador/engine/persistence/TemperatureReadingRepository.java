@@ -22,71 +22,64 @@ import java.util.List;
 
 @Service
 public class TemperatureReadingRepository {
-    private static final Logger logger = LoggerFactory.getLogger(TemperatureReadingRepository.class);
-    private final MongoCollection<Document> collection;
+  private static final Logger logger = LoggerFactory.getLogger(TemperatureReadingRepository.class);
+  private final MongoCollection<Document> collection;
 
-    @Autowired
-    public TemperatureReadingRepository(MongoClient mongoClient,
-                                        @Value("${MONGODB_DATABASE:sensores}") String databaseName,
-                                        @Value("${MONGODB_COLLECTION_MEDICIONES:mediciones}") String collectionName) {
-        MongoDatabase database = mongoClient.getDatabase(databaseName);
-        this.collection = database.getCollection(collectionName);
-        this.createIndexes();
+  @Autowired
+  public TemperatureReadingRepository(
+      MongoClient mongoClient,
+      @Value("${MONGODB_DATABASE:sensores}") String databaseName,
+      @Value("${MONGODB_COLLECTION_MEDICIONES:mediciones}") String collectionName) {
+    MongoDatabase database = mongoClient.getDatabase(databaseName);
+    this.collection = database.getCollection(collectionName);
+    this.createIndexes();
+  }
+
+  public TemperatureReadingRepository(MongoCollection<Document> collection) {
+    this.collection = collection;
+    this.createIndexes();
+  }
+
+  private void createIndexes() {
+    // Create an index on the "idThermostat" field for efficient querying
+    try {
+      collection.createIndex(new Document("idThermostat", 1).append("ts", -1));
+    } catch (RuntimeException e) {
+      logger.debug("Error creating indexes on " + this.collection.getNamespace() + " collection");
     }
+  }
 
-    public TemperatureReadingRepository(MongoCollection<Document> collection) {
-        this.collection = collection;
-        this.createIndexes();
-    }
+  public void saveTemperature(TemperatureMessage message) {
+    Document document =
+        new Document()
+            .append("id", message.id())
+            .append("idThermostat", message.idThermostat())
+            .append("tC", message.tC())
+            .append("tF", message.tF())
+            .append("ts", Date.from(message.ts()));
+    collection.insertOne(document);
+  }
 
-    private void createIndexes() {
-        // Create an index on the "idThermostat" field for efficient querying
-        try {
-            collection.createIndex(new Document("idThermostat", 1).append("ts", -1));
-        } catch (RuntimeException e) {
-            logger.debug("Error creating indexes on " + this.collection.getNamespace() + " collection");
-        }
-    }
+  public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> thermostatIds) {
+    // Retrieve the last temperature measurements associated to each thermostat ID in the list.
+    List<Bson> pipeline =
+        List.of(
+            Aggregates.match(Filters.in("idThermostat", thermostatIds)),
+            Aggregates.sort(Sorts.descending("ts")),
+            Aggregates.group("$idThermostat", Accumulators.first("lastRecord", "$$ROOT")),
+            Aggregates.replaceRoot("$lastRecord"));
 
-    public void saveTemperature(TemperatureMessage message) {
-        Document document = new Document()
-                .append("id", message.id())
-                .append("idThermostat", message.idThermostat())
-                .append("tC", message.tC())
-                .append("tF", message.tF())
-                .append("ts", Date.from(message.ts()));
-        collection.insertOne(document);
-    }
+    return this.collection.aggregate(pipeline, Document.class).into(new ArrayList<>()).stream()
+        .map(this::toTemperatureMessage)
+        .toList();
+  }
 
-    public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> thermostatIds) {
-        // Retrieve the last temperature measurements associated to each thermostat ID in the list.
-        List<Bson> pipeline = List.of(
-                Aggregates.match(
-                        Filters.in("idThermostat", thermostatIds)
-                ),
-                Aggregates.sort(
-                        Sorts.descending("ts")
-                ),
-                Aggregates.group(
-                        "$idThermostat",
-                        Accumulators.first("lastRecord", "$$ROOT")
-                ),
-                Aggregates.replaceRoot("$lastRecord")
-        );
-
-        return this.collection.aggregate(pipeline, Document.class)
-                .into(new ArrayList<>())
-                .stream()
-                .map(this::toTemperatureMessage)
-                .toList();
-    }
-
-    private TemperatureMessage toTemperatureMessage(Document document) {
-        return new TemperatureMessage(
-                document.getString("id"),
-                document.getString("idThermostat"),
-                document.getDouble("tC"),
-                document.getDouble("tF"),
-                document.getDate("ts").toInstant());
-    }
+  private TemperatureMessage toTemperatureMessage(Document document) {
+    return new TemperatureMessage(
+        document.getString("id"),
+        document.getString("idThermostat"),
+        document.getDouble("tC"),
+        document.getDouble("tF"),
+        document.getDate("ts").toInstant());
+  }
 }

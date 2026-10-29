@@ -20,64 +20,67 @@ import java.util.Map;
 @RequestMapping("/habitaciones")
 public class RoomController {
 
-    private final RoomService roomsService;
+  private final RoomService roomsService;
 
-    public RoomController(RoomService roomsService) {
-        this.roomsService = roomsService;
-    }
+  public RoomController(RoomService roomsService) {
+    this.roomsService = roomsService;
+  }
 
-    @GetMapping
-    public List<Inventory.Habitacion> listar() {
-        return roomsService.listar();
-    }
+  @GetMapping
+  public List<Inventory.Habitacion> listar() {
+    return roomsService.listar();
+  }
 
-    @GetMapping("/validar")
-    public List<Inventory.Habitacion> validar() {
-        return roomsService.validar();
-    }
+  @GetMapping("/validar")
+  public List<Inventory.Habitacion> validar() {
+    return roomsService.validar();
+  }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Inventory.Habitacion> buscarPorId(@PathVariable("id") String id) {
-        return roomsService.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  @GetMapping("/{id}")
+  public ResponseEntity<Inventory.Habitacion> buscarPorId(@PathVariable("id") String id) {
+    return roomsService
+        .buscarPorId(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 
-    @GetMapping("/termostato/{idTermostato}")
-    public ResponseEntity<Inventory.Habitacion> buscarPorTermostato(@PathVariable("idTermostato") String idTermostato) {
-        return roomsService.obtenerPorTermostato(idTermostato)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  @GetMapping("/termostato/{idTermostato}")
+  public ResponseEntity<Inventory.Habitacion> buscarPorTermostato(
+      @PathVariable("idTermostato") String idTermostato) {
+    return roomsService
+        .obtenerPorTermostato(idTermostato)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 
-    @PostMapping
-    public Inventory.Habitacion crear(@RequestBody Inventory.Habitacion habitacion) {
-        return roomsService.crear(habitacion);
-    }
+  @PostMapping
+  public Inventory.Habitacion crear(@RequestBody Inventory.Habitacion habitacion) {
+    return roomsService.crear(habitacion);
+  }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Inventory.Habitacion> modificar(
-            @PathVariable("id") String id,
-            @RequestBody Inventory.Habitacion habitacion) {
-        return roomsService.modificar(id, habitacion)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  @PutMapping("/{id}")
+  public ResponseEntity<Inventory.Habitacion> modificar(
+      @PathVariable("id") String id, @RequestBody Inventory.Habitacion habitacion) {
+    return roomsService
+        .modificar(id, habitacion)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable("id") String id) {
-        if (!roomsService.eliminar(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.noContent().build();
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> eliminar(@PathVariable("id") String id) {
+    if (!roomsService.eliminar(id)) {
+      return ResponseEntity.notFound().build();
     }
+    return ResponseEntity.noContent().build();
+  }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<Inventory.Habitacion> modificarParcialmente(
-            @PathVariable("id") String id,
-            @RequestBody Map<String, Object> cambios) {
-        return roomsService.modificarParcialmente(id, cambios)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  @PatchMapping("/{id}")
+  public ResponseEntity<Inventory.Habitacion> modificarParcialmente(
+      @PathVariable("id") String id, @RequestBody Map<String, Object> cambios) {
+    return roomsService
+        .modificarParcialmente(id, cambios)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 }
