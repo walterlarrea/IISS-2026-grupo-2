@@ -14,26 +14,36 @@ import com.iiss.sensores.grupo_2.controlador.api.model.StateControl;
 import com.iiss.sensores.grupo_2.controlador.shared.TemperatureEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 /** Handles time & simulated time, uses the Core to calculate action commands and executes them */
 @Service
 public class TemperatureControlEngine implements TemperatureEngineService {
   private static final Logger logger = LoggerFactory.getLogger(TemperatureControlEngine.class);
-  //  private static final ZoneId ZONA_MONTEVIDEO = ZoneId.of("America/Montevideo");
   private final SwitchClient switchClient;
   private final ICore core;
   private final SiteStateService siteStateService;
+  private final Clock baseClock;
   private volatile boolean active = false;
   private CustomClock clock;
 
+  @Autowired
   public TemperatureControlEngine(
       SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
+    this(switchClient, core, siteStateService, Clock.systemUTC());
+  }
+
+  public TemperatureControlEngine(
+      SwitchClient switchClient, ICore core, SiteStateService siteStateService, Clock baseClock) {
     this.switchClient = switchClient;
     this.core = core;
     this.siteStateService = siteStateService;
+    this.baseClock = Objects.requireNonNull(baseClock, "baseClock cannot be null");
   }
 
   @Override
@@ -48,7 +58,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
 
     this.active = true;
 
-    this.clock = new CustomClock(setDateTime, timeFactor);
+    this.clock = new CustomClock(setDateTime, timeFactor, this.baseClock);
 
     logger.info("Temperature Control Engine was INITIATED");
     logger.info("Simulated date: {}, time factor: {}", setDateTime, timeFactor);

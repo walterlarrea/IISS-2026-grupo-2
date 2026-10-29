@@ -29,3 +29,25 @@ jobs:
 
       - name: Build and test
         run: mvn -B verify -DskipITs=true
+
+      - name: Display Coverage in GitHub Summary
+        if: always()
+        run: |
+          CSV_FILE="core/target/site/jacoco/jacoco.csv"
+          if [ -f "$CSV_FILE" ]; then
+            awk -F, 'NR>1 {
+              ins_miss+=$4; ins_cov+=$5;
+              br_miss+=$6; br_cov+=$7;
+              line_miss+=$8; line_cov+=$9
+            } END {
+              ins_total=ins_miss+ins_cov;
+              br_total=br_miss+br_cov;
+              line_total=line_miss+line_cov;
+              print "### 📊 JaCoCo Coverage Summary (Core)" >> ENVIRON["GITHUB_STEP_SUMMARY"];
+              print "| Metric | Covered | Total | Coverage % |" >> ENVIRON["GITHUB_STEP_SUMMARY"];
+              print "| :--- | :--- | :--- | :--- |" >> ENVIRON["GITHUB_STEP_SUMMARY"];
+              if (ins_total > 0) printf("| Instructions | %d | %d | %.2f%% |\n", ins_cov, ins_total, (ins_cov/ins_total)*100) >> ENVIRON["GITHUB_STEP_SUMMARY"];
+              if (br_total > 0) printf("| Branches | %d | %d | %.2f%% |\n", br_cov, br_total, (br_cov/br_total)*100) >> ENVIRON["GITHUB_STEP_SUMMARY"];
+              if (line_total > 0) printf("| Lines | %d | %d | %.2f%% |\n", line_cov, line_total, (line_cov/line_total)*100) >> ENVIRON["GITHUB_STEP_SUMMARY"];
+            }' "$CSV_FILE"
+          fi
