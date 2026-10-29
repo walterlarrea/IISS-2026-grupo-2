@@ -4,11 +4,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
+/** Creates a client for SwitchClient */
 @Configuration
 public class SwitchRestClientConfig {
 
-    @Bean
-    public RestClient switchRestClient(RestClient.Builder builder) {
-        return builder.clone().defaultHeader("Accept", "application/json").build();
-    }
+  @Bean
+  public RestClient switchRestClient(RestClient.Builder builder) {
+    return builder.clone().defaultHeader("Accept", "application/json").build();
+  }
 }

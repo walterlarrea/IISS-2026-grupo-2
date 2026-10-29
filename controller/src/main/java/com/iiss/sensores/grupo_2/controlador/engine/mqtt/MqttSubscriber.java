@@ -18,6 +18,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Connects to a list of topics -> Receives messages from each topic -> Saves messages in MongoDB ->
+ * Triggers the control process
+ */
 @Service
 public class MqttSubscriber {
   private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);

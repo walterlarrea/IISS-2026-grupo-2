@@ -4,5 +4,4 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("inventario_controlador")
-public record InventoryDocument(@Id String id, Inventory inventory) {
-}
+public record InventoryDocument(@Id String id, Inventory inventory) {}

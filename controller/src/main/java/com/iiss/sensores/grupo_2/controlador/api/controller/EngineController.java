@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Optional;
 
+/** Rest commands for engine */
 @RestController
 public class EngineController {
   private final TemperatureEngineService engineService;

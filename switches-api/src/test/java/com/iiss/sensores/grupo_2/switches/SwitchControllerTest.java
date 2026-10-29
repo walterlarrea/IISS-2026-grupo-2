@@ -19,125 +19,144 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SwitchControllerTest {
 
-    private static final String API_KEY = "development-key";
+  private static final String API_KEY = "development-key";
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    // -------------------------------------------------------------------------
-    // GET /switches/{id}
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // GET /switches/{id}
+  // -------------------------------------------------------------------------
 
-    @Test
-    void creaUnSwitchApagadoAlConsultarUnIdNuevo() throws Exception {
-        mockMvc.perform(get("/switches/nuevo").header("X-API-KEY", API_KEY))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idSwitch").value("nuevo"))
-                .andExpect(jsonPath("$.estado").value("OFF"));
-    }
+  @Test
+  void creaUnSwitchApagadoAlConsultarUnIdNuevo() throws Exception {
+    mockMvc
+        .perform(get("/switches/nuevo").header("X-API-KEY", API_KEY))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.idSwitch").value("nuevo"))
+        .andExpect(jsonPath("$.estado").value("OFF"));
+  }
 
-    @Test
-    void retornaElMismoIdQueSeConsulto() throws Exception {
-        mockMvc.perform(get("/switches/cocina-luz").header("X-API-KEY", API_KEY))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idSwitch").value("cocina-luz"));
-    }
+  @Test
+  void retornaElMismoIdQueSeConsulto() throws Exception {
+    mockMvc
+        .perform(get("/switches/cocina-luz").header("X-API-KEY", API_KEY))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.idSwitch").value("cocina-luz"));
+  }
 
-    // -------------------------------------------------------------------------
-    // POST /switches/{id}/comandos
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // POST /switches/{id}/comandos
+  // -------------------------------------------------------------------------
 
-    @Test
-    void actualizaElEstadoDelSwitchAEncendido() throws Exception {
-        mockMvc.perform(post("/switches/sala-1/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"ON\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idSwitch").value("sala-1"))
-                .andExpect(jsonPath("$.estado").value("ON"))
-                .andExpect(jsonPath("$.cambio").value(true));
-    }
+  @Test
+  void actualizaElEstadoDelSwitchAEncendido() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-1/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"ON\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.idSwitch").value("sala-1"))
+        .andExpect(jsonPath("$.estado").value("ON"))
+        .andExpect(jsonPath("$.cambio").value(true));
+  }
 
-    @Test
-    void actualizaElEstadoDelSwitchAApagado() throws Exception {
-        // Primero encendemos
-        mockMvc.perform(post("/switches/sala-2/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"ON\"}"))
-                .andExpect(status().isOk());
+  @Test
+  void actualizaElEstadoDelSwitchAApagado() throws Exception {
+    // Primero encendemos
+    mockMvc
+        .perform(
+            post("/switches/sala-2/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"ON\"}"))
+        .andExpect(status().isOk());
 
-        // Luego apagamos y verificamos
-        mockMvc.perform(post("/switches/sala-2/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"OFF\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("OFF"))
-                .andExpect(jsonPath("$.cambio").value(true));
-    }
+    // Luego apagamos y verificamos
+    mockMvc
+        .perform(
+            post("/switches/sala-2/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"OFF\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.estado").value("OFF"))
+        .andExpect(jsonPath("$.cambio").value(true));
+  }
 
-    @Test
-    void indicaQueNoHuboCambioSiSeRepiteElEstado() throws Exception {
-        mockMvc.perform(post("/switches/sala-4/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"ON\"}"))
-                .andExpect(status().isOk());
+  @Test
+  void indicaQueNoHuboCambioSiSeRepiteElEstado() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-4/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"ON\"}"))
+        .andExpect(status().isOk());
 
-        mockMvc.perform(post("/switches/sala-4/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"ON\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("ON"))
-                .andExpect(jsonPath("$.cambio").value(false));
-    }
+    mockMvc
+        .perform(
+            post("/switches/sala-4/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"ON\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.estado").value("ON"))
+        .andExpect(jsonPath("$.cambio").value(false));
+  }
 
-    @Test
-    void actualizaYConsultaElEstadoDelSwitch() throws Exception {
-        mockMvc.perform(post("/switches/sala-3/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"ON\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("ON"));
+  @Test
+  void actualizaYConsultaElEstadoDelSwitch() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-3/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"ON\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.estado").value("ON"));
 
-        mockMvc.perform(get("/switches/sala-3").header("X-API-KEY", API_KEY))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("ON"));
-    }
+    mockMvc
+        .perform(get("/switches/sala-3").header("X-API-KEY", API_KEY))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.estado").value("ON"));
+  }
 
-    // -------------------------------------------------------------------------
-    // Validación de body
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Validación de body
+  // -------------------------------------------------------------------------
 
-    @Test
-    void rechazaBodyConAccionInvalida() throws Exception {
-        mockMvc.perform(post("/switches/sala-1/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{\"accion\":\"INVALIDA\"}"))
-                .andExpect(status().isBadRequest());
-    }
+  @Test
+  void rechazaBodyConAccionInvalida() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-1/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{\"accion\":\"INVALIDA\"}"))
+        .andExpect(status().isBadRequest());
+  }
 
-    @Test
-    void rechazaBodySinCampoAccion() throws Exception {
-        mockMvc.perform(post("/switches/sala-1/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-    }
+  @Test
+  void rechazaBodySinCampoAccion() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-1/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content("{}"))
+        .andExpect(status().isBadRequest());
+  }
 
-    @Test
-    void rechazaBodyVacio() throws Exception {
-        mockMvc.perform(post("/switches/sala-1/comandos")
-                        .header("X-API-KEY", API_KEY)
-                        .contentType("application/json")
-                        .content(""))
-                .andExpect(status().isBadRequest());
-    }
-
+  @Test
+  void rechazaBodyVacio() throws Exception {
+    mockMvc
+        .perform(
+            post("/switches/sala-1/comandos")
+                .header("X-API-KEY", API_KEY)
+                .contentType("application/json")
+                .content(""))
+        .andExpect(status().isBadRequest());
+  }
 }

@@ -10,26 +10,24 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 
+/** Transform message to Json format */
 public class ThermostatMessageObject {
-    private static final Logger logger = LoggerFactory.getLogger(ThermostatMessageObject.class);
+  private static final Logger logger = LoggerFactory.getLogger(ThermostatMessageObject.class);
 
-    public record Temperature(
-            String id,
-            @JsonSerialize(using = TwoDecimalSerializer.class)
-            double tC,
-            @JsonSerialize(using = TwoDecimalSerializer.class)
-            double tF,
-            @JsonSerialize(using = CustomSerializer.ThreeDecimalBigDecimalSerializer.class)
-            BigDecimal ts
-    ){}
+  public record Temperature(
+      String id,
+      @JsonSerialize(using = TwoDecimalSerializer.class) double tC,
+      @JsonSerialize(using = TwoDecimalSerializer.class) double tF,
+      @JsonSerialize(using = CustomSerializer.ThreeDecimalBigDecimalSerializer.class)
+          BigDecimal ts) {}
 
-    public static <Type> String validateJson(Type object) throws Exception {
-        try{
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(object);
-        }catch(JsonProcessingException e){
-            logger.error("Failed to validate JSON object of type {}", object.getClass().getName(), e);
-            throw new Exception("Failed to validate JSON object", e);
-        }
+  public static <Type> String validateJson(Type object) throws Exception {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      return mapper.writeValueAsString(object);
+    } catch (JsonProcessingException e) {
+      logger.error("Failed to validate JSON object of type {}", object.getClass().getName(), e);
+      throw new Exception("Failed to validate JSON object", e);
     }
+  }
 }
