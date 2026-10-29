@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/** Handles updates for Room and sends them to InventoryService */
 @Service
 public class RoomService implements RoomProvider {
 

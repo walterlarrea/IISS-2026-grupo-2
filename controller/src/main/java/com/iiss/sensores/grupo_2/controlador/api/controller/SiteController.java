@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/** Rest commands for Site */
 @RestController
 public class SiteController {
   private final InventoryService inventoryService;

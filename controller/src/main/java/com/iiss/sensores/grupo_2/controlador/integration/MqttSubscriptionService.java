@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/** Responsible for the connection of MQTTSubscriber */
 @Service
 public class MqttSubscriptionService {
   private static final Logger logger = LoggerFactory.getLogger(MqttSubscriptionService.class);

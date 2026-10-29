@@ -7,10 +7,9 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+/** Loads site state for the first time from database and in memory */
 @Component
 public class SiteStateInitializer {
-  // recupera la configuración persistida cuando la aplicación termina de arrancar
-  // usa InventoryService y no el simulador
   private static final Logger logger = LoggerFactory.getLogger(SiteStateInitializer.class);
   private final InventoryService inventoryService;
   private final InventoryMapper inventoryMapper;

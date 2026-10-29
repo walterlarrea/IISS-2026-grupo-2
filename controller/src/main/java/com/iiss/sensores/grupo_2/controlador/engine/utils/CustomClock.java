@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 
+/** Custom clock to accelerate time */
 public class CustomClock {
   final ZoneId ZONA_MONTEVIDEO = ZoneId.of("America/Montevideo");
   private final Clock baseClock;

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+/** Estructure for the entire site */
 public record Inventory(
     @NotBlank @Pattern(regexp = "^2\\.\\d+$") String schemaVersion,
     @NotNull @Valid Sitio sitio,

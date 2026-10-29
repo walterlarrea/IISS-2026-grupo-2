@@ -8,9 +8,9 @@ import com.iiss.sensores.grupo_2.modelos.input.DataSite;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
+/** Transforms the Api model into a model that uses Core */
 @Component
 public class InventoryMapper {
-  // transforma el modelo de la api en modelos que use el core
   public DataSite convertir(Inventory inventory) {
     if (inventory == null || inventory.sitio() == null) {
       throw new IllegalArgumentException("El inventory y el site son obligatorios");
@@ -51,9 +51,11 @@ public class InventoryMapper {
                         h.topicTermostato(),
                         h.idSwitch(),
                         h.urlSwitch(),
-                        // Not a Number
-                        Double.NaN, // temperatura desconocida hasta recibir MQTT, sería la
-                        // temperatura actual
+                        /**
+                         * Not a Number. Unknown temperature until MQTT readings, would be current
+                         * temperature
+                         */
+                        Double.NaN,
                         SwitchState.APAGADO))
             .toList();
 

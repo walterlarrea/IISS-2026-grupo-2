@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** a */
+/** Handles updates for Inventory and emits events to inform there's been an update */
 @Service
 public class InventoryService {
   private static final String INVENTARIO_ACTIVO_ID = "activo";

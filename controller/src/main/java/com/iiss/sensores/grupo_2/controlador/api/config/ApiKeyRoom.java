@@ -12,6 +12,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.io.IOException;
 import java.time.Instant;
 
+/** Handler for authentification Api key */
 @Component
 public class ApiKeyRoom implements HandlerInterceptor {
   private static final String API_KEY_HEADER = "X-API-KEY";

@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/** Dynamic register with MQTT component */
 @Service
 public class IntegrationService {
   private static final Logger logger = LoggerFactory.getLogger(IntegrationService.class);
@@ -84,6 +85,7 @@ public class IntegrationService {
     intentarInicializar();
   }
 
+  /** Retries registration every 5 seconds if fails to connect */
   @Scheduled(fixedDelayString = "${REGISTRATION_RETRY_MS:5000}")
   public void reintentarRegistro() {
     if (conectarSimulador && !initialized.get()) {

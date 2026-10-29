@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 
-/** */
+/** Transform message to Json format */
 public class ThermostatMessageObject {
   private static final Logger logger = LoggerFactory.getLogger(ThermostatMessageObject.class);
 
