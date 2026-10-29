@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/** a */
 @Service
 public class InventoryService {
   private static final String INVENTARIO_ACTIVO_ID = "activo";

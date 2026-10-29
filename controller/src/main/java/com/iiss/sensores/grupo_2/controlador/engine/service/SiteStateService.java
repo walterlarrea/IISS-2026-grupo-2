@@ -108,7 +108,7 @@ public class SiteStateService {
             .toList());
   }
 
-  // actualiza la temperatura recibida de un termostato
+  /** Updates the temperature received from a thermostat */
   public synchronized DataSite updateRoomTemperature(String idThermostat, double temperature) {
     checkInitializedSiteState();
     List<Room> habitaciones = new ArrayList<>(dataSite.habitaciones());
@@ -145,7 +145,7 @@ public class SiteStateService {
     return dataSite;
   }
 
-  // actualiza el estado conocido de un switch
+  /** Updates known state of a switch */
   public synchronized DataSite updateSwitchState(String idSwitch, SwitchState newSwitchState) {
     checkInitializedSiteState();
     List<Room> rooms = new ArrayList<>(dataSite.habitaciones());

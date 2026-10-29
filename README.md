@@ -1,4 +1,4 @@
-# PROYECTO DE SENSORES VERSION 4.
+# PROYECTO DE SENSORES VERSION 5.
 
 ## 1. ESTRUCTURA
 
@@ -40,6 +40,11 @@ El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras qu
   - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
   - **test-validacion.sh**  para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
   - **run-controlador-local.sh** para cambiarlo a local.
+  - **kill-ports.sh** busca procesos en esos puertos y lo mata (Bash).
+  - **kill-ports.ps1** busca procesos en esos puertos y lo mata (PowerShell).
+- **Simulación**
+  - **build-sim.sh** sirve para crear la imagen del simulador en Docker.
+  - **up-sim.sh** sirve para levantar el simulador en Docker.
 - **curl-ejemplos**
 
   - **curl-ctrl**
@@ -75,7 +80,7 @@ El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras qu
 3. Ejecutar el programa desde Compose.
 4. El programa se conectará al broker MQTT.
 5. Una vez conectado se suscribirá al tópico : "#".
-   - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker.
+   - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker. Como último recurso si no hay habitaciones.
 6. Cualquier mensaje recibido lo mostrará en la consola.
 
 ### Integración con el simulador EcoWarm
@@ -175,6 +180,9 @@ mvn clean test
 **switches-api**
 
 ## 10. TEST DE INTEGRACIÓN
+
+Se crearon test para probar tramos del programa y confirmar el funcionamiento de envío y recibimiento de mensajes y datos. 
+Todos los test que terminan en IT son las pruebas de integración.
 
 > Corre la suite entera de Tests Unitarios + Integración
 ```bash

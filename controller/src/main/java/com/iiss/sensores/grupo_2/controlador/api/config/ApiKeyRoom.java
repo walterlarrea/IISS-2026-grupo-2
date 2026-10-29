@@ -14,45 +14,46 @@ import java.time.Instant;
 
 @Component
 public class ApiKeyRoom implements HandlerInterceptor {
-    private static final String API_KEY_HEADER = "X-API-KEY";
-    private final String expectedApiKey;
-    private final ObjectMapper objectMapper;
+  private static final String API_KEY_HEADER = "X-API-KEY";
+  private final String expectedApiKey;
+  private final ObjectMapper objectMapper;
 
-    @Autowired
-    public ApiKeyRoom(
-            @Value("${CONTROLADOR_API_KEY:development-key}") String expectedApiKey,
-            ObjectMapper objectMapper
-    ) {
-        this.expectedApiKey = expectedApiKey;
-        this.objectMapper = objectMapper;
-    }
+  @Autowired
+  public ApiKeyRoom(
+      @Value("${CONTROLADOR_API_KEY:development-key}") String expectedApiKey,
+      ObjectMapper objectMapper) {
+    this.expectedApiKey = expectedApiKey;
+    this.objectMapper = objectMapper;
+  }
 
-    public ApiKeyRoom(String expectedApiKey) {
-        this(expectedApiKey, new ObjectMapper().findAndRegisterModules());
-    }
+  public ApiKeyRoom(String expectedApiKey) {
+    this(expectedApiKey, new ObjectMapper().findAndRegisterModules());
+  }
 
-    @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
-        String providedApiKey = request.getHeader(API_KEY_HEADER);
-        if (providedApiKey == null || providedApiKey.isBlank()) {
-            responderNoAutorizado(response);
-            return false;
-        }
-        if (!expectedApiKey.equals(providedApiKey)) {
-            responderNoAutorizado(response);
-            return false;
-        }
-        return true;
+  @Override
+  public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+      throws IOException {
+    String providedApiKey = request.getHeader(API_KEY_HEADER);
+    if (providedApiKey == null || providedApiKey.isBlank()) {
+      responderNoAutorizado(response);
+      return false;
     }
+    if (!expectedApiKey.equals(providedApiKey)) {
+      responderNoAutorizado(response);
+      return false;
+    }
+    return true;
+  }
 
-    private void responderNoAutorizado(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        objectMapper.writeValue(response.getWriter(), new ErrorApi(
-                Instant.now(),
-                HttpServletResponse.SC_UNAUTHORIZED,
-                "falta o no coincide el header X-API-Key",
-                null
-        ));
-    }
+  private void responderNoAutorizado(HttpServletResponse response) throws IOException {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType("application/json");
+    objectMapper.writeValue(
+        response.getWriter(),
+        new ErrorApi(
+            Instant.now(),
+            HttpServletResponse.SC_UNAUTHORIZED,
+            "falta o no coincide el header X-API-Key",
+            null));
+  }
 }

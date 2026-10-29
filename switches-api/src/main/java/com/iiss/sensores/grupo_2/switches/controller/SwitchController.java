@@ -11,20 +11,21 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/switches")
 public class SwitchController {
 
-    private final SwitchService service;
+  private final SwitchService service;
 
-    public SwitchController(SwitchService service) {
-        this.service = service;
-    }
+  public SwitchController(SwitchService service) {
+    this.service = service;
+  }
 
-    @GetMapping("/{id}")
-    public SwitchResponse obtener(@PathVariable("id") String id) {
-        return service.obtener(id);
-    }
+  @GetMapping("/{id}")
+  public SwitchResponse obtener(@PathVariable("id") String id) {
+    return service.obtener(id);
+  }
 
-    @PostMapping("/{id}/comandos")
-    @ResponseStatus(HttpStatus.OK)
-    public SwitchResponse actualizar(@PathVariable("id") String id, @Valid @RequestBody SwitchRequest request) {
-        return service.actualizar(id, request.getAccion());
-    }
+  @PostMapping("/{id}/comandos")
+  @ResponseStatus(HttpStatus.OK)
+  public SwitchResponse actualizar(
+      @PathVariable("id") String id, @Valid @RequestBody SwitchRequest request) {
+    return service.actualizar(id, request.getAccion());
+  }
 }
