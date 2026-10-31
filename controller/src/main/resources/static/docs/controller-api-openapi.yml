@@ -30,7 +30,7 @@ servers:
         default: http://control-casa:8080
 
 security:
-  - ApiKeyAuth: []
+  - ApiKeyAuth: [ ]
 
 tags:
   - name: site
@@ -44,7 +44,7 @@ paths:
 
   /habitaciones:
     get:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: listarHabitaciones
       summary: Lista las habitaciones del inventory activo
       responses:
@@ -58,7 +58,7 @@ paths:
         "401": { $ref: "#/components/responses/NoAutorizado" }
 
     post:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: crearHabitacion
       summary: Agrega una habitación al inventory activo
       description: Si ya existe una habitación con el mismo id, devuelve la existente sin agregar otra.
@@ -87,7 +87,7 @@ paths:
 
   /habitaciones/validar:
     get:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: validarHabitaciones
       summary: Valida las habitaciones del inventory activo
       description: Devuelve habitaciones con URL de switch inválida o con idTermostato o URL de switch duplicados.
@@ -109,7 +109,7 @@ paths:
         description: Identificador de la habitación.
         schema: { type: string }
     get:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: obtenerHabitacionPorId
       summary: Obtiene una habitación por su identificador
       responses:
@@ -121,7 +121,7 @@ paths:
         "401": { $ref: "#/components/responses/NoAutorizado" }
         "404": { $ref: "#/components/responses/NoEncontrado" }
     put:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: modificarHabitacion
       summary: Reemplaza una habitación existente
       description: El identificador de la ruta prevalece sobre el id recibido en el cuerpo.
@@ -144,7 +144,7 @@ paths:
         "401": { $ref: "#/components/responses/NoAutorizado" }
         "404": { $ref: "#/components/responses/NoEncontrado" }
     patch:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: modificarParcialmenteHabitacion
       summary: Modifica parcialmente una habitación existente
       requestBody:
@@ -182,7 +182,7 @@ paths:
         "401": { $ref: "#/components/responses/NoAutorizado" }
         "404": { $ref: "#/components/responses/NoEncontrado" }
     delete:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: eliminarHabitacion
       summary: Elimina una habitación del inventory activo
       responses:
@@ -198,7 +198,7 @@ paths:
         description: Identificador del termostato asociado.
         schema: { type: string }
     get:
-      tags: [Habitaciones]
+      tags: [ Habitaciones ]
       operationId: obtenerHabitacionPorTermostato
       summary: Obtiene una habitación por su termostato
       responses:
@@ -212,7 +212,7 @@ paths:
 
   /sitio:
     get:
-      tags: [site]
+      tags: [ site ]
       operationId: obtenerSitio
       summary: El inventory en uso
       description: |
@@ -237,7 +237,7 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
 
     put:
-      tags: [site]
+      tags: [ site ]
       operationId: reemplazarSitio
       summary: Reemplaza el inventory completo
       description: |
@@ -283,7 +283,7 @@ paths:
 
   /control:
     get:
-      tags: [control]
+      tags: [ control ]
       operationId: obtenerControl
       summary: Estado del control
       responses:
@@ -312,7 +312,7 @@ paths:
 
   /control/comandos:
     post:
-      tags: [control]
+      tags: [ control ]
       operationId: comandarControl
       summary: Arrancar o detener el control
       description: |
@@ -434,7 +434,7 @@ components:
 
         La suma de `potenciaKW` **puede** superar la potencia contratada: no es un error, es la
         situación que el controlador tiene que administrar encendiendo por turnos.
-      required: [schemaVersion, sitio, habitaciones]
+      required: [ schemaVersion, sitio, habitaciones ]
       properties:
         schemaVersion:
           type: string
@@ -448,7 +448,7 @@ components:
 
     Sitio:
       type: object
-      required: [id, nombre, potenciaContratadaKW, tarifa]
+      required: [ id, nombre, potenciaContratadaKW, tarifa ]
       properties:
         id:
           type: string
@@ -473,7 +473,7 @@ components:
     Tarifa:
       type: object
       description: "Doble horario: se declara solo la rushHour, todo el resto del tiempo es llana."
-      required: [punta]
+      required: [ punta ]
       properties:
         punta: { $ref: "#/components/schemas/Franja" }
 
@@ -482,7 +482,7 @@ components:
       description: |
         Franja en **hora local**, 24 h, semiabierta `[desde, hasta)`. No cruza la medianoche: si
         hace falta, se parte en dos. No hay conversión de zona horaria.
-      required: [desde, hasta, dias]
+      required: [ desde, hasta, dias ]
       properties:
         desde:
           type: string
@@ -494,7 +494,7 @@ components:
           example: "23:00"
         dias:
           type: string
-          enum: [HABILES]
+          enum: [ HABILES ]
           description: "`HABILES` = lunes a viernes."
 
     Habitacion:
@@ -503,7 +503,7 @@ components:
         La unidad de control: un termostato, un switch, una potencia. **No** lleva histéresis —
         cuándo encender y cuándo apagar es decisión del controlador, no dato del sitio.
       required:
-        [id, nombre, temperaturaEsperada, potenciaKW, idTermostato, topicTermostato, idSwitch, urlSwitch]
+        [ id, nombre, temperaturaEsperada, potenciaKW, idTermostato, topicTermostato, idSwitch, urlSwitch ]
       properties:
         id:
           type: string
@@ -556,11 +556,11 @@ components:
 
     EstadoControl:
       type: object
-      required: [estado, fechaHora, factorTiempo, iniciadoEn]
+      required: [ estado, fechaHora, factorTiempo, iniciadoEn ]
       properties:
         estado:
           type: string
-          enum: [EN_EJECUCION, DETENIDO]
+          enum: [ EN_EJECUCION, DETENIDO ]
           description: Arranca en `DETENIDO`.
         fechaHora:
           type: string
@@ -592,11 +592,11 @@ components:
 
     ComandoIniciar:
       type: object
-      required: [accion, fechaHora]
+      required: [ accion, fechaHora ]
       properties:
         accion:
           type: string
-          enum: [INICIAR]
+          enum: [ INICIAR ]
         fechaHora:
           type: string
           format: date-time
@@ -611,16 +611,16 @@ components:
 
     ComandoDetener:
       type: object
-      required: [accion]
+      required: [ accion ]
       properties:
         accion:
           type: string
-          enum: [DETENER]
+          enum: [ DETENER ]
 
     Error:
       type: object
       description: Cuerpo de error uniforme de las convenciones transversales.
-      required: [timestamp, status, mensaje]
+      required: [ timestamp, status, mensaje ]
       properties:
         timestamp:
           type: string

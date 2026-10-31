@@ -14,58 +14,62 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ApiKeyTest {
 
-    private static final String VALID_KEY = "dev-rooms-key";
-    private ApiKeyRoom apiKeyInterceptor;
-    private MockHttpServletRequest request;
-    private MockHttpServletResponse response;
+  private static final String VALID_KEY = "dev-rooms-key";
+  private ApiKeyRoom apiKeyInterceptor;
+  private MockHttpServletRequest request;
+  private MockHttpServletResponse response;
 
-    @BeforeEach
-    void setUp() {
-        apiKeyInterceptor = new ApiKeyRoom(VALID_KEY);
-        request = new MockHttpServletRequest();
-        response = new MockHttpServletResponse();
-    }
+  @BeforeEach
+  void setUp() {
+    apiKeyInterceptor = new ApiKeyRoom(VALID_KEY);
+    request = new MockHttpServletRequest();
+    response = new MockHttpServletResponse();
+  }
 
-    @Test
-    @DisplayName("Devuelve 401 Unauthorized cuando la clave API está ausente")
-    void deniesApiKeyRequestAbsent() throws Exception {
-        boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
+  @Test
+  @DisplayName("Devuelve 401 Unauthorized cuando la clave API está ausente")
+  void deniesApiKeyRequestAbsent() throws Exception {
+    boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
-        assertFalse(result);
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
-    }
+    assertFalse(result);
+    assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+  }
 
-    @Test
-    @DisplayName("Devuelve 401 Unauthorized cuando la clave API está en blanco")
-    void deniesApiKeyBlankSpace() throws Exception {
-        request.addHeader("X-API-KEY", "   ");
+  @Test
+  @DisplayName("Devuelve 401 Unauthorized cuando la clave API está en blanco")
+  void deniesApiKeyBlankSpace() throws Exception {
+    request.addHeader("X-API-KEY", "   ");
 
-        boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
+    boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
-        assertFalse(result);
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
-    }
+    assertFalse(result);
+    assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+  }
 
-    @Test
-    @DisplayName("Devuelve 401 Unauthorized con el formato de error documentado cuando la clave es incorrecta")
-    void deniesApiKeyRequestIncorrect() throws Exception {
-        request.addHeader("X-API-KEY", "clave-invalida");
+  @Test
+  @DisplayName(
+      "Devuelve 401 Unauthorized con el formato de error documentado cuando la clave es incorrecta")
+  void deniesApiKeyRequestIncorrect() throws Exception {
+    request.addHeader("X-API-KEY", "clave-invalida");
 
-        boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
+    boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
-        assertFalse(result);
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
-        assertTrue(response.getContentAsString().contains("\"mensaje\":\"falta o no coincide el header X-API-Key\""));
-    }
+    assertFalse(result);
+    assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+    assertTrue(
+        response
+            .getContentAsString()
+            .contains("\"mensaje\":\"falta o no coincide el header X-API-Key\""));
+  }
 
-    @Test
-    @DisplayName("Permite el acceso cuando la clave API es correcta")
-    void allowsApiKeyRequest() throws Exception {
-        request.addHeader("X-API-KEY", VALID_KEY);
+  @Test
+  @DisplayName("Permite el acceso cuando la clave API es correcta")
+  void allowsApiKeyRequest() throws Exception {
+    request.addHeader("X-API-KEY", VALID_KEY);
 
-        boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
+    boolean result = apiKeyInterceptor.preHandle(request, response, new Object());
 
-        assertTrue(result);
-        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-    }
+    assertTrue(result);
+    assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+  }
 }

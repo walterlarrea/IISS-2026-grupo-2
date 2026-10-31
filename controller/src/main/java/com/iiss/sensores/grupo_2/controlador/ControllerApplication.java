@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @EnableScheduling
 public class ControllerApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ControllerApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(ControllerApplication.class, args);
+  }
 }

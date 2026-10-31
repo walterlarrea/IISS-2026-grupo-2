@@ -33,27 +33,26 @@ class Core implements ICore {
     }
     logger.debug("Evaluating {} rooms", siteData.habitaciones().size());
 
-    // Turn OFF all switches during the configured rush hour period
+    /** Turn OFF all switches during the configured rush hour period */
     if (siteData.site() != null
         && siteData.site().fee() != null
         && siteData.site().fee().isRushHour(dateTime)) {
       logger.debug("Rush hour period active; all switches currently turned ON will be turned OFF");
       List<Command> commands = new ArrayList<>();
       for (Room room : siteData.habitaciones()) {
-        appendCommandoSiNecessary(commands, room, SwitchState.APAGADO);
+        appendCommandIfNecessary(commands, room, SwitchState.APAGADO);
       }
       logger.debug("Finished calculating rush hour: {} commands", commands.size());
       return new CoreAnswer(commands);
     }
 
-    // Set of rooms at or over expected temperature
+    /** Set of rooms at or over expected temperature */
     List<Room> roomsOverTheExpectedTemperature =
         siteData.habitaciones().stream()
             .filter(room -> room.currentTemperatureC() >= room.expectedTemperature())
             .toList();
 
-    // Set of rooms below their expected temperature,
-    // ordered by temperature deficit DESC
+    /** Set of rooms below their expected temperature, ordered by temperature deficit DESC */
     List<Room> roomsBelowExpectedTemperature =
         siteData.habitaciones().stream()
             .filter(room -> room.currentTemperatureC() < room.expectedTemperature())
@@ -67,7 +66,7 @@ class Core implements ICore {
         roomsOverTheExpectedTemperature.size(),
         roomsBelowExpectedTemperature.size());
 
-    // Calculate power used by rooms whose switch is turned ON
+    /** Calculate power used by rooms whose switch is turned ON */
     double utilizedPower =
         siteData.habitaciones().stream()
             .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
@@ -77,9 +76,11 @@ class Core implements ICore {
 
     List<Command> commands = new ArrayList<>();
 
-    // - Appends the commands for turning OFF switches of rooms that are at or over their expected
-    // temperature and are currently ON.
-    // - Frees power before trying to turn ON switches for rooms that are below expected temperature
+    /**
+     * - Appends the commands for turning OFF switches of rooms that are at or over their expected
+     * temperature and are currently ON. - Frees power before trying to turn ON switches for rooms
+     * that are below expected temperature
+     */
     for (Room room : roomsOverTheExpectedTemperature) {
       if (room.currentSwitchState() != SwitchState.APAGADO) {
         commands.add(new CommandSwitch(room.idSwitch(), SwitchState.APAGADO));
@@ -93,15 +94,16 @@ class Core implements ICore {
       }
     }
 
-    // - Appends the commands for turning ON the switches of rooms that are below their expected
-    // temperature and are currently OFF.
-    // - Switches are turned ON only if enough power is available.
-    // - If the room with greater deficit can't be turned ON because of lack of power,
-    //    the system attempts to turn ON the next room in order (deficit DESC).
+    /**
+     * - Appends the commands for turning ON the switches of rooms that are below their expected
+     * temperature and are currently OFF. - Switches are turned ON only if enough power is
+     * available. - If the room with greater deficit can't be turned ON because of lack of power,
+     * the system attempts to turn ON the next room in order (deficit DESC).
+     */
     for (Room room : roomsBelowExpectedTemperature) {
       if (room.currentSwitchState() != SwitchState.ENCENDIDO) {
         assert siteData.site() != null;
-        // Room is turned ON only when it won't surpass the available power.
+        /** Room is turned ON only when it won't surpass the available power. */
         if (utilizedPower + room.powerKW() <= siteData.site().potenciaContratadaKW()) {
           commands.add(new CommandSwitch(room.idSwitch(), SwitchState.ENCENDIDO));
           utilizedPower += room.powerKW();
@@ -128,7 +130,7 @@ class Core implements ICore {
     return new CoreAnswer(commands);
   }
 
-  private void appendCommandoSiNecessary(List<Command> commands, Room room, SwitchState newStatus) {
+  private void appendCommandIfNecessary(List<Command> commands, Room room, SwitchState newStatus) {
     if (room.currentSwitchState() != newStatus) {
       commands.add(new CommandSwitch(room.idSwitch(), newStatus));
       logger.debug("Adding command for switch {}: status {}", room.idSwitch(), newStatus);

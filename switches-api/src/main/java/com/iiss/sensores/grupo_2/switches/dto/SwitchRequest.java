@@ -6,10 +6,9 @@ import jakarta.validation.constraints.NotNull;
 
 public class SwitchRequest {
 
-    @NotNull
-    private EstadoSwitch accion;
+  @NotNull private EstadoSwitch accion;
 
-    public EstadoSwitch getAccion() {
-        return accion;
-    }
+  public EstadoSwitch getAccion() {
+    return accion;
+  }
 }

@@ -10,36 +10,36 @@ import jakarta.annotation.PreDestroy;
 
 @Component
 public class PublisherFactory {
-    private MqttClient client;
+  private MqttClient client;
 
-    public PublisherFactory(AppConfig appConfig) {
-        final String mqttUrl = appConfig.getValue(appConfig.MQTT_BROKER_URL);
-        // Genera un ID de client unico
-        final String clientId = MqttClient.generateClientId();
+  public PublisherFactory(AppConfig appConfig) {
+    final String mqttUrl = appConfig.getValue(appConfig.MQTT_BROKER_URL);
+    // Genera un ID de client unico
+    final String clientId = MqttClient.generateClientId();
 
-        try {
-            this.initClient(mqttUrl, clientId);
-        } catch (MqttException e) {
-            throw new RuntimeException(e);
-        }
+    try {
+      this.initClient(mqttUrl, clientId);
+    } catch (MqttException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private void initClient(String mqttUrl, String clientId) throws MqttException {
-        this.client = new MqttClient(mqttUrl, clientId, new MemoryPersistence());
+  private void initClient(String mqttUrl, String clientId) throws MqttException {
+    this.client = new MqttClient(mqttUrl, clientId, new MemoryPersistence());
 
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setCleanSession(true);
+    MqttConnectOptions options = new MqttConnectOptions();
+    options.setCleanSession(true);
 
-        this.client.connect(options);
-    }
+    this.client.connect(options);
+  }
 
-    public EventPublisher buildPublisher(String topic) {
-        return new EventPublisher(this.client, topic);
-    }
+  public EventPublisher buildPublisher(String topic) {
+    return new EventPublisher(this.client, topic);
+  }
 
-    @PreDestroy
-    public void destroy() throws MqttException {
-        this.client.disconnect();
-        this.client.close();
-    }
+  @PreDestroy
+  public void destroy() throws MqttException {
+    this.client.disconnect();
+    this.client.close();
+  }
 }

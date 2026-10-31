@@ -14,7 +14,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/Id'
     get:
-      tags: [Switches]
+      tags: [ Switches ]
       summary: Obtiene el estado de un switch
       operationId: obtenerSwitch
       responses:
@@ -28,7 +28,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/Id'
     post:
-      tags: [Switches]
+      tags: [ Switches ]
       summary: Acciona un switch
       operationId: accionarSwitch
       requestBody:
@@ -58,14 +58,14 @@ components:
   schemas:
     Switch:
       type: object
-      required: [idSwitch, estado, aplicadoEn]
+      required: [ idSwitch, estado, aplicadoEn ]
       properties:
         idSwitch:
           type: string
           example: switch-0
         estado:
           type: string
-          enum: ["ON", "OFF"]
+          enum: [ "ON", "OFF" ]
           example: "OFF"
         aplicadoEn:
           type: string
@@ -73,17 +73,17 @@ components:
           example: "2026-10-14T12:00:00Z"
     SwitchRequest:
       type: object
-      required: [accion]
+      required: [ accion ]
       properties:
         accion:
           type: string
-          enum: ["ON", "OFF"]
+          enum: [ "ON", "OFF" ]
           example: "ON"
     SwitchAccionResponse:
       allOf:
         - $ref: '#/components/schemas/Switch'
         - type: object
-          required: [cambio]
+          required: [ cambio ]
           properties:
             cambio:
               type: boolean
@@ -91,7 +91,7 @@ components:
               example: true
     Error:
       type: object
-      required: [error]
+      required: [ error ]
       properties:
         error:
           type: string
