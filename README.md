@@ -201,3 +201,28 @@ Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos
 Acá se encuentra la organización y seguimiento del proyecto.
 
 [Link a Jira](https://walterlarrea.atlassian.net/jira/software/projects/SCRUM/boards/1?filter=&groupBy=none&atlOrigin=eyJpIjoiYjAzY2VmYzE5OTgzNDFiNjgyNDEzM2Y2OTA2ODI2NjgiLCJwIjoiaiJ9)
+
+## 13. MCP Server
+
+Para ejecutar el MCP Server:
+
+```bash
+docker-compose -f docker-compose-test.yml run --rm mcp-server
+```
+
+Config para Claude
+
+```json
+{
+  "mcpServers": {
+    "controlador-sitio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:8081/mcp"
+      ]
+    }
+  }
+}
+```

@@ -98,13 +98,12 @@ public class IntegrationService {
       return;
     }
     try {
-      RegistroControlador registro =
-          simulatorClient
-              .post()
-              .uri("/controladores")
-              .body(new AltaControlador(controllerLabel, controllerBaseUrl, controllerApiKey))
-              .retrieve()
-              .body(RegistroControlador.class);
+      RegistroControlador registro = simulatorClient
+          .post()
+          .uri("/controladores")
+          .body(new AltaControlador(controllerLabel, controllerBaseUrl, controllerApiKey))
+          .retrieve()
+          .body(RegistroControlador.class);
       if (registro == null
           || registro.mqtt() == null
           || registro.mqtt().host() == null
@@ -126,10 +125,13 @@ public class IntegrationService {
     }
   }
 
-  private record AltaControlador(String etiqueta, String baseUrl, String apiKey) {}
+  private record AltaControlador(String etiqueta, String baseUrl, String apiKey) {
+  }
 
   private record RegistroControlador(
-      String id, String etiqueta, String baseUrl, String registradoEn, Mqtt mqtt) {}
+      String id, String etiqueta, String baseUrl, String registradoEn, Mqtt mqtt) {
+  }
 
-  private record Mqtt(String host, int puerto) {}
+  private record Mqtt(String host, int puerto) {
+  }
 }

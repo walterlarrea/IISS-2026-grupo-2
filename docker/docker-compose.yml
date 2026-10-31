@@ -49,6 +49,7 @@ services:
       REGISTRATION_RETRY_MS: ${REGISTRATION_RETRY_MS:-5000}
       CONTROLADOR_ETIQUETA: ${CONTROLADOR_ETIQUETA:-controller}
       CONTROLADOR_API_URL: ${CONTROLADOR_API_URL:-http://controller:8080}
+      CONTROLADOR_PUBLIC_API_URL: ${CONTROLADOR_PUBLIC_API_URL:-http://localhost:8080}
 
       MONGODB_DATABASE: ${MONGODB_DATABASE}
       MONGODB_URI: ${MONGODB_URI}
@@ -94,6 +95,25 @@ services:
       SWITCHES_API_KEY: ${SWITCHES_API_KEY}
     ports:
       - '${SWITCHES_API_PORT:-8090}:${SWITCHES_API_PORT:-8090}'
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: mcp-server
+    container_name: mcp-server
+    depends_on:
+      controller:
+        condition: service_started
+    environment:
+      APP_LOG_LEVEL: ${LOGGING_LEVEL:-INFO}
+      CONTROLADOR_API_URL: ${CONTROLADOR_API_URL:-http://controller:8080}
+      CONTROLADOR_API_KEY: ${CONTROLADOR_API_KEY:-development-key}
+      SWITCHES_API_KEY: ${SWITCHES_API_KEY:-development-key}
+      MCP_SERVER_PORT: ${MCP_SERVER_PORT:-8081}
+    ports:
+      - '${MCP_SERVER_PORT:-8081}:8081'
     restart: unless-stopped
 
 volumes:

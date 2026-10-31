@@ -8,6 +8,7 @@ COPY common/pom.xml ./common/
 COPY controller/pom.xml ./controller/
 COPY publisher/pom.xml ./publisher/
 COPY switches-api/pom.xml ./switches-api/
+COPY mcp-server/pom.xml ./mcp-server/
 
 RUN mvn dependency:go-offline -B
 
@@ -51,5 +52,18 @@ FROM eclipse-temurin:25-jre AS switches-api
 WORKDIR /app
 
 COPY --from=build_base /workspace/switches-api/target/switches-api-app.jar /app/app.jar
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+
+# ===============================
+# MCP Server
+# ===============================
+
+FROM eclipse-temurin:25-jre AS mcp-server
+
+WORKDIR /app
+
+COPY --from=build_base /workspace/mcp-server/target/mcp-server-app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
