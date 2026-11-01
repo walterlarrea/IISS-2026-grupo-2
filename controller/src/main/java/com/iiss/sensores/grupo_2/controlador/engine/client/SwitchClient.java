@@ -46,13 +46,9 @@ public class SwitchClient {
     }
 
     SwitchState switchState =
-        switch (response.estado()) {
-          case EstadoRespuestaSwitch.ON -> SwitchState.ENCENDIDO;
-          case EstadoRespuestaSwitch.OFF, EstadoRespuestaSwitch.DESCONOCIDO -> SwitchState.APAGADO;
-          default ->
-              throw new IllegalStateException(
-                  "La API de switches devolvió un estado no soportado: " + response.estado());
-        };
+        "ON".equals(response.estado())
+            ? SwitchState.ENCENDIDO
+            : SwitchState.APAGADO;
 
     return new SwitchStateResponse(response.idSwitch(), switchState, response.aplicadoEn());
   }
@@ -80,14 +76,8 @@ public class SwitchClient {
     OFF
   }
 
-  private enum EstadoRespuestaSwitch {
-    ON,
-    OFF,
-    DESCONOCIDO
-  }
-
   private record SwitchRequest(EstadoAccionSwitch accion) {}
 
   private record SwitchResponse(
-      String idSwitch, EstadoRespuestaSwitch estado, Instant aplicadoEn) {}
+      String idSwitch, String estado, Instant aplicadoEn) {}
 }

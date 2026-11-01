@@ -105,4 +105,37 @@ class SwitchClientTest {
 
     server.verify();
   }
+
+  @Test
+  void mapsUnknownSwitchStateToOff() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+    Room room =
+        new Room(
+            "room1",
+            "Room 1",
+            22.0,
+            1.5,
+            "thermostat-room1",
+            "topic-room1",
+            "sw-sim-room1",
+            "http://iiss-simulator:9090",
+            21.0,
+            SwitchState.APAGADO);
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"UNKNOWN","aplicadoEn":null}
+                        """,
+                MediaType.APPLICATION_JSON));
+
+    assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
+
+    server.verify();
+  }
 }
