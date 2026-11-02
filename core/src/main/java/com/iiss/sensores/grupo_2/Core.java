@@ -16,13 +16,31 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Logic to take decisions based on site data config, temperature readings and domain requirements
+ * Logic to make decisions based on site data config, temperature readings and domain requirements.
+ * Handles power limitations, underfloor heating thermal inertia, and prevents room starvation.
  */
 class Core implements ICore {
   private static final Logger logger = LoggerFactory.getLogger(Core.class);
 
+  /**
+   * Thermal inertia tolerance band in °C.
+   * Underfloor heating stores significant heat in the slab. When a room is within this band of
+   * its expected temperature and other colder rooms are awaiting power, the switch can be turned
+   * off early, relying on accumulated thermal inertia to reach the target while releasing
+   * electrical capacity for other rooms to avoid starvation.
+   */
+  public static final double THERMAL_INERTIA_BAND_C = 0.5;
+
   public Core() {}
 
+  /**
+   * Calculates the switch actuation commands required to maintain room temperatures within limits
+   * without exceeding the contracted power capacity of the site.
+   *
+   * @param dateTime current simulated timestamp used to determine tariff periods (e.g. rush hour).
+   * @param siteData current site configuration and status of all rooms.
+   * @return {@link CoreAnswer} containing the list of switch commands to be dispatched.
+   */
   @Override
   public CoreAnswer calcularComandos(ZonedDateTime dateTime, DataSite siteData) {
     logger.debug(
@@ -66,7 +84,7 @@ class Core implements ICore {
         roomsOverTheExpectedTemperature.size(),
         roomsBelowExpectedTemperature.size());
 
-    /** Calculate power used by rooms whose switch is turned ON */
+    /** Calculate initial power used by rooms whose switch is turned ON */
     double utilizedPower =
         siteData.habitaciones().stream()
             .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
@@ -77,9 +95,8 @@ class Core implements ICore {
     List<Command> commands = new ArrayList<>();
 
     /**
-     * - Appends the commands for turning OFF switches of rooms that are at or over their expected
-     * temperature and are currently ON. - Frees power before trying to turn ON switches for rooms
-     * that are below expected temperature
+     * 1. Turn OFF switches of rooms that reached or exceeded their expected temperature.
+     * Frees power before attempting to turn ON switches for rooms that are below expected temperature.
      */
     for (Room room : roomsOverTheExpectedTemperature) {
       if (room.currentSwitchState() != SwitchState.APAGADO) {
@@ -95,16 +112,56 @@ class Core implements ICore {
     }
 
     /**
-     * - Appends the commands for turning ON the switches of rooms that are below their expected
-     * temperature and are currently OFF. - Switches are turned ON only if enough power is
-     * available. - If the room with greater deficit can't be turned ON because of lack of power,
-     * the system attempts to turn ON the next room in order (deficit DESC).
+     * 2. Anti-starvation & Thermal Inertia early release:
+     * When there are colder rooms awaiting power that exceed the available capacity, active rooms
+     * already inside their thermal inertia band (within THERMAL_INERTIA_BAND_C of their target)
+     * yield their switch to OFF. This allows the colder rooms to receive power and heat up.
+     */
+    double contractedPower = (siteData.site() != null) ? siteData.site().potenciaContratadaKW() : 0.0;
+    for (Room activeRoom : siteData.habitaciones()) {
+      if (activeRoom.currentSwitchState() == SwitchState.ENCENDIDO) {
+        boolean isInInertiaBand = activeRoom.currentTemperatureC() >= (activeRoom.expectedTemperature() - THERMAL_INERTIA_BAND_C);
+        double activeDeficit = activeRoom.expectedTemperature() - activeRoom.currentTemperatureC();
+
+        // Check if there is any colder waiting room that cannot turn ON without more power
+        boolean colderRoomWaiting = false;
+        for (Room waiting : roomsBelowExpectedTemperature) {
+          if (waiting.currentSwitchState() == SwitchState.APAGADO) {
+            double waitingDeficit = waiting.expectedTemperature() - waiting.currentTemperatureC();
+            if (waitingDeficit > activeDeficit && (utilizedPower + waiting.powerKW() > contractedPower)) {
+              colderRoomWaiting = true;
+              break;
+            }
+          }
+        }
+
+        if (isInInertiaBand && colderRoomWaiting) {
+          commands.add(new CommandSwitch(activeRoom.idSwitch(), SwitchState.APAGADO));
+          utilizedPower -= activeRoom.powerKW();
+          logger.debug(
+              "Yielding power due to thermal inertia / anti-starvation: turning OFF switch {}. "
+                  + "Temp: {} °C (Target: {} °C), freed: {} kW",
+              activeRoom.idSwitch(),
+              activeRoom.currentTemperatureC(),
+              activeRoom.expectedTemperature(),
+              activeRoom.powerKW());
+        }
+      }
+    }
+
+    /**
+     * 3. Turn ON switches of rooms that are below expected temperature in descending order of deficit.
+     * Switches are turned ON only if enough power is available.
      */
     for (Room room : roomsBelowExpectedTemperature) {
-      if (room.currentSwitchState() != SwitchState.ENCENDIDO) {
-        assert siteData.site() != null;
+      boolean alreadyTurnedOffInThisCycle = commands.stream()
+          .anyMatch(c -> c instanceof CommandSwitch cs
+              && cs.idSwitch().equals(room.idSwitch())
+              && cs.estado() == SwitchState.APAGADO);
+
+      if (room.currentSwitchState() != SwitchState.ENCENDIDO && !alreadyTurnedOffInThisCycle) {
         /** Room is turned ON only when it won't surpass the available power. */
-        if (utilizedPower + room.powerKW() <= siteData.site().potenciaContratadaKW()) {
+        if (utilizedPower + room.powerKW() <= contractedPower) {
           commands.add(new CommandSwitch(room.idSwitch(), SwitchState.ENCENDIDO));
           utilizedPower += room.powerKW();
           logger.debug(
@@ -112,13 +169,13 @@ class Core implements ICore {
               room.idSwitch(),
               room.expectedTemperature() - room.currentTemperatureC(),
               utilizedPower,
-              siteData.site().potenciaContratadaKW());
+              contractedPower);
         } else {
           logger.debug(
               "Can't turn ON switch {}: required power {} kW exceeds the established limit of {} kW",
               room.idSwitch(),
               utilizedPower + room.powerKW(),
-              siteData.site().potenciaContratadaKW());
+              contractedPower);
         }
       }
     }
@@ -130,6 +187,13 @@ class Core implements ICore {
     return new CoreAnswer(commands);
   }
 
+  /**
+   * Helper method to append a switch command if the switch is not already in the target state.
+   *
+   * @param commands list of commands to append to.
+   * @param room room whose switch is being evaluated.
+   * @param newStatus desired state for the switch.
+   */
   private void appendCommandIfNecessary(List<Command> commands, Room room, SwitchState newStatus) {
     if (room.currentSwitchState() != newStatus) {
       commands.add(new CommandSwitch(room.idSwitch(), newStatus));
