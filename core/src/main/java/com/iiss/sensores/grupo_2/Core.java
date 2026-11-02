@@ -22,16 +22,25 @@ import java.util.List;
 class Core implements ICore {
   private static final Logger logger = LoggerFactory.getLogger(Core.class);
 
-  /**
-   * Thermal inertia tolerance band in °C.
-   * Underfloor heating stores significant heat in the slab. When a room is within this band of
-   * its expected temperature and other colder rooms are awaiting power, the switch can be turned
-   * off early, relying on accumulated thermal inertia to reach the target while releasing
-   * electrical capacity for other rooms to avoid starvation.
-   */
-  public static final double THERMAL_INERTIA_BAND_C = 0.5;
+  public static final double DEFAULT_THERMAL_INERTIA_BAND_C = 0.5;
 
-  public Core() {}
+  private final double thermalInertiaBandC;
+
+  /**
+   * Default constructor using the default thermal inertia band (0.5 °C).
+   */
+  public Core() {
+    this(DEFAULT_THERMAL_INERTIA_BAND_C);
+  }
+
+  /**
+   * Parameterized constructor allowing configurable thermal inertia tolerance.
+   *
+   * @param thermalInertiaBandC tolerance band in °C for early cutoff / anti-starvation.
+   */
+  public Core(double thermalInertiaBandC) {
+    this.thermalInertiaBandC = thermalInertiaBandC;
+  }
 
   /**
    * Calculates the switch actuation commands required to maintain room temperatures within limits
@@ -114,13 +123,13 @@ class Core implements ICore {
     /**
      * 2. Anti-starvation & Thermal Inertia early release:
      * When there are colder rooms awaiting power that exceed the available capacity, active rooms
-     * already inside their thermal inertia band (within THERMAL_INERTIA_BAND_C of their target)
+     * already inside their thermal inertia band (within thermalInertiaBandC of their target)
      * yield their switch to OFF. This allows the colder rooms to receive power and heat up.
      */
     double contractedPower = (siteData.site() != null) ? siteData.site().potenciaContratadaKW() : 0.0;
     for (Room activeRoom : siteData.habitaciones()) {
       if (activeRoom.currentSwitchState() == SwitchState.ENCENDIDO) {
-        boolean isInInertiaBand = activeRoom.currentTemperatureC() >= (activeRoom.expectedTemperature() - THERMAL_INERTIA_BAND_C);
+        boolean isInInertiaBand = activeRoom.currentTemperatureC() >= (activeRoom.expectedTemperature() - thermalInertiaBandC);
         double activeDeficit = activeRoom.expectedTemperature() - activeRoom.currentTemperatureC();
 
         // Check if there is any colder waiting room that cannot turn ON without more power
