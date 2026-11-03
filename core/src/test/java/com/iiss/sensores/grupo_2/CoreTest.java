@@ -469,33 +469,84 @@ class CoreTest {
   }
 
   /**
-   * Anti-starvation test:
-   * Scenario with 5 rooms and limited contracted power (4.0 kW, 2.0 kW per room).
-   * Only 2 rooms can be powered simultaneously.
-   * Room 1 and Room 2 were previously ON and are now within the thermal inertia band
-   * (e.g. 20.8 °C and 20.7 °C with expected 21.0 °C, deficit < 0.5 °C).
-   * Rooms 3, 4, 5 are cold (e.g. Room 5 is the coldest, like the grandma's room at 14.0 °C).
-   * Verifies that Room 1 and Room 2 yield power (turn OFF) early due to thermal inertia,
+   * Anti-starvation test: Scenario with 5 rooms and limited contracted power (4.0 kW, 2.0 kW per
+   * room). Only 2 rooms can be powered simultaneously. Room 1 and Room 2 were previously ON and are
+   * now within the thermal inertia band (e.g. 20.8 °C and 20.7 °C with expected 21.0 °C, deficit <
+   * 0.5 °C). Rooms 3, 4, 5 are cold (e.g. Room 5 is the coldest, like the grandma's room at 14.0
+   * °C). Verifies that Room 1 and Room 2 yield power (turn OFF) early due to thermal inertia,
    * allowing the coldest rooms (like Room 5 and Room 4) to turn ON without suffering starvation.
    */
   @Test
   void calcularComandos_liberaPorInerciaParaEvitarInanicionDeHabitacionesMasFrias() {
     Site site =
-        new Site("casa-5hab", "Casa de 5 habitaciones", 4.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+        new Site(
+            "casa-5hab",
+            "Casa de 5 habitaciones",
+            4.0,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
 
     List<Room> habitaciones =
         List.of(
             // Room 1: ON, close to target (20.8 / 21.0 -> deficit 0.2, inside inertia band)
-            new Room("r1", "Habitacion 1", 21.0, 2.0, "t1", "t1", "sw1", "http://switches/sw1", 20.8, SwitchState.ENCENDIDO),
+            new Room(
+                "r1",
+                "Habitacion 1",
+                21.0,
+                2.0,
+                "t1",
+                "t1",
+                "sw1",
+                "http://switches/sw1",
+                20.8,
+                SwitchState.ENCENDIDO),
             // Room 2: ON, close to target (20.7 / 21.0 -> deficit 0.3, inside inertia band)
-            new Room("r2", "Habitacion 2", 21.0, 2.0, "t2", "t2", "sw2", "http://switches/sw2", 20.7, SwitchState.ENCENDIDO),
+            new Room(
+                "r2",
+                "Habitacion 2",
+                21.0,
+                2.0,
+                "t2",
+                "t2",
+                "sw2",
+                "http://switches/sw2",
+                20.7,
+                SwitchState.ENCENDIDO),
             // Room 3: OFF, deficit 1.5
-            new Room("r3", "Habitacion 3", 20.0, 2.0, "t3", "t3", "sw3", "http://switches/sw3", 18.5, SwitchState.APAGADO),
+            new Room(
+                "r3",
+                "Habitacion 3",
+                20.0,
+                2.0,
+                "t3",
+                "t3",
+                "sw3",
+                "http://switches/sw3",
+                18.5,
+                SwitchState.APAGADO),
             // Room 4: OFF, deficit 2.0
-            new Room("r4", "Habitacion 4", 20.0, 2.0, "t4", "t4", "sw4", "http://switches/sw4", 18.0, SwitchState.APAGADO),
+            new Room(
+                "r4",
+                "Habitacion 4",
+                20.0,
+                2.0,
+                "t4",
+                "t4",
+                "sw4",
+                "http://switches/sw4",
+                18.0,
+                SwitchState.APAGADO),
             // Room 5 (abuela): OFF, huge deficit 7.0 (14 °C / 21 °C)
-            new Room("r5", "Habitacion 5 (Abuela)", 21.0, 2.0, "t5", "t5", "sw5", "http://switches/sw5", 14.0, SwitchState.APAGADO)
-        );
+            new Room(
+                "r5",
+                "Habitacion 5 (Abuela)",
+                21.0,
+                2.0,
+                "t5",
+                "t5",
+                "sw5",
+                "http://switches/sw5",
+                14.0,
+                SwitchState.APAGADO));
 
     DataSite config = new DataSite(site, habitaciones);
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
@@ -507,26 +558,48 @@ class CoreTest {
     assertComandosIguales(
         respuesta,
         new CommandSwitch("sw1", SwitchState.APAGADO),
-        new CommandSwitch("sw5", SwitchState.ENCENDIDO)
-    );
+        new CommandSwitch("sw5", SwitchState.ENCENDIDO));
   }
 
   /**
-   * Inertia test: If a room is within the thermal inertia band but NO other room is awaiting
-   * power (or there is ample power available), it remains ON until it reaches expected temperature.
+   * Inertia test: If a room is within the thermal inertia band but NO other room is awaiting power
+   * (or there is ample power available), it remains ON until it reaches expected temperature.
    */
   @Test
   void calcularComandos_noApagaPorInerciaSiNoHayCompetenciaPorPotencia() {
     Site site =
-        new Site("casa-sobra-potencia", "Casa con potencia", 10.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+        new Site(
+            "casa-sobra-potencia",
+            "Casa con potencia",
+            10.0,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
 
     List<Room> habitaciones =
         List.of(
             // Room 1: ON, close to target (20.8 / 21.0), but power is ample (10 kW)
-            new Room("r1", "Habitacion 1", 21.0, 2.0, "t1", "t1", "sw1", "http://switches/sw1", 20.8, SwitchState.ENCENDIDO),
+            new Room(
+                "r1",
+                "Habitacion 1",
+                21.0,
+                2.0,
+                "t1",
+                "t1",
+                "sw1",
+                "http://switches/sw1",
+                20.8,
+                SwitchState.ENCENDIDO),
             // Room 2: OFF, deficit 2.0
-            new Room("r2", "Habitacion 2", 20.0, 2.0, "t2", "t2", "sw2", "http://switches/sw2", 18.0, SwitchState.APAGADO)
-        );
+            new Room(
+                "r2",
+                "Habitacion 2",
+                20.0,
+                2.0,
+                "t2",
+                "t2",
+                "sw2",
+                "http://switches/sw2",
+                18.0,
+                SwitchState.APAGADO));
 
     DataSite config = new DataSite(site, habitaciones);
     ZonedDateTime fechaHora = ZonedDateTime.parse("2026-10-07T12:00:00Z");
@@ -534,71 +607,286 @@ class CoreTest {
     CoreAnswer respuesta = core.calcularComandos(fechaHora, config);
 
     // sw1 stays ON (no command), sw2 turns ON because there is enough power for both
-    assertComandosIguales(
-        respuesta,
-        new CommandSwitch("sw2", SwitchState.ENCENDIDO)
-    );
+    assertComandosIguales(respuesta, new CommandSwitch("sw2", SwitchState.ENCENDIDO));
   }
 
   /**
-   * Simulates dynamic temperature evolution across multiple cycles (such as over a 2-hour span).
-   * 5 rooms with a 4.0 kW limit (each room 2.0 kW, only 2 rooms ON at a time).
-   * Cycle 1: Rooms 1 and 2 start with cold deficit (e.g. 17 °C / 21 °C). They turn ON.
-   * Cycle 2: After heating, Rooms 1 and 2 enter their thermal inertia band (20.6 °C and 20.7 °C).
-   *          Meanwhile, Room 5 (abuela at 14 °C) and Room 4 (18 °C) need heating.
-   *          Core yields power from Rooms 1 and 2 early to heat Room 5 and Room 4.
-   * Cycle 3: Rooms 4 and 5 heat up into their comfort band, while Room 3 (18.5 °C) gets its turn.
-   * Confirms that across the time window, ALL 5 rooms receive power and avoid starvation.
+   * Inertia test: a room inside the inertia band must not yield when the power it frees is not
+   * enough for the colder room to fit; turning it OFF would only waste heating.
+   */
+  @Test
+  void calcularComandos_noLiberaPorInerciaSiLaPotenciaLiberadaNoAlcanzaParaLaMasFria() {
+    Site site =
+        new Site(
+            "casa-insuficiente",
+            "Casa insuficiente",
+            4.0,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+
+    List<Room> habitaciones =
+        List.of(
+            // r1: ON, inside the inertia band (20.8 / 21.0), frees only 1.0 kW
+            new Room(
+                "r1",
+                "Habitacion 1",
+                21.0,
+                1.0,
+                "t1",
+                "t1",
+                "sw1",
+                "http://switches/sw1",
+                20.8,
+                SwitchState.ENCENDIDO),
+            // r2: ON, far from target, outside the inertia band
+            new Room(
+                "r2",
+                "Habitacion 2",
+                21.0,
+                3.0,
+                "t2",
+                "t2",
+                "sw2",
+                "http://switches/sw2",
+                15.0,
+                SwitchState.ENCENDIDO),
+            // r3: OFF, coldest, needs 3.0 kW: 1.0 kW from r1 would not be enough
+            new Room(
+                "r3",
+                "Habitacion 3",
+                21.0,
+                3.0,
+                "t3",
+                "t3",
+                "sw3",
+                "http://switches/sw3",
+                14.0,
+                SwitchState.APAGADO));
+
+    CoreAnswer respuesta =
+        core.calcularComandos(
+            ZonedDateTime.parse("2026-10-07T12:00:00Z"), new DataSite(site, habitaciones));
+
+    assertTrue(respuesta.commands().isEmpty(), "No debe apagarse r1 si r3 igual no entra");
+  }
+
+  /**
+   * Simulates dynamic temperature evolution across multiple cycles (such as over a 2-hour span). 5
+   * rooms with a 4.0 kW limit (each room 2.0 kW, only 2 rooms ON at a time). Cycle 1: Rooms 1 and 2
+   * start with cold deficit (e.g. 17 °C / 21 °C). They turn ON. Cycle 2: After heating, Rooms 1 and
+   * 2 enter their thermal inertia band (20.6 °C and 20.7 °C). Meanwhile, Room 5 (abuela at 14 °C)
+   * and Room 4 (18 °C) need heating. Core yields power from Rooms 1 and 2 early to heat Room 5 and
+   * Room 4. Cycle 3: Rooms 4 and 5 heat up into their comfort band, while Room 3 (18.5 °C) gets its
+   * turn. Confirms that across the time window, ALL 5 rooms receive power and avoid starvation.
    */
   @Test
   void calcularComandos_simulacionDinamicaDosHorasCincoHabitacionesRotanCorrectamente() {
-    Site site = new Site("casa-5hab", "Casa 5 hab", 4.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+    Site site =
+        new Site(
+            "casa-5hab",
+            "Casa 5 hab",
+            4.0,
+            new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
     ZonedDateTime t0 = ZonedDateTime.parse("2026-10-07T10:00:00Z");
 
     // --- CICLO 1: Estado inicial al minuto 0 ---
-    List<Room> habsCiclo1 = List.of(
-        new Room("r1", "H1", 21.0, 2.0, "t1", "t1", "sw1", "url/1", 16.0, SwitchState.APAGADO), // deficit 5.0
-        new Room("r2", "H2", 21.0, 2.0, "t2", "t2", "sw2", "url/2", 17.0, SwitchState.APAGADO), // deficit 4.0
-        new Room("r3", "H3", 20.0, 2.0, "t3", "t3", "sw3", "url/3", 18.0, SwitchState.APAGADO), // deficit 2.0
-        new Room("r4", "H4", 20.0, 2.0, "t4", "t4", "sw4", "url/4", 17.5, SwitchState.APAGADO), // deficit 2.5
-        new Room("r5", "H5 (Abuela)", 21.0, 2.0, "t5", "t5", "sw5", "url/5", 14.0, SwitchState.APAGADO) // deficit 7.0
-    );
+    List<Room> habsCiclo1 =
+        List.of(
+            new Room(
+                "r1",
+                "H1",
+                21.0,
+                2.0,
+                "t1",
+                "t1",
+                "sw1",
+                "url/1",
+                16.0,
+                SwitchState.APAGADO), // deficit 5.0
+            new Room(
+                "r2",
+                "H2",
+                21.0,
+                2.0,
+                "t2",
+                "t2",
+                "sw2",
+                "url/2",
+                17.0,
+                SwitchState.APAGADO), // deficit 4.0
+            new Room(
+                "r3",
+                "H3",
+                20.0,
+                2.0,
+                "t3",
+                "t3",
+                "sw3",
+                "url/3",
+                18.0,
+                SwitchState.APAGADO), // deficit 2.0
+            new Room(
+                "r4",
+                "H4",
+                20.0,
+                2.0,
+                "t4",
+                "t4",
+                "sw4",
+                "url/4",
+                17.5,
+                SwitchState.APAGADO), // deficit 2.5
+            new Room(
+                "r5",
+                "H5 (Abuela)",
+                21.0,
+                2.0,
+                "t5",
+                "t5",
+                "sw5",
+                "url/5",
+                14.0,
+                SwitchState.APAGADO) // deficit 7.0
+            );
     CoreAnswer ans1 = core.calcularComandos(t0, new DataSite(site, habsCiclo1));
     // Encienden r5 (deficit 7.0) y r1 (deficit 5.0) -> ocupan los 4.0 kW
-    assertComandosIguales(ans1,
+    assertComandosIguales(
+        ans1,
         new CommandSwitch("sw5", SwitchState.ENCENDIDO),
-        new CommandSwitch("sw1", SwitchState.ENCENDIDO)
-    );
+        new CommandSwitch("sw1", SwitchState.ENCENDIDO));
 
-    // --- CICLO 2: Minuto 45 (r5 y r1 calentaron; r1 llega a banda de inercia 20.6 °C; r5 a 19.5 °C) ---
-    List<Room> habsCiclo2 = List.of(
-        new Room("r1", "H1", 21.0, 2.0, "t1", "t1", "sw1", "url/1", 20.6, SwitchState.ENCENDIDO), // deficit 0.4 (en inercia)
-        new Room("r2", "H2", 21.0, 2.0, "t2", "t2", "sw2", "url/2", 17.0, SwitchState.APAGADO), // deficit 4.0
-        new Room("r3", "H3", 20.0, 2.0, "t3", "t3", "sw3", "url/3", 18.0, SwitchState.APAGADO), // deficit 2.0
-        new Room("r4", "H4", 20.0, 2.0, "t4", "t4", "sw4", "url/4", 17.5, SwitchState.APAGADO), // deficit 2.5
-        new Room("r5", "H5 (Abuela)", 21.0, 2.0, "t5", "t5", "sw5", "url/5", 19.5, SwitchState.ENCENDIDO) // deficit 1.5
-    );
+    // --- CICLO 2: Minuto 45 (r5 y r1 calentaron; r1 llega a banda de inercia 20.6 °C; r5 a 19.5
+    // °C) ---
+    List<Room> habsCiclo2 =
+        List.of(
+            new Room(
+                "r1",
+                "H1",
+                21.0,
+                2.0,
+                "t1",
+                "t1",
+                "sw1",
+                "url/1",
+                20.6,
+                SwitchState.ENCENDIDO), // deficit 0.4 (en inercia)
+            new Room(
+                "r2",
+                "H2",
+                21.0,
+                2.0,
+                "t2",
+                "t2",
+                "sw2",
+                "url/2",
+                17.0,
+                SwitchState.APAGADO), // deficit 4.0
+            new Room(
+                "r3",
+                "H3",
+                20.0,
+                2.0,
+                "t3",
+                "t3",
+                "sw3",
+                "url/3",
+                18.0,
+                SwitchState.APAGADO), // deficit 2.0
+            new Room(
+                "r4",
+                "H4",
+                20.0,
+                2.0,
+                "t4",
+                "t4",
+                "sw4",
+                "url/4",
+                17.5,
+                SwitchState.APAGADO), // deficit 2.5
+            new Room(
+                "r5",
+                "H5 (Abuela)",
+                21.0,
+                2.0,
+                "t5",
+                "t5",
+                "sw5",
+                "url/5",
+                19.5,
+                SwitchState.ENCENDIDO) // deficit 1.5
+            );
     CoreAnswer ans2 = core.calcularComandos(t0.plusMinutes(45), new DataSite(site, habsCiclo2));
-    // r1 cede potencia (apaga) porque r2 tiene deficit 4.0 > 0.4 y no cabe. r2 se enciende. r5 sigue encendido.
-    assertComandosIguales(ans2,
+    // r1 cede potencia (apaga) porque r2 tiene deficit 4.0 > 0.4 y no cabe. r2 se enciende. r5
+    // sigue encendido.
+    assertComandosIguales(
+        ans2,
         new CommandSwitch("sw1", SwitchState.APAGADO),
-        new CommandSwitch("sw2", SwitchState.ENCENDIDO)
-    );
+        new CommandSwitch("sw2", SwitchState.ENCENDIDO));
 
     // --- CICLO 3: Minuto 90 (r5 llega a banda de inercia 20.7 °C; r2 llega a 19.8 °C) ---
-    List<Room> habsCiclo3 = List.of(
-        new Room("r1", "H1", 21.0, 2.0, "t1", "t1", "sw1", "url/1", 20.8, SwitchState.APAGADO), // inercia manteniendo
-        new Room("r2", "H2", 21.0, 2.0, "t2", "t2", "sw2", "url/2", 19.8, SwitchState.ENCENDIDO), // deficit 1.2
-        new Room("r3", "H3", 20.0, 2.0, "t3", "t3", "sw3", "url/3", 18.0, SwitchState.APAGADO), // deficit 2.0
-        new Room("r4", "H4", 20.0, 2.0, "t4", "t4", "sw4", "url/4", 17.5, SwitchState.APAGADO), // deficit 2.5
-        new Room("r5", "H5 (Abuela)", 21.0, 2.0, "t5", "t5", "sw5", "url/5", 20.7, SwitchState.ENCENDIDO) // deficit 0.3 (en inercia)
-    );
+    List<Room> habsCiclo3 =
+        List.of(
+            new Room(
+                "r1",
+                "H1",
+                21.0,
+                2.0,
+                "t1",
+                "t1",
+                "sw1",
+                "url/1",
+                20.8,
+                SwitchState.APAGADO), // inercia manteniendo
+            new Room(
+                "r2",
+                "H2",
+                21.0,
+                2.0,
+                "t2",
+                "t2",
+                "sw2",
+                "url/2",
+                19.8,
+                SwitchState.ENCENDIDO), // deficit 1.2
+            new Room(
+                "r3",
+                "H3",
+                20.0,
+                2.0,
+                "t3",
+                "t3",
+                "sw3",
+                "url/3",
+                18.0,
+                SwitchState.APAGADO), // deficit 2.0
+            new Room(
+                "r4",
+                "H4",
+                20.0,
+                2.0,
+                "t4",
+                "t4",
+                "sw4",
+                "url/4",
+                17.5,
+                SwitchState.APAGADO), // deficit 2.5
+            new Room(
+                "r5",
+                "H5 (Abuela)",
+                21.0,
+                2.0,
+                "t5",
+                "t5",
+                "sw5",
+                "url/5",
+                20.7,
+                SwitchState.ENCENDIDO) // deficit 0.3 (en inercia)
+            );
     CoreAnswer ans3 = core.calcularComandos(t0.plusMinutes(90), new DataSite(site, habsCiclo3));
     // r5 cede potencia (apaga) porque r4 tiene deficit 2.5 y r3 tiene deficit 2.0. r4 enciende.
-    assertComandosIguales(ans3,
+    assertComandosIguales(
+        ans3,
         new CommandSwitch("sw5", SwitchState.APAGADO),
-        new CommandSwitch("sw4", SwitchState.ENCENDIDO)
-    );
+        new CommandSwitch("sw4", SwitchState.ENCENDIDO));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -613,8 +901,8 @@ class CoreTest {
   private static final ZonedDateTime HACE_6_HORAS = AHORA.minusHours(6);
 
   /**
-   * Starvation por déficit bajo: con potencia para una sola habitación, la de menor déficit
-   * quedaba siempre última. Tras 6 h esperando debe pasar por delante de las que acaban de esperar.
+   * Starvation por déficit bajo: con potencia para una sola habitación, la de menor déficit quedaba
+   * siempre última. Tras 6 h esperando debe pasar por delante de las que acaban de esperar.
    */
   @Test
   void calcularComandos_enciendeLaHabitacionQueLlevaMuchoEsperandoAunqueTengaMenorDeficit() {
@@ -712,7 +1000,9 @@ class CoreTest {
         new CommandSwitch("sw-grande", SwitchState.ENCENDIDO));
   }
 
-  /** Sin información de espera (lastSwitchChange null) el criterio sigue siendo el mayor déficit. */
+  /**
+   * Sin información de espera (lastSwitchChange null) el criterio sigue siendo el mayor déficit.
+   */
   @Test
   void calcularComandos_priorizaPorDeficitCuandoSeDesconoceElTiempoDeEspera() {
     DataSite config =
@@ -775,8 +1065,9 @@ class CoreTest {
 
   /**
    * Simulación de 12 h (ciclos de 10 min) con una sola habitación encendida a la vez (2 kW de 2 kW
-   * contratados). A y B se enfrían rápido, por lo que su déficit siempre supera al de C, que casi no
-   * pierde calor. Con prioridad solo por déficit, C nunca se enciende. Todas deben recibir potencia.
+   * contratados). A y B se enfrían rápido, por lo que su déficit siempre supera al de C, que casi
+   * no pierde calor. Con prioridad solo por déficit, C nunca se enciende. Todas deben recibir
+   * potencia.
    */
   @Test
   void calcularComandos_simulacionDe12HorasTodasLasHabitacionesRecibenPotencia() {
@@ -797,7 +1088,8 @@ class CoreTest {
             sala(ids[i], esperada[i], 2.0, temperatura[i], estado[i], ultimoCambio[i]));
       }
 
-      CoreAnswer respuesta = core.calcularComandos(instante, new DataSite(sitio(2.0), habitaciones));
+      CoreAnswer respuesta =
+          core.calcularComandos(instante, new DataSite(sitio(2.0), habitaciones));
 
       for (var comando : respuesta.commands()) {
         CommandSwitch cs = (CommandSwitch) comando;
@@ -825,7 +1117,10 @@ class CoreTest {
 
   private static Site sitio(double potenciaContratadaKW) {
     return new Site(
-        "casa", "Casa", potenciaContratadaKW, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+        "casa",
+        "Casa",
+        potenciaContratadaKW,
+        new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
   }
 
   private static Room sala(
@@ -899,6 +1194,3 @@ class CoreTest {
     }
   }
 }
-
-
-
