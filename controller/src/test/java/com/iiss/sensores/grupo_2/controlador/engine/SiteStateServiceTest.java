@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,6 +88,69 @@ class SiteStateServiceTest {
 
     assertEquals(SwitchState.ENCENDIDO, room.currentSwitchState());
     assertEquals(19.0, room.currentTemperatureC());
+  }
+
+  @Test
+  void sellaConLaHoraActualLasHabitacionesSinInicioDeSituacionConocido() {
+    ZonedDateTime ahora = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+
+    Room room = siteStateService.getSiteState(ahora).habitaciones().get(0);
+
+    assertEquals(ahora, room.lastSwitchChange());
+  }
+
+  @Test
+  void noPisaElInicioDeSituacionDeUnaHabitacionQueSigueEsperando() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    Room room = siteStateService.getSiteState(inicio.plusHours(2)).habitaciones().get(0);
+
+    assertEquals(inicio, room.lastSwitchChange());
+  }
+
+  @Test
+  void reiniciaElRelojDeEsperaDeUnaHabitacionApagadaQueYaAlcanzoSuTemperatura() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+    siteStateService.updateRoomTemperature("termo-1", 21.5);
+
+    Room room = siteStateService.getSiteState(inicio.plusHours(2)).habitaciones().get(0);
+
+    assertEquals(inicio.plusHours(2), room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarEstadoSwitchRegistraElMomentoDelCambio() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    ZonedDateTime cambio = inicio.plusMinutes(30);
+    siteStateService.getSiteState(inicio);
+
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO, cambio);
+
+    Room room = siteStateService.getSiteState(cambio.plusMinutes(5)).habitaciones().get(0);
+    assertEquals(cambio, room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarEstadoSwitchSinCambioRealConservaElMomentoAnterior() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    siteStateService.updateSwitchState("switch-1", SwitchState.APAGADO, inicio.plusMinutes(30));
+
+    Room room = siteStateService.getSiteState(inicio.plusMinutes(35)).habitaciones().get(0);
+    assertEquals(inicio, room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarTemperaturaConservaElInicioDeSituacion() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    DataSite actualizado = siteStateService.updateRoomTemperature("termo-1", 18.5);
+
+    assertEquals(inicio, actualizado.habitaciones().get(0).lastSwitchChange());
   }
 
   @Test

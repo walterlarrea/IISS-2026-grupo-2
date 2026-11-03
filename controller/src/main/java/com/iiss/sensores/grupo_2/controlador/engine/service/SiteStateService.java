@@ -7,6 +7,7 @@ import com.iiss.sensores.grupo_2.modelos.input.Room;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import org.springframework.stereotype.Service;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,6 +61,21 @@ public class SiteStateService {
    *     statuses
    */
   public synchronized DataSite getSiteState() {
+    return getSiteState(null);
+  }
+
+  /**
+   * Gets the entire site config state, keeping up to date the moment each room's current situation
+   * started (see {@link Room#lastSwitchChange()}) so the Core can prevent starvation:
+   *
+   * <ul>
+   *   <li>rooms whose start is unknown are stamped with {@code now}
+   *   <li>OFF rooms at or over their expected temperature are not waiting, so their clock restarts
+   * </ul>
+   *
+   * @param now current (simulated) time, or null to skip stamping
+   */
+  public synchronized DataSite getSiteState(ZonedDateTime now) {
     if (dataSite == null) {
       throw new IllegalStateException("The Site state is not yet been initialized");
     }
@@ -93,11 +109,17 @@ public class SiteStateService {
                         room.idSwitch(),
                         room.urlSwitch(),
                         currentTemp,
-                        switchClient.consultarEstado(room).estado());
+                        switchClient.consultarEstado(room).estado(),
+                        room.lastSwitchChange());
                   })
               .toList();
       dataSite = new DataSite(dataSite.site(), List.copyOf(enrichedRooms));
       stateMarkedDirty = false;
+    }
+
+    if (now != null) {
+      replaceSiteRooms(
+          dataSite.habitaciones().stream().map(room -> stampSituationStart(room, now)).toList());
     }
 
     // Skip rooms with no temperature reading
@@ -106,6 +128,17 @@ public class SiteStateService {
         List.copyOf(dataSite.habitaciones()).stream()
             .filter(room -> room.currentTemperatureC() != null)
             .toList());
+  }
+
+  private static Room stampSituationStart(Room room, ZonedDateTime now) {
+    boolean satisfiedAndOff =
+        room.currentSwitchState() == SwitchState.APAGADO
+            && room.currentTemperatureC() != null
+            && room.currentTemperatureC() >= room.expectedTemperature();
+    if (room.lastSwitchChange() == null || satisfiedAndOff) {
+      return room.withLastSwitchChange(now);
+    }
+    return room;
   }
 
   /** Updates the temperature received from a thermostat */
@@ -133,7 +166,8 @@ public class SiteStateService {
                 h.idSwitch(),
                 h.urlSwitch(),
                 temperature,
-                h.currentSwitchState()));
+                h.currentSwitchState(),
+                h.lastSwitchChange()));
         roomFound = true;
       }
     }
@@ -145,8 +179,19 @@ public class SiteStateService {
     return dataSite;
   }
 
-  /** Updates known state of a switch */
+  /** Updates known state of a switch, keeping its situation start unless the state changed */
   public synchronized DataSite updateSwitchState(String idSwitch, SwitchState newSwitchState) {
+    return updateSwitchState(idSwitch, newSwitchState, null);
+  }
+
+  /**
+   * Updates known state of a switch.
+   *
+   * @param changedAt (simulated) moment of the change; when the state actually changes it becomes
+   *     the room's {@code lastSwitchChange} (null leaves it unknown)
+   */
+  public synchronized DataSite updateSwitchState(
+      String idSwitch, SwitchState newSwitchState, ZonedDateTime changedAt) {
     checkInitializedSiteState();
     List<Room> rooms = new ArrayList<>(dataSite.habitaciones());
     boolean roomFound = false;
@@ -170,7 +215,8 @@ public class SiteStateService {
                 h.idSwitch(),
                 h.urlSwitch(),
                 h.currentTemperatureC(),
-                newSwitchState));
+                newSwitchState,
+                h.currentSwitchState() == newSwitchState ? h.lastSwitchChange() : changedAt));
         roomFound = true;
         break;
       }

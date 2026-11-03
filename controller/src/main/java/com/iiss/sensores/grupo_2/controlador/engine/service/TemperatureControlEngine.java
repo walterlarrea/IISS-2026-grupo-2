@@ -98,9 +98,9 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     }
 
     try {
-      DataSite siteState = siteStateService.getSiteState();
-
       ZonedDateTime simulatedDateTime = this.clock.getTimeZoned();
+
+      DataSite siteState = siteStateService.getSiteState(simulatedDateTime);
 
       CoreAnswer coreResponse = core.calcularComandos(simulatedDateTime, siteState);
 
@@ -139,7 +139,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
           }
 
           // Switch status is updated only when the operation was successful
-          siteStateService.updateSwitchState(commandSwitch.idSwitch(), commandSwitch.estado());
+          siteStateService.updateSwitchState(
+              commandSwitch.idSwitch(), commandSwitch.estado(), simulatedDateTime);
           logger.info(
               "Switch {} state updated to {}", commandSwitch.idSwitch(), commandSwitch.estado());
 

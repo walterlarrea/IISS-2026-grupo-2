@@ -10,10 +10,13 @@ import com.iiss.sensores.grupo_2.modelos.output.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Logic to make decisions based on site data config, temperature readings and domain requirements.
@@ -23,23 +26,39 @@ class Core implements ICore {
   private static final Logger logger = LoggerFactory.getLogger(Core.class);
 
   public static final double DEFAULT_THERMAL_INERTIA_BAND_C = 0.5;
+  public static final Duration DEFAULT_MAX_WAIT = Duration.ofMinutes(60);
+  public static final Duration DEFAULT_MIN_ON_TIME = Duration.ofMinutes(10);
 
   private final double thermalInertiaBandC;
+  private final Duration maxWait;
+  private final Duration minOnTime;
 
-  /**
-   * Default constructor using the default thermal inertia band (0.5 °C).
-   */
+  /** Default constructor using the default thermal inertia band, max wait and min ON time. */
   public Core() {
     this(DEFAULT_THERMAL_INERTIA_BAND_C);
   }
 
   /**
-   * Parameterized constructor allowing configurable thermal inertia tolerance.
+   * Constructor allowing configurable thermal inertia tolerance.
    *
    * @param thermalInertiaBandC tolerance band in °C for early cutoff / anti-starvation.
    */
   public Core(double thermalInertiaBandC) {
+    this(thermalInertiaBandC, DEFAULT_MAX_WAIT, DEFAULT_MIN_ON_TIME);
+  }
+
+  /**
+   * Fully parameterized constructor.
+   *
+   * @param thermalInertiaBandC tolerance band in °C for early cutoff.
+   * @param maxWait how long a room below its expected temperature may wait with its switch OFF
+   *     before it is promoted over any other room, even preempting rooms that are already ON.
+   * @param minOnTime how long a room must stay ON before it can be preempted or yield its power.
+   */
+  public Core(double thermalInertiaBandC, Duration maxWait, Duration minOnTime) {
     this.thermalInertiaBandC = thermalInertiaBandC;
+    this.maxWait = maxWait;
+    this.minOnTime = minOnTime;
   }
 
   /**
@@ -102,6 +121,9 @@ class Core implements ICore {
     logger.debug("Power utilized initially: {} kW", utilizedPower);
 
     List<Command> commands = new ArrayList<>();
+    Set<String> switchesTurnedOff = new HashSet<>();
+    Set<String> switchesTurnedOn = new HashSet<>();
+    double contractedPower = (siteData.site() != null) ? siteData.site().potenciaContratadaKW() : 0.0;
 
     /**
      * 1. Turn OFF switches of rooms that reached or exceeded their expected temperature.
@@ -110,6 +132,7 @@ class Core implements ICore {
     for (Room room : roomsOverTheExpectedTemperature) {
       if (room.currentSwitchState() != SwitchState.APAGADO) {
         commands.add(new CommandSwitch(room.idSwitch(), SwitchState.APAGADO));
+        switchesTurnedOff.add(room.idSwitch());
         utilizedPower -= room.powerKW();
         logger.debug(
             "Turning OFF switch {}: current temperature {} °C, expected {} °C; power freed {} kW",
@@ -121,21 +144,86 @@ class Core implements ICore {
     }
 
     /**
-     * 2. Anti-starvation & Thermal Inertia early release:
+     * 2. Anti-starvation by waiting time:
+     * Rooms below their expected temperature that have waited OFF for maxWait or longer are served
+     * first (longest wait first), regardless of their deficit. If there isn't enough free power,
+     * rooms already ON (past their minimum ON time) are turned OFF, lowest deficit first, but only
+     * when that frees enough power for the starved room to actually fit.
+     */
+    List<Room> starvedRooms =
+        roomsBelowExpectedTemperature.stream()
+            .filter(room -> isStarved(room, dateTime))
+            .sorted(Comparator.comparing((Room room) -> elapsedSince(room, dateTime)).reversed())
+            .toList();
+    for (Room starved : starvedRooms) {
+      double missingPower = utilizedPower + starved.powerKW() - contractedPower;
+      List<Room> victims = new ArrayList<>();
+      if (missingPower > 0) {
+        List<Room> preemptable =
+            siteData.habitaciones().stream()
+                .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
+                .filter(room -> !switchesTurnedOff.contains(room.idSwitch()))
+                .filter(room -> !isProtectedByMinOnTime(room, dateTime))
+                .sorted(
+                    Comparator.comparingDouble(
+                        (Room room) -> room.expectedTemperature() - room.currentTemperatureC()))
+                .toList();
+        double freedPower = 0.0;
+        for (Room candidate : preemptable) {
+          if (freedPower >= missingPower) {
+            break;
+          }
+          victims.add(candidate);
+          freedPower += candidate.powerKW();
+        }
+        if (freedPower < missingPower) {
+          logger.debug(
+              "Starved room {} cannot be served: preemptable rooms free {} kW but {} kW are missing",
+              starved.idSwitch(),
+              freedPower,
+              missingPower);
+          continue;
+        }
+      }
+      for (Room victim : victims) {
+        commands.add(new CommandSwitch(victim.idSwitch(), SwitchState.APAGADO));
+        switchesTurnedOff.add(victim.idSwitch());
+        utilizedPower -= victim.powerKW();
+        logger.debug(
+            "Preempting switch {} (ON for {}) to serve starved room {}",
+            victim.idSwitch(),
+            elapsedSince(victim, dateTime),
+            starved.idSwitch());
+      }
+      commands.add(new CommandSwitch(starved.idSwitch(), SwitchState.ENCENDIDO));
+      switchesTurnedOn.add(starved.idSwitch());
+      utilizedPower += starved.powerKW();
+      logger.debug(
+          "Turning ON switch {}: starved after waiting {}; power utilized {}/{} kW",
+          starved.idSwitch(),
+          elapsedSince(starved, dateTime),
+          utilizedPower,
+          contractedPower);
+    }
+
+    /**
+     * 3. Thermal Inertia early release:
      * When there are colder rooms awaiting power that exceed the available capacity, active rooms
      * already inside their thermal inertia band (within thermalInertiaBandC of their target)
      * yield their switch to OFF. This allows the colder rooms to receive power and heat up.
      */
-    double contractedPower = (siteData.site() != null) ? siteData.site().potenciaContratadaKW() : 0.0;
     for (Room activeRoom : siteData.habitaciones()) {
-      if (activeRoom.currentSwitchState() == SwitchState.ENCENDIDO) {
+      if (activeRoom.currentSwitchState() == SwitchState.ENCENDIDO
+          && !switchesTurnedOff.contains(activeRoom.idSwitch())
+          && !isProtectedByMinOnTime(activeRoom, dateTime)) {
         boolean isInInertiaBand = activeRoom.currentTemperatureC() >= (activeRoom.expectedTemperature() - thermalInertiaBandC);
         double activeDeficit = activeRoom.expectedTemperature() - activeRoom.currentTemperatureC();
 
         // Check if there is any colder waiting room that cannot turn ON without more power
         boolean colderRoomWaiting = false;
         for (Room waiting : roomsBelowExpectedTemperature) {
-          if (waiting.currentSwitchState() == SwitchState.APAGADO) {
+          if (waiting.currentSwitchState() == SwitchState.APAGADO
+              && !switchesTurnedOn.contains(waiting.idSwitch())) {
             double waitingDeficit = waiting.expectedTemperature() - waiting.currentTemperatureC();
             if (waitingDeficit > activeDeficit && (utilizedPower + waiting.powerKW() > contractedPower)) {
               colderRoomWaiting = true;
@@ -146,6 +234,7 @@ class Core implements ICore {
 
         if (isInInertiaBand && colderRoomWaiting) {
           commands.add(new CommandSwitch(activeRoom.idSwitch(), SwitchState.APAGADO));
+          switchesTurnedOff.add(activeRoom.idSwitch());
           utilizedPower -= activeRoom.powerKW();
           logger.debug(
               "Yielding power due to thermal inertia / anti-starvation: turning OFF switch {}. "
@@ -159,16 +248,14 @@ class Core implements ICore {
     }
 
     /**
-     * 3. Turn ON switches of rooms that are below expected temperature in descending order of deficit.
+     * 4. Turn ON switches of rooms that are below expected temperature in descending order of deficit.
      * Switches are turned ON only if enough power is available.
      */
     for (Room room : roomsBelowExpectedTemperature) {
-      boolean alreadyTurnedOffInThisCycle = commands.stream()
-          .anyMatch(c -> c instanceof CommandSwitch cs
-              && cs.idSwitch().equals(room.idSwitch())
-              && cs.estado() == SwitchState.APAGADO);
+      boolean alreadyHandledInThisCycle =
+          switchesTurnedOff.contains(room.idSwitch()) || switchesTurnedOn.contains(room.idSwitch());
 
-      if (room.currentSwitchState() != SwitchState.ENCENDIDO && !alreadyTurnedOffInThisCycle) {
+      if (room.currentSwitchState() != SwitchState.ENCENDIDO && !alreadyHandledInThisCycle) {
         /** Room is turned ON only when it won't surpass the available power. */
         if (utilizedPower + room.powerKW() <= contractedPower) {
           commands.add(new CommandSwitch(room.idSwitch(), SwitchState.ENCENDIDO));
@@ -194,6 +281,34 @@ class Core implements ICore {
         commands.size(),
         utilizedPower);
     return new CoreAnswer(commands);
+  }
+
+  /**
+   * Time elapsed since the room's current situation started (its switch last changed state or, for
+   * a satisfied room, it was last satisfied).
+   *
+   * @return the elapsed time, or null when unknown.
+   */
+  private static Duration elapsedSince(Room room, ZonedDateTime now) {
+    if (room.lastSwitchChange() == null) {
+      return null;
+    }
+    Duration elapsed = Duration.between(room.lastSwitchChange(), now);
+    return elapsed.isNegative() ? Duration.ZERO : elapsed;
+  }
+
+  /** A room is starved when it is OFF, below its expected temperature and waited maxWait or more. */
+  private boolean isStarved(Room room, ZonedDateTime now) {
+    Duration elapsed = elapsedSince(room, now);
+    return room.currentSwitchState() == SwitchState.APAGADO
+        && elapsed != null
+        && elapsed.compareTo(maxWait) >= 0;
+  }
+
+  /** A room just turned ON must stay ON for minOnTime. Unknown times are not protected. */
+  private boolean isProtectedByMinOnTime(Room room, ZonedDateTime now) {
+    Duration elapsed = elapsedSince(room, now);
+    return elapsed != null && elapsed.compareTo(minOnTime) < 0;
   }
 
   /**
