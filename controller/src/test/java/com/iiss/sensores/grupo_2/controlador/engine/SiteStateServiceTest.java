@@ -25,11 +25,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Comprueba la hidratación y actualización del estado en memoria del sitio. */
 class SiteStateServiceTest {
   private SiteStateService siteStateService;
   private SwitchClient switchClient;
   private TemperatureReadingRepository tempReadingsRepository;
 
+  /** Prepara servicios simulados y carga un sitio de prueba. */
   @BeforeEach
   void setUp() {
     switchClient = mock(SwitchClient.class);
@@ -61,6 +63,7 @@ class SiteStateServiceTest {
     siteStateService.loadSiteState(new DataSite(site, List.of(room)));
   }
 
+  /** Verifica que cambiar la temperatura conserve el resto de datos de la habitación. */
   @Test
   void actualizarTemperaturaConservaElRestoDelEstado() {
     DataSite actualizado = siteStateService.updateRoomTemperature("termo-1", 18.5);
@@ -72,6 +75,7 @@ class SiteStateServiceTest {
     assertEquals(SwitchState.APAGADO, room.currentSwitchState());
   }
 
+  /** Verifica que falle la actualización para un termostato no asociado a una habitación. */
   @Test
   void actualizarTemperaturaDeTermostatoInexistenteFalla() {
     assertThrows(
@@ -79,6 +83,7 @@ class SiteStateServiceTest {
         () -> siteStateService.updateRoomTemperature("inexistente", 18.5));
   }
 
+  /** Verifica que cambiar el switch conserve la temperatura medida. */
   @Test
   void actualizarEstadoSwitchConservaLaTemperatura() {
     siteStateService.getSiteState();
@@ -89,6 +94,7 @@ class SiteStateServiceTest {
     assertEquals(19.0, room.currentTemperatureC());
   }
 
+  /** Verifica que la carga inicial consulte y aplique el estado de cada switch. */
   @Test
   void cargarEstadoConsultaYMapeaElEstadoDeCadaSwitch() {
     clearInvocations(switchClient);
@@ -142,6 +148,7 @@ class SiteStateServiceTest {
     verify(switchClient, times(2)).consultarEstado(any());
   }
 
+  /** Verifica que un estado ya hidratado no vuelva a consultar los switches. */
   @Test
   void consultarEstadoDeSitioLimpiaLaMarcaDeEstadoSucio() {
     clearInvocations(switchClient);

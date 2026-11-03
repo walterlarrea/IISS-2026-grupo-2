@@ -16,17 +16,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Verifica las reglas de validación y búsqueda del servicio de habitaciones. */
 class RoomServiceTest {
 
   private InventoryService inventoryService;
   private RoomService service;
 
+  /** Prepara el servicio con una dependencia de inventario simulada. */
   @BeforeEach
   void setUp() {
     inventoryService = mock(InventoryService.class);
     service = new RoomService(inventoryService);
   }
 
+  /** Comprueba que un inventario sin habitaciones no tenga errores. */
   @Test
   @DisplayName("Devuelve lista vacía si el inventory no contiene habitaciones")
   void validarColeccionVacia() {
@@ -35,6 +38,7 @@ class RoomServiceTest {
     assertTrue(service.validar().isEmpty());
   }
 
+  /** Comprueba que habitaciones con termostatos y URLs únicos sean válidas. */
   @Test
   @DisplayName("Devuelve lista vacía cuando las habitaciones son válidas y no están duplicadas")
   void validarTodasValidas() {
@@ -46,6 +50,7 @@ class RoomServiceTest {
     assertTrue(service.validar().isEmpty());
   }
 
+  /** Comprueba que se detecten termostatos nulos o en blanco. */
   @Test
   @DisplayName("Detecta habitaciones con idTermostato nulo o vacío")
   void validarIdTermostatoInvalido() {
@@ -60,6 +65,7 @@ class RoomServiceTest {
     assertEquals(List.of(nulo, vacio), resultado);
   }
 
+  /** Comprueba que se detecten URLs nulas, vacías, mal formadas o no HTTP(S). */
   @Test
   @DisplayName("Detecta habitaciones con urlSwitch nula, vacía o inválida")
   void validarUrlSwitchInvalida() {
@@ -77,6 +83,7 @@ class RoomServiceTest {
     assertEquals(List.of(nula, vacia, malformada, protocoloInvalido), resultado);
   }
 
+  /** Comprueba que la validación devuelva todos los termostatos duplicados. */
   @Test
   @DisplayName("Devuelve todas las habitaciones duplicadas por idTermostato")
   void validarIdTermostatoDuplicado() {
@@ -92,6 +99,7 @@ class RoomServiceTest {
     assertEquals(List.of(living, cocina), service.validar());
   }
 
+  /** Comprueba que la validación devuelva todas las URLs duplicadas. */
   @Test
   @DisplayName("Devuelve todas las habitaciones duplicadas por urlSwitch")
   void validarUrlSwitchDuplicada() {
@@ -106,6 +114,7 @@ class RoomServiceTest {
     assertEquals(List.of(living, cocina), service.validar());
   }
 
+  /** Comprueba que múltiples errores de una habitación no la dupliquen en el resultado. */
   @Test
   @DisplayName("Una habitación con varios incumplimientos no se duplica en el resultado")
   void validarMultiplesIncumplimientosNoDuplica() {
@@ -118,6 +127,7 @@ class RoomServiceTest {
     assertEquals(List.of(living, cocina), service.validar());
   }
 
+  /** Comprueba la búsqueda de una habitación por termostato en el inventario activo. */
   @Test
   @DisplayName("Busca la habitación por termostato en el inventory activo")
   void obtenerPorTermostatoUsaInventarioActivo() {
@@ -137,6 +147,7 @@ class RoomServiceTest {
     verify(inventoryService).obtenerActivo();
   }
 
+  /** Construye un inventario de prueba con una lista de habitaciones. */
   private static Inventory inventario(List<Inventory.Habitacion> habitaciones) {
     return new Inventory(
         "2.0",
@@ -148,6 +159,7 @@ class RoomServiceTest {
         habitaciones);
   }
 
+  /** Crea una habitación de prueba con identificadores y URL configurables. */
   private static Inventory.Habitacion habitacion(String id, String idTermostato, String urlSwitch) {
     return new Inventory.Habitacion(
         id, "Habitación " + id, 21.0, 1.2, idTermostato, "topic/" + id, "switch-" + id, urlSwitch);

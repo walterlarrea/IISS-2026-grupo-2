@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class McpToolsConfig {
 
+    /** Registra las clases de herramientas para que Spring AI las exponga por MCP. */
     @Bean
     public ToolCallbackProvider mcpTools(
             HabitacionTools habitacionTools,

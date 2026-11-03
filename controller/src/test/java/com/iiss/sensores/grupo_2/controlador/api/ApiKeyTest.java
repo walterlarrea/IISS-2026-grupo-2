@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** Verifica la autorización de solicitudes mediante API key. */
 class ApiKeyTest {
 
   private static final String VALID_KEY = "dev-rooms-key";
@@ -19,6 +20,7 @@ class ApiKeyTest {
   private MockHttpServletRequest request;
   private MockHttpServletResponse response;
 
+  /** Prepara un interceptor y solicitudes/respuestas HTTP simuladas para cada caso. */
   @BeforeEach
   void setUp() {
     apiKeyInterceptor = new ApiKeyRoom(VALID_KEY);
@@ -26,6 +28,7 @@ class ApiKeyTest {
     response = new MockHttpServletResponse();
   }
 
+  /** Comprueba que se rechace una solicitud sin encabezado de API key. */
   @Test
   @DisplayName("Devuelve 401 Unauthorized cuando la clave API está ausente")
   void deniesApiKeyRequestAbsent() throws Exception {
@@ -35,6 +38,7 @@ class ApiKeyTest {
     assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
   }
 
+  /** Comprueba que se rechace una API key compuesta solo por espacios. */
   @Test
   @DisplayName("Devuelve 401 Unauthorized cuando la clave API está en blanco")
   void deniesApiKeyBlankSpace() throws Exception {
@@ -46,6 +50,7 @@ class ApiKeyTest {
     assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
   }
 
+  /** Comprueba que una clave incorrecta produzca el error JSON esperado. */
   @Test
   @DisplayName(
       "Devuelve 401 Unauthorized con el formato de error documentado cuando la clave es incorrecta")
@@ -62,6 +67,7 @@ class ApiKeyTest {
             .contains("\"mensaje\":\"falta o no coincide el header X-API-Key\""));
   }
 
+  /** Comprueba que una solicitud con la clave correcta sea autorizada. */
   @Test
   @DisplayName("Permite el acceso cuando la clave API es correcta")
   void allowsApiKeyRequest() throws Exception {

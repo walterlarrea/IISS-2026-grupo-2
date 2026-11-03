@@ -10,11 +10,13 @@ import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/** Mantiene y modifica los estados de switches en memoria. */
 @Service
 public class SwitchService {
 
   private final ConcurrentMap<String, Switch> switches = new ConcurrentHashMap<>();
 
+  /** Devuelve el estado del switch, creándolo apagado si aún no existe. */
   public SwitchResponse obtener(String id) {
     Switch switchActual =
         switches.computeIfAbsent(id, ignored -> new Switch(id, EstadoSwitch.OFF, Instant.now()));
@@ -22,6 +24,7 @@ public class SwitchService {
         switchActual.getId(), switchActual.getEstado(), switchActual.getAplicadoEn());
   }
 
+  /** Aplica una acción al switch y devuelve su estado y si hubo un cambio. */
   public SwitchResponse actualizar(String id, EstadoSwitch accion) {
     boolean[] cambio = {false};
 

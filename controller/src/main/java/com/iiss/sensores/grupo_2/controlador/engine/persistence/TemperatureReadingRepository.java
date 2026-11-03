@@ -20,12 +20,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-/** Saves temperatures in mongoDB */
+/** Persiste las mediciones de temperatura y consulta la última por termostato. */
 @Service
 public class TemperatureReadingRepository {
   private static final Logger logger = LoggerFactory.getLogger(TemperatureReadingRepository.class);
   private final MongoCollection<Document> collection;
 
+  /** Obtiene la colección MongoDB y prepara sus índices de consulta. */
   @Autowired
   public TemperatureReadingRepository(
       MongoClient mongoClient,
@@ -36,11 +37,13 @@ public class TemperatureReadingRepository {
     this.createIndexes();
   }
 
+  /** Usa una colección MongoDB proporcionada directamente, principalmente en pruebas. */
   public TemperatureReadingRepository(MongoCollection<Document> collection) {
     this.collection = collection;
     this.createIndexes();
   }
 
+  /** Crea un índice para recuperar rápidamente las mediciones recientes por termostato. */
   private void createIndexes() {
     // Create an index on the "idThermostat" field for efficient querying
     try {
@@ -50,6 +53,7 @@ public class TemperatureReadingRepository {
     }
   }
 
+  /** Guarda una medición en la colección configurada. */
   public void saveTemperature(TemperatureMessage message) {
     Document document =
         new Document()
@@ -61,7 +65,7 @@ public class TemperatureReadingRepository {
     collection.insertOne(document);
   }
 
-  /** Retrieve the last temperature measurements associated to each thermostat ID in the list. */
+  /** Obtiene la medición más reciente de cada termostato indicado. */
   public List<TemperatureMessage> getLastTemperatureMeasurements(List<String> thermostatIds) {
     List<Bson> pipeline =
         List.of(
@@ -75,6 +79,7 @@ public class TemperatureReadingRepository {
         .toList();
   }
 
+  /** Convierte un documento MongoDB al modelo de medición de temperatura. */
   private TemperatureMessage toTemperatureMessage(Document document) {
     return new TemperatureMessage(
         document.getString("id"),

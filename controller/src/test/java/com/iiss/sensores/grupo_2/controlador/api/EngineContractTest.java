@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Verifica los contratos HTTP principales del inventario y del motor. */
 @SpringBootTest(
     properties = {
       "CONTROLADOR_API_KEY=test-api-key",
@@ -44,6 +45,7 @@ class EngineContractTest {
 
   @MockitoBean private SwitchClient switchClient;
 
+  /** Comprueba la respuesta cuando se consulta un sitio aún no configurado. */
   @Test
   void obtieneSitioYDevuelve404CuandoAunNoFueConfigurado() throws Exception {
     when(inventoryService.obtenerActivo()).thenReturn(Optional.empty());
@@ -54,6 +56,7 @@ class EngineContractTest {
         .andExpect(jsonPath("$.status").value(404));
   }
 
+  /** Comprueba el reemplazo del sitio y el rechazo de una versión de esquema inválida. */
   @Test
   void reemplazaYConsultaSitio() throws Exception {
     String payload =
@@ -104,6 +107,7 @@ class EngineContractTest {
         .andExpect(jsonPath("$.errores").isArray());
   }
 
+  /** Verifica el inicio del motor, su respuesta y la validación del factor temporal. */
   @Test
   void comandosSincronizanYExponenEstadoDelControl() throws Exception {
     Instant fechaHora = Instant.parse("2026-10-01T09:15:03.120Z");
@@ -140,6 +144,7 @@ class EngineContractTest {
         .andExpect(jsonPath("$.status").value(400));
   }
 
+  /** Comprueba que los endpoints nuevos requieren una API key válida. */
   @Test
   void protegeLosEndpointsNuevosConElFormatoDe401Documentado() throws Exception {
     mockMvc

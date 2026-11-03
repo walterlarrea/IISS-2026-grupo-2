@@ -29,6 +29,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+/** Comprueba la reconexión MQTT y el comportamiento ante mensajes durante una caída. */
 @Testcontainers
 class MqttResilienceIT {
   private static final int MQTT_PORT = 1883;
@@ -47,6 +48,7 @@ class MqttResilienceIT {
               MountableFile.forClasspathResource("mosquitto.conf"), MOSQUITTO_CONFIG)
           .waitingFor(Wait.forListeningPort());
 
+  /** Verifica que el suscriptor se reconecte y reciba nuevos mensajes tras reiniciar el broker. */
   @Test
   void subscriberReconnectsAndReceivesMessagesAfterBrokerRestart() throws Exception {
     // Comprueba que el suscriptor recupera su conexión y recibe mensajes tras reiniciar el broker.
@@ -85,6 +87,7 @@ class MqttResilienceIT {
     }
   }
 
+  /** Verifica que los mensajes enviados sin suscriptor no se recuperen al reconectar. */
   @Test
   void messagesPublishedWhileSubscriberIsOfflineAreLostButNewMessagesArrive() throws Exception {
     // Comprueba que los mensajes enviados sin suscriptor no se reproducen y que los nuevos sí
@@ -127,10 +130,12 @@ class MqttResilienceIT {
     }
   }
 
+  /** Construye la dirección MQTT del broker de prueba. */
   private String brokerUri() {
     return "tcp://" + broker.getHost() + ":" + broker.getMappedPort(MQTT_PORT);
   }
 
+  /** Conecta un publicador MQTT de prueba al broker. */
   private MqttClient publisher(String brokerUri) throws MqttException {
     MqttClient publisher =
         new MqttClient(brokerUri, "publisher-" + UUID.randomUUID(), new MemoryPersistence());
@@ -140,6 +145,7 @@ class MqttResilienceIT {
     return publisher;
   }
 
+  /** Publica una medición de prueba en el topic indicado. */
   private void publish(MqttClient publisher, String topic, String messageId) throws Exception {
     String payload =
         """
@@ -151,6 +157,7 @@ class MqttResilienceIT {
     publisher.publish(topic, message);
   }
 
+  /** Espera a que los logs del broker indiquen la cantidad de suscripciones esperada. */
   private void awaitSubscription(String clientId, int expectedCount) {
     await()
         .atMost(Duration.ofSeconds(10))
@@ -162,6 +169,7 @@ class MqttResilienceIT {
             });
   }
 
+  /** Detiene y vuelve a iniciar Mosquitto dentro del contenedor de prueba. */
   private void restartBroker() throws Exception {
     var stopResult =
         broker.execInContainer(
@@ -176,6 +184,7 @@ class MqttResilienceIT {
     }
   }
 
+  /** Indica si el proceso del broker ya se detuvo. */
   private boolean brokerProcessStopped() {
     try {
       return broker.execInContainer("sh", "-c", "pidof mosquitto").getExitCode() != 0;
@@ -184,6 +193,7 @@ class MqttResilienceIT {
     }
   }
 
+  /** Comprueba si el broker acepta conexiones MQTT y cierra la conexión de prueba. */
   private boolean brokerAcceptsMqttConnections() {
     MqttClient probe = null;
     try {
@@ -203,6 +213,7 @@ class MqttResilienceIT {
     }
   }
 
+  /** Desconecta y libera el cliente publicador de prueba. */
   private void closePublisher(MqttClient publisher) throws MqttException {
     if (publisher.isConnected()) {
       publisher.disconnect();

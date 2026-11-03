@@ -20,17 +20,20 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Verifica las operaciones de gestión de habitaciones sobre el inventario activo. */
 class RoomAServiceTest {
 
   private InventoryService inventoryService;
   private RoomService service;
 
+  /** Prepara el servicio de habitaciones con un inventario simulado. */
   @BeforeEach
   void setUp() {
     inventoryService = mock(InventoryService.class);
     service = new RoomService(inventoryService);
   }
 
+  /** Comprueba que crear agregue una habitación y reemplace el inventario. */
   @Test
   void crearHabitacionLaAgregaAlInventario() {
     Inventory inventory = inventario(List.of(habitacion("sala")));
@@ -44,6 +47,7 @@ class RoomAServiceTest {
     assertEquals(List.of(habitacion("sala"), nueva), captor.getValue().habitaciones());
   }
 
+  /** Comprueba que crear no reemplace el inventario si el ID ya existe. */
   @Test
   void crearHabitacionConIdExistenteNoModificaInventario() {
     Inventory.Habitacion existente = habitacion("sala");
@@ -55,6 +59,7 @@ class RoomAServiceTest {
     verify(inventoryService, never()).reemplazar(any());
   }
 
+  /** Comprueba que listar devuelva las habitaciones del inventario activo. */
   @Test
   void listarHabitacionesDelInventarioActivo() {
     List<Inventory.Habitacion> habitaciones = List.of(habitacion("sala"));
@@ -63,6 +68,7 @@ class RoomAServiceTest {
     assertEquals(habitaciones, service.listar());
   }
 
+  /** Comprueba la búsqueda por ID para habitaciones existentes e inexistentes. */
   @Test
   void buscarPorIdDevuelveHabitacionDelInventario() {
     Inventory.Habitacion habitacion = habitacion("sala");
@@ -72,6 +78,7 @@ class RoomAServiceTest {
     assertTrue(service.buscarPorId("inexistente").isEmpty());
   }
 
+  /** Comprueba que eliminar quite la habitación indicada del inventario. */
   @Test
   void eliminarHabitacionLaQuitaDelInventario() {
     Inventory inventory = inventario(List.of(habitacion("sala"), habitacion("dormitorio")));
@@ -84,6 +91,7 @@ class RoomAServiceTest {
     assertEquals(List.of(habitacion("dormitorio")), captor.getValue().habitaciones());
   }
 
+  /** Comprueba que eliminar una habitación inexistente no modifique el inventario. */
   @Test
   void eliminarHabitacionInexistenteNoModificaInventario() {
     when(inventoryService.obtenerActivo())
@@ -94,6 +102,7 @@ class RoomAServiceTest {
     verify(inventoryService, never()).reemplazar(any());
   }
 
+  /** Comprueba la búsqueda de habitaciones por el ID de termostato. */
   @Test
   void obtenerPorTermostatoBuscaEnInventario() {
     Inventory.Habitacion habitacion = habitacion("sala");
@@ -103,6 +112,7 @@ class RoomAServiceTest {
     assertTrue(service.obtenerPorTermostato("inexistente").isEmpty());
   }
 
+  /** Comprueba que modificar actualice los datos conservando el ID de la ruta. */
   @Test
   void modificarHabitacionReemplazaDatosYConservaElIdDeLaRuta() {
     Inventory inventory = inventario(List.of(habitacion("sala")));
@@ -121,6 +131,7 @@ class RoomAServiceTest {
     assertEquals(List.of(resultado.get()), captor.getValue().habitaciones());
   }
 
+  /** Comprueba que modificar devuelva vacío si la habitación no existe. */
   @Test
   void modificarHabitacionInexistenteDevuelveVacio() {
     when(inventoryService.obtenerActivo())
@@ -131,6 +142,7 @@ class RoomAServiceTest {
     verify(inventoryService, never()).reemplazar(any());
   }
 
+  /** Comprueba que la actualización parcial conserve los campos no enviados. */
   @Test
   void modificarParcialmenteConservaCamposNoModificados() {
     Inventory.Habitacion original = habitacion("sala");
@@ -146,6 +158,7 @@ class RoomAServiceTest {
     verify(inventoryService).reemplazar(any());
   }
 
+  /** Comprueba que una actualización parcial de un ID inexistente no persista cambios. */
   @Test
   void modificarParcialmenteHabitacionInexistenteDevuelveVacio() {
     when(inventoryService.obtenerActivo())
@@ -156,6 +169,7 @@ class RoomAServiceTest {
     verify(inventoryService, never()).reemplazar(any());
   }
 
+  /** Comprueba que la validación detecte termostatos duplicados. */
   @Test
   void validarDetectaHabitacionesConTermostatoDuplicado() {
     Inventory.Habitacion sala = habitacion("sala");
@@ -175,6 +189,7 @@ class RoomAServiceTest {
     assertEquals(List.of(sala, dormitorio), service.validar());
   }
 
+  /** Construye un inventario de prueba con las habitaciones indicadas. */
   private static Inventory inventario(List<Inventory.Habitacion> habitaciones) {
     return new Inventory(
         "2.0",
@@ -186,6 +201,7 @@ class RoomAServiceTest {
         habitaciones);
   }
 
+  /** Crea datos de prueba para una habitación y sus identificadores relacionados. */
   private static Inventory.Habitacion habitacion(String id) {
     return new Inventory.Habitacion(
         id,

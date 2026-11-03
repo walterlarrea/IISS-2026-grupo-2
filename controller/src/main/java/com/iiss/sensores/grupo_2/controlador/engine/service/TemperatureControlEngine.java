@@ -21,7 +21,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 
-/** Handles time & simulated time, uses the Core to calculate action commands and executes them */
+/** Coordina el ciclo de control: obtiene decisiones del Core y las aplica en los switches. */
 @Service
 public class TemperatureControlEngine implements TemperatureEngineService {
   private static final Logger logger = LoggerFactory.getLogger(TemperatureControlEngine.class);
@@ -32,12 +32,14 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   private volatile boolean active = false;
   private CustomClock clock;
 
+  /** Construye el motor usando el reloj UTC del sistema. */
   @Autowired
   public TemperatureControlEngine(
       SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
     this(switchClient, core, siteStateService, Clock.systemUTC());
   }
 
+  /** Construye el motor con sus dependencias y el reloj base indicado. */
   public TemperatureControlEngine(
       SwitchClient switchClient, ICore core, SiteStateService siteStateService, Clock baseClock) {
     this.switchClient = switchClient;
@@ -46,6 +48,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     this.baseClock = Objects.requireNonNull(baseClock, "baseClock cannot be null");
   }
 
+  /** Inicia el controlador con una fecha simulada y un factor de avance del tiempo. */
   @Override
   public void start(Instant setDateTime, int timeFactor) {
     if (setDateTime == null) {
@@ -64,6 +67,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     logger.info("Simulated date: {}, time factor: {}", setDateTime, timeFactor);
   }
 
+  /** Detiene el controlador y descarta su reloj simulado. */
   @Override
   public void stop() {
     active = false;
@@ -72,11 +76,13 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     logger.info("Temperature Control Engine was STOPPED");
   }
 
+  /** Indica si el controlador está activo. */
   @Override
   public boolean isActive() {
     return active;
   }
 
+  /** Devuelve el estado actual del controlador y, si está activo, los datos de su reloj. */
   @Override
   public StateControl getTempControllerStatus() {
     if (!active) {
@@ -90,7 +96,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
         this.clock.getStartedAt());
   }
 
-  /** Request decisions from Core and executes it's commands */
+  /** Obtiene los comandos del Core para el estado actual y los ejecuta en los switches. */
   public synchronized void execute() {
     if (!active) {
       logger.debug("Controller is stopped");
@@ -155,11 +161,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     }
   }
 
-  /**
-   * Processes a temperature reading message. Updates the site state and executes a control cycle.
-   *
-   * @param temperatureMsg Parsed temperature reading from MQTT
-   */
+  /** Actualiza la temperatura de una habitación y ejecuta un ciclo de control. */
   public void processTemperature(TemperatureMessage temperatureMsg) {
     if (!active) {
       logger.debug(

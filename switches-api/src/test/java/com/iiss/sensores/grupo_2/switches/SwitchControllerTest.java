@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Verifica los endpoints REST para consultar y comandar switches. */
 @SpringBootTest(properties = "logging.level.root=INFO")
 @AutoConfigureMockMvc
 @ActiveProfiles("development")
@@ -27,6 +28,7 @@ class SwitchControllerTest {
   // GET /switches/{id}
   // -------------------------------------------------------------------------
 
+  /** Comprueba que consultar un switch nuevo lo inicialice apagado. */
   @Test
   void creaUnSwitchApagadoAlConsultarUnIdNuevo() throws Exception {
     mockMvc
@@ -36,6 +38,7 @@ class SwitchControllerTest {
         .andExpect(jsonPath("$.estado").value("OFF"));
   }
 
+  /** Comprueba que la consulta devuelva el mismo identificador solicitado. */
   @Test
   void retornaElMismoIdQueSeConsulto() throws Exception {
     mockMvc
@@ -48,6 +51,7 @@ class SwitchControllerTest {
   // POST /switches/{id}/comandos
   // -------------------------------------------------------------------------
 
+  /** Comprueba que el endpoint de comandos encienda el switch. */
   @Test
   void actualizaElEstadoDelSwitchAEncendido() throws Exception {
     mockMvc
@@ -62,6 +66,7 @@ class SwitchControllerTest {
         .andExpect(jsonPath("$.cambio").value(true));
   }
 
+  /** Comprueba que el endpoint permita apagar un switch previamente encendido. */
   @Test
   void actualizaElEstadoDelSwitchAApagado() throws Exception {
     // Primero encendemos
@@ -85,6 +90,7 @@ class SwitchControllerTest {
         .andExpect(jsonPath("$.cambio").value(true));
   }
 
+  /** Comprueba que repetir el mismo estado no reporte un cambio. */
   @Test
   void indicaQueNoHuboCambioSiSeRepiteElEstado() throws Exception {
     mockMvc
@@ -106,6 +112,7 @@ class SwitchControllerTest {
         .andExpect(jsonPath("$.cambio").value(false));
   }
 
+  /** Comprueba que el estado aplicado pueda consultarse después del comando. */
   @Test
   void actualizaYConsultaElEstadoDelSwitch() throws Exception {
     mockMvc
@@ -127,6 +134,7 @@ class SwitchControllerTest {
   // Validación de body
   // -------------------------------------------------------------------------
 
+  /** Comprueba que se rechace una acción que no pertenece a los estados admitidos. */
   @Test
   void rechazaBodyConAccionInvalida() throws Exception {
     mockMvc
@@ -138,6 +146,7 @@ class SwitchControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  /** Comprueba que se rechace un cuerpo sin el campo de acción obligatorio. */
   @Test
   void rechazaBodySinCampoAccion() throws Exception {
     mockMvc
@@ -149,6 +158,7 @@ class SwitchControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  /** Comprueba que se rechace un cuerpo vacío. */
   @Test
   void rechazaBodyVacio() throws Exception {
     mockMvc

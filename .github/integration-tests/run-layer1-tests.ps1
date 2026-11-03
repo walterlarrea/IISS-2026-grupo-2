@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+# Ejecuta las pruebas de integración de la capa 1 del proyecto.
 
 docker info *> $null
 if ($LASTEXITCODE -ne 0) {

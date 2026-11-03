@@ -15,21 +15,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Handles updates for Room and sends them to InventoryService */
+/** Consulta y modifica las habitaciones dentro del inventario activo. */
 @Service
 public class RoomService implements RoomProvider {
 
   private final InventoryService inventoryService;
 
+  /** Crea el servicio con acceso al inventario persistido. */
   public RoomService(InventoryService inventoryService) {
     this.inventoryService = inventoryService;
   }
 
+  /** Devuelve la lista de habitaciones del inventario activo. */
   public List<Inventory.Habitacion> listar() {
     Optional<Inventory> inventarioActivo = inventoryService.obtenerActivo();
     return inventarioActivo.map(Inventory::habitaciones).orElse(null);
   }
 
+  /** Busca una habitación por su identificador. */
   public Optional<Inventory.Habitacion> buscarPorId(String id) {
     Optional<Inventory> inventarioActivo = inventoryService.obtenerActivo();
     return inventarioActivo.flatMap(
@@ -39,6 +42,7 @@ public class RoomService implements RoomProvider {
                 .findFirst());
   }
 
+  /** Agrega una habitación si su identificador aún no existe. */
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
   public Inventory.Habitacion crear(Inventory.Habitacion habitacion) {
     Inventory inventory = inventoryService.obtenerActivo().orElseThrow(SiteNotConfigException::new);
@@ -58,6 +62,7 @@ public class RoomService implements RoomProvider {
     return habitacion;
   }
 
+  /** Reemplaza la configuración de una habitación existente. */
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
   public Optional<Inventory.Habitacion> modificar(String id, Inventory.Habitacion habitacion) {
     Optional<Inventory> inventarioActivo = inventoryService.obtenerActivo();
@@ -88,6 +93,7 @@ public class RoomService implements RoomProvider {
     return Optional.empty();
   }
 
+  /** Elimina una habitación por su identificador. */
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
   public boolean eliminar(String id) {
     Optional<Inventory> inventarioActivo = inventoryService.obtenerActivo();
@@ -105,6 +111,7 @@ public class RoomService implements RoomProvider {
     return true;
   }
 
+  /** Busca la habitación asociada a un termostato usando la caché. */
   @Override
   @Cacheable(value = "habitaciones_termostato", key = "#idTermostato")
   public Optional<Inventory.Habitacion> obtenerPorTermostato(String idTermostato) {
@@ -119,6 +126,7 @@ public class RoomService implements RoomProvider {
     return Optional.empty();
   }
 
+  /** Aplica solo los campos recibidos y persiste la habitación actualizada. */
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
   public Optional<Inventory.Habitacion> modificarParcialmente(
       String id, Map<String, Object> cambios) {
@@ -167,6 +175,7 @@ public class RoomService implements RoomProvider {
     return Optional.empty();
   }
 
+  /** Devuelve las habitaciones inválidas o con termostatos/URLs duplicados. */
   public List<Inventory.Habitacion> validar() {
     List<Inventory.Habitacion> habitaciones =
         inventoryService.obtenerActivo().map(Inventory::habitaciones).orElseGet(List::of);
@@ -214,6 +223,7 @@ public class RoomService implements RoomProvider {
     return new ArrayList<>(noCumplen);
   }
 
+  /** Comprueba que la URL sea absoluta y use HTTP o HTTPS con un host. */
   private boolean esUriValida(String uriStr) {
     if (uriStr == null || uriStr.isBlank()) {
       return false;

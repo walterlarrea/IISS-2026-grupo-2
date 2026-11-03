@@ -6,8 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/** TODO: clean for iter 6 */
+/** Acceso a las habitaciones persistidas en MongoDB. */
 @Repository
 public interface RoomRepository extends MongoRepository<Room, String> {
+  /** Busca una habitación por el identificador de su termostato. */
   Optional<Room> findByIdTermostato(String idTermostato);
 }

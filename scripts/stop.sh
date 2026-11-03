@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Detiene los contenedores del proyecto sin eliminarlos.
 # Get the absolute directory of this script
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 

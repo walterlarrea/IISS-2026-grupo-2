@@ -16,17 +16,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Verifica que los endpoints deleguen operaciones al servicio de habitaciones. */
 class RoomControllerTest {
 
   private RoomService service;
   private RoomController controller;
 
+  /** Prepara un servicio simulado y el controlador bajo prueba. */
   @BeforeEach
   void setUp() {
     service = mock(RoomService.class);
     controller = new RoomController(service);
   }
 
+  /** Comprueba que el endpoint de listado devuelva el resultado del servicio. */
   @Test
   void listarHabitacionesTest() {
     List<Inventory.Habitacion> habitaciones = List.of(habitacion("dormitorio"));
@@ -36,6 +39,7 @@ class RoomControllerTest {
     verify(service).listar();
   }
 
+  /** Comprueba que el endpoint de validación devuelva los resultados del servicio. */
   @Test
   void validarHabitacionesTest() {
     List<Inventory.Habitacion> habitaciones = List.of(habitacion("dormitorio"));
@@ -45,6 +49,7 @@ class RoomControllerTest {
     verify(service).validar();
   }
 
+  /** Comprueba la respuesta exitosa al buscar una habitación existente. */
   @Test
   void buscarPorIdTest() {
     String id = "dormitorio";
@@ -55,6 +60,7 @@ class RoomControllerTest {
     verify(service).buscarPorId(id);
   }
 
+  /** Comprueba la respuesta 404 al buscar una habitación inexistente. */
   @Test
   void buscarPorIdNoExistenteTest() {
     String id = "inexistente";
@@ -64,6 +70,7 @@ class RoomControllerTest {
     verify(service).buscarPorId(id);
   }
 
+  /** Comprueba la respuesta exitosa al buscar por identificador de termostato. */
   @Test
   void buscarPorTermostatoTest() {
     String idTermostato = "termostato-01";
@@ -74,6 +81,7 @@ class RoomControllerTest {
     verify(service).obtenerPorTermostato(idTermostato);
   }
 
+  /** Comprueba que el endpoint de creación delegue la habitación al servicio. */
   @Test
   void crearHabitacionTest() {
     Inventory.Habitacion habitacion = habitacion("dormitorio");
@@ -83,6 +91,7 @@ class RoomControllerTest {
     verify(service).crear(habitacion);
   }
 
+  /** Comprueba la respuesta exitosa al modificar una habitación existente. */
   @Test
   void modificarHabitacionTest() {
     String id = "dormitorio";
@@ -93,6 +102,7 @@ class RoomControllerTest {
     verify(service).modificar(id, habitacion);
   }
 
+  /** Comprueba la respuesta 404 al modificar una habitación inexistente. */
   @Test
   void modificarHabitacionNoExistenteTest() {
     String id = "inexistente";
@@ -103,6 +113,7 @@ class RoomControllerTest {
     verify(service).modificar(id, habitacion);
   }
 
+  /** Comprueba que la eliminación exitosa responda sin contenido. */
   @Test
   void eliminarHabitacionTest() {
     String id = "dormitorio";
@@ -112,6 +123,7 @@ class RoomControllerTest {
     verify(service).eliminar(id);
   }
 
+  /** Comprueba que eliminar una habitación inexistente responda 404. */
   @Test
   void eliminarHabitacionNoExistenteTest() {
     String id = "inexistente";
@@ -121,6 +133,7 @@ class RoomControllerTest {
     verify(service).eliminar(id);
   }
 
+  /** Comprueba la respuesta exitosa de una actualización parcial. */
   @Test
   void modificarParcialmenteHabitacionTest() {
     String id = "dormitorio";
@@ -132,6 +145,7 @@ class RoomControllerTest {
     verify(service).modificarParcialmente(id, cambios);
   }
 
+  /** Comprueba la respuesta 404 de una actualización parcial sin coincidencia. */
   @Test
   void modificarParcialmenteHabitacionNoExistenteTest() {
     String id = "inexistente";
@@ -142,6 +156,7 @@ class RoomControllerTest {
     verify(service).modificarParcialmente(id, cambios);
   }
 
+  /** Crea una habitación de prueba con configuración completa. */
   private static Inventory.Habitacion habitacion(String id) {
     return new Inventory.Habitacion(
         id,

@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/** Verifica la persistencia real y consulta de lecturas usando MongoDB en contenedor. */
 @Testcontainers
 class TemperatureReadingRepositoryIT {
   private static final int MONGO_PORT = 27017;
@@ -26,6 +27,7 @@ class TemperatureReadingRepositoryIT {
           .withExposedPorts(MONGO_PORT)
           .waitingFor(Wait.forListeningPort());
 
+  /** Comprueba que se devuelva la última lectura de cada termostato solicitado. */
   @Test
   void savesAndReturnsLatestTemperatureForEachThermostat() {
     // Comprueba con MongoDB real que se filtra por idThermostat y se devuelve la lectura más

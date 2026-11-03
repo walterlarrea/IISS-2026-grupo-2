@@ -14,8 +14,10 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.http.HttpMethod.POST;
 
+/** Verifica el registro del controlador en el simulador y su conexión al broker asignado. */
 class IntegrationServiceTest {
 
+  /** Comprueba que el registro use las credenciales y conecte a los topics del broker devuelto. */
   @Test
   void registersFetchesInventoryAndConnectsToReturnedBrokerAndDeclaredTopics() {
     RestClient.Builder builder = RestClient.builder();

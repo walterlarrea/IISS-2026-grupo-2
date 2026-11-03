@@ -6,7 +6,9 @@ import java.time.ZonedDateTime;
 
 import com.iiss.sensores.grupo_2.enums.RushDays;
 
+/** Define el horario y los días en que se considera activa la hora punta. */
 public record RushHour(String fromTime, String toTime, RushDays dias) {
+  /** Comprueba si la fecha y hora indicadas pertenecen a la franja configurada. */
   public boolean isRushHour(ZonedDateTime currentDateTime) {
     if (currentDateTime == null || this.dias == null) {
       return false;

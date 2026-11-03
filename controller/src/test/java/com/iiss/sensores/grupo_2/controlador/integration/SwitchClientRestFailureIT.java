@@ -28,7 +28,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/** Comprueba cómo se propagan errores HTTP de la API remota de switches. */
 class SwitchClientRestFailureIT {
+  /** Comprueba que se informe un error de conexión cuando la API está fuera de línea. */
   @Test
   void reportsConnectionFailureWhenRemoteSwitchApiIsOffline() throws Exception {
     // Comprueba que el cliente REST informa el fallo cuando la API remota no está disponible.
@@ -54,6 +56,7 @@ class SwitchClientRestFailureIT {
     assertThrows(ResourceAccessException.class, () -> client.encender(habitacion));
   }
 
+  /** Comprueba que se propague una respuesta HTTP 503 del servicio remoto. */
   @Test
   void reportsServiceUnavailableWhenRemoteSwitchApiFails() throws Exception {
     // Comprueba que el cliente propaga HTTP 503 cuando la API de switches falla.
@@ -101,6 +104,7 @@ class SwitchClientRestFailureIT {
     }
   }
 
+  /** Comprueba que un comando fallido no sobrescriba el último estado conocido. */
   @Test
   void keepsLastKnownSwitchStateWhenControllerCommandCannotReachSwitch() throws Exception {
     // Comprueba que el controlador registra el fallo del switch y conserva el último estado

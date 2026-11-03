@@ -18,8 +18,10 @@ import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/** Comprueba las solicitudes HTTP que el cliente envía a la API de switches. */
 class SwitchClientTest {
 
+  /** Verifica la acción de encendido, su API key y el cuerpo enviado. */
   @Test
   void sendsSimulatorCommandWithApiKeyAndContractPayload() throws Exception {
     RestClient.Builder builder = RestClient.builder();
@@ -61,6 +63,7 @@ class SwitchClientTest {
     server.verify();
   }
 
+  /** Verifica que la consulta remota convierta los estados ON y OFF correctamente. */
   @Test
   void readsAndMapsTheSwitchStateWithApiKey() {
     RestClient.Builder builder = RestClient.builder();
@@ -101,6 +104,40 @@ class SwitchClientTest {
                 MediaType.APPLICATION_JSON));
 
     assertEquals(SwitchState.ENCENDIDO, client.consultarEstado(room).estado());
+    assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
+
+    server.verify();
+  }
+
+  /** Verifica que un estado remoto desconocido se interprete como apagado. */
+  @Test
+  void mapsUnknownSwitchStateToOff() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+    Room room =
+        new Room(
+            "room1",
+            "Room 1",
+            22.0,
+            1.5,
+            "thermostat-room1",
+            "topic-room1",
+            "sw-sim-room1",
+            "http://iiss-simulator:9090",
+            21.0,
+            SwitchState.APAGADO);
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"UNKNOWN","aplicadoEn":null}
+                        """,
+                MediaType.APPLICATION_JSON));
+
     assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
 
     server.verify();

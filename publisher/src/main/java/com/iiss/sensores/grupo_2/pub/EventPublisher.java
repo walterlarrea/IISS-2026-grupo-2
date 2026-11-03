@@ -8,16 +8,19 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 
+/** Publica mensajes de texto en un topic MQTT. */
 public class EventPublisher {
   private static final Logger logger = LoggerFactory.getLogger(EventPublisher.class);
   private final MqttClient client;
   private final String topic;
 
+  /** Configura el cliente MQTT y el topic de destino. */
   public EventPublisher(MqttClient client, String topic) {
     this.client = client;
     this.topic = topic;
   }
 
+  /** Envía el contenido indicado como mensaje MQTT. */
   public void publish(String content) {
     try {
       MqttMessage message = new MqttMessage(content.getBytes(StandardCharsets.UTF_8));

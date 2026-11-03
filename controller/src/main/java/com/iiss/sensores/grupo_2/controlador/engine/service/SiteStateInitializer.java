@@ -7,7 +7,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/** Loads site state for the first time from database and in memory */
+/** Carga al iniciar la aplicación el inventario persistido en el estado del motor. */
 @Component
 public class SiteStateInitializer {
   private static final Logger logger = LoggerFactory.getLogger(SiteStateInitializer.class);
@@ -15,6 +15,7 @@ public class SiteStateInitializer {
   private final InventoryMapper inventoryMapper;
   private final SiteStateService siteStateService;
 
+  /** Crea el inicializador con los servicios de inventario y estado. */
   public SiteStateInitializer(
       InventoryService inventoryService,
       InventoryMapper inventoryMapper,
@@ -24,6 +25,7 @@ public class SiteStateInitializer {
     this.siteStateService = siteStateService;
   }
 
+  /** Inicializa el estado en memoria si existe un inventario activo. */
   @EventListener(ApplicationReadyEvent.class)
   public void inicializarEstado() {
     inventoryService

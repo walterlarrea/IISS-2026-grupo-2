@@ -1,4 +1,5 @@
 #!/bin/bash
+# Construye la imagen Docker del simulador.
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

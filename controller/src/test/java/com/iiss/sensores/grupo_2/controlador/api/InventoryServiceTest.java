@@ -22,6 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Verifica la persistencia, validación y consulta del inventario activo. */
 class InventoryServiceTest {
   private InventoryRepository repository;
   private ApplicationEventPublisher eventPublisher;
@@ -29,6 +30,7 @@ class InventoryServiceTest {
   private InventoryMapper inventoryMapper;
   private InventoryService inventoryService;
 
+  /** Prepara dependencias simuladas y crea el servicio bajo prueba. */
   @BeforeEach
   void setUp() {
     repository = mock(InventoryRepository.class);
@@ -39,6 +41,7 @@ class InventoryServiceTest {
         new InventoryService(repository, eventPublisher, siteStateService, inventoryMapper);
   }
 
+  /** Comprueba que el inventario completo se guarde como un documento y se notifique. */
   @Test
   void guardaInventarioCompletoComoUnSoloDocumento() {
     Inventory inventory = inventario(List.of(habitacion("room1", "termo1", "switch1")));
@@ -49,6 +52,7 @@ class InventoryServiceTest {
     verify(eventPublisher).publishEvent(new UpdatedInventoryEvent(inventory));
   }
 
+  /** Comprueba que un identificador de switch duplicado impida la persistencia. */
   @Test
   void rechazaIdsDuplicadosSinPersistirElInventario() {
     Inventory inventory =
@@ -65,6 +69,7 @@ class InventoryServiceTest {
     verify(eventPublisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
   }
 
+  /** Comprueba que el servicio recupere el inventario almacenado. */
   @Test
   void devuelveElInventarioPersistido() {
     Inventory inventory = inventario(List.of(habitacion("room1", "termo1", "switch1")));
@@ -74,6 +79,7 @@ class InventoryServiceTest {
     assertEquals(Optional.of(inventory), inventoryService.obtenerActivo());
   }
 
+  /** Construye un inventario de prueba con la lista de habitaciones indicada. */
   private Inventory inventario(List<Inventory.Habitacion> habitaciones) {
     return new Inventory(
         "2.0",
@@ -85,6 +91,7 @@ class InventoryServiceTest {
         habitaciones);
   }
 
+  /** Construye una habitación de prueba con sus dispositivos asociados. */
   private Inventory.Habitacion habitacion(String id, String termostato, String switchId) {
     return new Inventory.Habitacion(
         id,

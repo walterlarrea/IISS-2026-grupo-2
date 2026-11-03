@@ -9,6 +9,7 @@ echo "=========================================================="
 echo "Creando datos de prueba en la API: $API_URL"
 echo "=========================================================="
 
+# Crea una habitación de prueba enviando su descripción y payload a la API.
 crear_habitacion() {
   local descripcion="$1"
   local payload="$2"
