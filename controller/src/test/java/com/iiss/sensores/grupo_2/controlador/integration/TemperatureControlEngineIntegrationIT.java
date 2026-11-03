@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+/** Verifica la integración del motor con una API de switches simulada. */
 @SpringBootTest
 class TemperatureControlEngineIntegrationIT {
   /** Simulates API Switch */
@@ -38,17 +39,20 @@ class TemperatureControlEngineIntegrationIT {
 
   @MockitoBean private InventoryService inventoryService;
 
+  /** Inicia el servidor WireMock que simula la API de switches. */
   @BeforeAll
   static void startSimulatedApi() {
     switchesApi = new WireMockServer(WireMockConfiguration.options().dynamicPort());
     switchesApi.start();
   }
 
+  /** Detiene el servidor WireMock después de ejecutar las pruebas. */
   @AfterAll
   static void stopSimulatedApi() {
     switchesApi.stop();
   }
 
+  /** Comprueba que el Core encienda y apague habitaciones según temperaturas y potencia. */
   @Test
   void controlTemperatureWhenEnoughPower() {
     /** Simulated APi with each initial state. */
@@ -146,6 +150,7 @@ class TemperatureControlEngineIntegrationIT {
     controller.stop();
   }
 
+  /** Configura las respuestas HTTP simuladas para consultar y comandar un switch. */
   private static void switchConfig(String idSwitch, String initialState) {
     switchesApi.stubFor(
         get(urlEqualTo("/switches/" + idSwitch))
@@ -174,6 +179,7 @@ class TemperatureControlEngineIntegrationIT {
                         .formatted(idSwitch, initialState.equals("ON") ? "ON" : "OFF"))));
   }
 
+  /** Busca una habitación del estado del sitio por su identificador. */
   private static Room findRoom(DataSite data, String id) {
     return data.habitaciones().stream()
         .filter(room -> room.id().equals(id))

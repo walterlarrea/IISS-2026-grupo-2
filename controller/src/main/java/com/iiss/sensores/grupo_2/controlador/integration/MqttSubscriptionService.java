@@ -14,7 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Responsible for the connection of MQTTSubscriber */
+/** Gestiona las suscripciones MQTT según los topics del inventario activo. */
 @Service
 public class MqttSubscriptionService {
   private static final Logger logger = LoggerFactory.getLogger(MqttSubscriptionService.class);
@@ -23,6 +23,7 @@ public class MqttSubscriptionService {
   private final MqttSubscriber mqttSubscriber;
   private final String fallbackTopic;
 
+  /** Crea el servicio con el topic de respaldo, inventario y suscriptor MQTT. */
   public MqttSubscriptionService(
       @Value("${MQTT_TOPIC:sensores/temperatura}") String fallbackTopic,
       InventoryService inventoryService,
@@ -32,10 +33,12 @@ public class MqttSubscriptionService {
     this.fallbackTopic = fallbackTopic;
   }
 
+  /** Conecta al broker y se suscribe a los topics configurados. */
   public void conectar(String broker, String clientId) {
     mqttSubscriber.connect(broker, clientId, obtenerTopicsDeseados());
   }
 
+  /** Sincroniza las suscripciones cuando cambia el inventario. */
   @EventListener
   public void alActualizarInventario(UpdatedInventoryEvent event) {
     try {
@@ -46,6 +49,7 @@ public class MqttSubscriptionService {
     }
   }
 
+  /** Obtiene los topics de habitaciones o el topic de respaldo si no hay habitaciones. */
   private Set<String> obtenerTopicsDeseados() {
     Set<String> topics =
         inventoryService.obtenerActivo().map(Inventory::habitaciones).stream()

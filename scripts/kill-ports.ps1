@@ -1,3 +1,4 @@
+# Detiene los procesos que ocupan los puertos usados por los servicios.
 $ports = 1883, 9001, 8080, 8081, 8082, 8083, 8090, 8091
 
 foreach ($port in $ports) {

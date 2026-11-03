@@ -18,10 +18,12 @@ public class SwitchTools {
 
     private final ControllerClient controllerClient;
 
+    /** Crea las herramientas de switches con el cliente HTTP del controlador. */
     public SwitchTools(ControllerClient controllerClient) {
         this.controllerClient = controllerClient;
     }
 
+    /** Enciende el switch asociado a una habitación. */
     @Tool(name = "activar_switch",
             description = """
                     Turns ON the electrical switch of a specific room, activating the climate
@@ -38,6 +40,7 @@ public class SwitchTools {
         return controllerClient.accionarSwitch(idHabitacion, "ON");
     }
 
+    /** Apaga el switch asociado a una habitación. */
     @Tool(name = "desactivar_switch",
             description = """
                     Turns OFF the electrical switch of a specific room, deactivating the climate
@@ -54,6 +57,7 @@ public class SwitchTools {
         return controllerClient.accionarSwitch(idHabitacion, "OFF");
     }
 
+    /** Consulta el estado actual del switch asociado a una habitación. */
     @Tool(name = "consultar_estado_switch",
             description = """
                     Returns the current ON/OFF state of the switch associated with a specific room,

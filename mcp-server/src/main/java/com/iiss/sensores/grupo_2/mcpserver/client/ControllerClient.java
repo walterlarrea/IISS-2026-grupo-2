@@ -42,6 +42,7 @@ public class ControllerClient {
     private final RestClient controllerRestClient;
     private final String switchesApiKey;
 
+    /** Configura los clientes HTTP del controlador y de la API de switches. */
     public ControllerClient(
             @Value("${controller.base-url}") String controllerBaseUrl,
             @Value("${controller.api-key}") String controllerApiKey,

@@ -31,6 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** Verifica la coordinación del motor entre las mediciones, el Core y los switches. */
 @ExtendWith(MockitoExtension.class)
 class TemperatureControlEngineTest {
   @Mock private SwitchClient switchClient;
@@ -38,35 +39,42 @@ class TemperatureControlEngineTest {
   @Mock private ICore core;
   private TemperatureControlEngine controller;
 
+  /** Reloj de prueba cuyo instante puede adelantarse para simular ciclos acelerados. */
   private static class MutableClock extends Clock {
     private final AtomicReference<Instant> currentInstant;
     private final ZoneId zone;
 
+    /** Crea el reloj de prueba con el instante inicial indicado. */
     public MutableClock(Instant initialInstant) {
       this.currentInstant = new AtomicReference<>(initialInstant);
       this.zone = ZoneOffset.UTC;
     }
 
+    /** Avanza manualmente el instante del reloj de prueba. */
     public void advance(Duration duration) {
       currentInstant.updateAndGet(i -> i.plus(duration));
     }
 
+    /** Devuelve la zona horaria del reloj de prueba. */
     @Override
     public ZoneId getZone() {
       return zone;
     }
 
+    /** Devuelve el mismo reloj de prueba para la zona solicitada. */
     @Override
     public Clock withZone(ZoneId zone) {
       return this;
     }
 
+    /** Devuelve el instante actual del reloj de prueba. */
     @Override
     public Instant instant() {
       return currentInstant.get();
     }
   }
 
+  /** Comprueba que una nueva lectura llegue al Core con la temperatura actualizada. */
   @Test
   void temperaturaActualizadaLlegaAlCore() {
     List<TemperatureMessage> tempReadings = new ArrayList<>();
@@ -111,6 +119,7 @@ class TemperatureControlEngineTest {
     assertEquals(18.0, captor.getValue().habitaciones().get(0).currentTemperatureC());
   }
 
+  /** Verifica que el motor apague el switch al entrar en hora punta con factor diez. */
   @Test
   @DisplayName(
       "With timeFactor=10, turns OFF switches of rooms that are still below the expected temperature because rush hour has started")
@@ -165,6 +174,7 @@ class TemperatureControlEngineTest {
         estadoService.getSiteState().habitaciones().get(0).currentSwitchState());
   }
 
+  /** Verifica que el motor apague el switch al entrar en hora punta con factor veinte. */
   @Test
   @DisplayName(
       "With timeFactor=20, quickly turns OFF switches of rooms that are still below the expected temperature because rush hour has started")

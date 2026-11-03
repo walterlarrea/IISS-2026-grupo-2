@@ -8,9 +8,10 @@ import com.iiss.sensores.grupo_2.modelos.input.DataSite;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
-/** Transforms the Api model into a model that uses Core */
+/** Convierte el inventario de la API a los modelos que utiliza el Core. */
 @Component
 public class InventoryMapper {
+  /** Mapea la configuración del sitio y sus habitaciones al modelo de dominio. */
   public DataSite convertir(Inventory inventory) {
     if (inventory == null || inventory.sitio() == null) {
       throw new IllegalArgumentException("El inventory y el site son obligatorios");

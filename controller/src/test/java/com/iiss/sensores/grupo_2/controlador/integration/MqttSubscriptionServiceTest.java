@@ -14,8 +14,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Verifica la conexión y actualización de topics MQTT desde el inventario. */
 class MqttSubscriptionServiceTest {
 
+  /** Comprueba que se usen los topics del inventario y no el fallback cuando hay habitaciones. */
   @Test
   void conectaConTopicsDeInventarioYConservaElTopicDeFallback() {
     InventoryService inventoryService = mock(InventoryService.class);
@@ -34,6 +36,7 @@ class MqttSubscriptionServiceTest {
         .connect("tcp://broker:1883", "subscriber", Set.of("sensors/room1", "sensors/room2"));
   }
 
+  /** Comprueba que un cambio de inventario actualice las suscripciones MQTT. */
   @Test
   void actualizaTopicsAlRecibirUnInventarioActualizado() {
     InventoryService inventoryService = mock(InventoryService.class);
@@ -55,6 +58,7 @@ class MqttSubscriptionServiceTest {
     verify(mqttSubscriber).updateSubscriptions(Set.of("sensors/room2", "sensors/room3"));
   }
 
+  /** Crea un inventario de prueba a partir de las habitaciones indicadas. */
   private static Inventory inventario(Inventory.Habitacion... habitaciones) {
     return new Inventory(
         "2.0",
@@ -66,6 +70,7 @@ class MqttSubscriptionServiceTest {
         List.of(habitaciones));
   }
 
+  /** Crea una habitación de prueba con un topic MQTT explícito. */
   private static Inventory.Habitacion habitacion(String id, String topic) {
     return new Inventory.Habitacion(
         id, id, 21.0, 1.0, "thermostat-" + id, topic, "switch-" + id, "http://switches:8081");

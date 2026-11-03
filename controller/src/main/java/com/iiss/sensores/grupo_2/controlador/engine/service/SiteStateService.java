@@ -10,29 +10,23 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Keeps a complete in-memory copy of the site state (with temperatures and switch status) */
+/** Mantiene en memoria el sitio enriquecido con temperaturas y estados de switches. */
 @Service
 public class SiteStateService {
   private DataSite dataSite;
   private final SwitchClient switchClient;
   private final TemperatureReadingRepository tempReadings;
 
-  /** Initialize dirty state as true to trigger a full load of temperatures and switch states */
+  /** Marca el estado como pendiente de completar con lecturas y switches reales. */
   private boolean stateMarkedDirty = true;
 
+  /** Crea el servicio con acceso a switches y mediciones persistidas. */
   public SiteStateService(SwitchClient switchClient, TemperatureReadingRepository tempReadings) {
     this.switchClient = switchClient;
     this.tempReadings = tempReadings;
   }
 
-  /**
-   * Initializes or replaces the entire site config state.
-   *
-   * <p>Side effects: Will hydrate with lastest temperature readings from DB and switch statuses
-   * from switches APIs.
-   *
-   * @param newSiteState the complete new config for the site
-   */
+  /** Reemplaza la configuración del sitio y marca sus datos dinámicos para recarga. */
   public synchronized void loadSiteState(DataSite newSiteState) {
     if (newSiteState == null
         || newSiteState.site() == null
@@ -43,22 +37,19 @@ public class SiteStateService {
     this.stateMarkedDirty = true;
   }
 
+  /** Falla si todavía no se ha cargado la configuración del sitio. */
   private void checkInitializedSiteState() {
     if (dataSite == null) {
       throw new IllegalStateException("The Site state is not yet been initialized");
     }
   }
 
+  /** Sustituye la lista de habitaciones conservando la configuración del sitio. */
   private void replaceSiteRooms(List<Room> rooms) {
     dataSite = new DataSite(dataSite.site(), List.copyOf(rooms));
   }
 
-  /**
-   * Gets the entire site config state.
-   *
-   * @return The complete config for the site, with latest temperature readings and switches
-   *     statuses
-   */
+  /** Devuelve el estado con temperaturas y switches actuales, excluyendo habitaciones sin lectura. */
   public synchronized DataSite getSiteState() {
     if (dataSite == null) {
       throw new IllegalStateException("The Site state is not yet been initialized");
@@ -108,7 +99,7 @@ public class SiteStateService {
             .toList());
   }
 
-  /** Updates the temperature received from a thermostat */
+  /** Actualiza la temperatura de la habitación asociada al termostato. */
   public synchronized DataSite updateRoomTemperature(String idThermostat, double temperature) {
     checkInitializedSiteState();
     List<Room> habitaciones = new ArrayList<>(dataSite.habitaciones());
@@ -145,7 +136,7 @@ public class SiteStateService {
     return dataSite;
   }
 
-  /** Updates known state of a switch */
+  /** Actualiza el estado conocido del switch asociado a una habitación. */
   public synchronized DataSite updateSwitchState(String idSwitch, SwitchState newSwitchState) {
     checkInitializedSiteState();
     List<Room> rooms = new ArrayList<>(dataSite.habitaciones());

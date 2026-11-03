@@ -6,13 +6,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Creates an instance for Core and Spring Boot manages it */
+/** Registra el motor Core como dependencia administrada por Spring. */
 @Configuration
 public class CoreConfiguration {
 
   @Value("${controlador.inercia-termica-c:0.5}")
   private double inerciaTermicaC;
 
+  /** Crea el Core con la banda de inercia térmica configurada. */
   @Bean
   public ICore core() {
     return CoreFactory.getCore(inerciaTermicaC);

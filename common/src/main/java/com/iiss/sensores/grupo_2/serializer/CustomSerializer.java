@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/** Custom Json Serializer for the thermostat message */
+/** Agrupa serializadores JSON que controlan la precisión numérica de las mediciones. */
 public class CustomSerializer {
+  /** Serializa valores Double con tres decimales. */
   public static class ThreeDecimalSerializer extends JsonSerializer<Double> {
+    /** Escribe el valor con tres decimales, o null si no hay valor. */
     @Override
     public void serialize(Double value, JsonGenerator gen, SerializerProvider serializers)
         throws IOException {
@@ -25,7 +27,9 @@ public class CustomSerializer {
     }
   }
 
+  /** Serializa valores Double con dos decimales. */
   public static class TwoDecimalSerializer extends JsonSerializer<Double> {
+    /** Escribe el valor con dos decimales, o null si no hay valor. */
     @Override
     public void serialize(Double value, JsonGenerator gen, SerializerProvider serializers)
         throws IOException {
@@ -38,8 +42,10 @@ public class CustomSerializer {
     }
   }
 
+  /** Serializa valores BigDecimal redondeados a un entero. */
   public static class ThreeDecimalBigDecimalSerializer extends JsonSerializer<BigDecimal> {
 
+    /** Redondea el valor y lo escribe como número JSON, o null si no hay valor. */
     @Override
     public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider serializers)
         throws IOException {

@@ -13,9 +13,11 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+/** Comprueba que el repositorio guarde mediciones en MongoDB. */
 @ExtendWith(MockitoExtension.class)
 public class TemperatureReadingRepositoryTest {
 
+  /** Verifica que guardar una lectura inserte un documento en la colección. */
   @Test
   void saveTemperatureMongoTest() {
     MongoCollection<Document> collectionMock = mock(MongoCollection.class);

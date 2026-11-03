@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Construye y levanta el contenedor del simulador.
 # Get the absolute directory of this script
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 

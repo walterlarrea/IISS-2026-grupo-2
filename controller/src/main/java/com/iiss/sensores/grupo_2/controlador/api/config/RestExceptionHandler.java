@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.Instant;
 import java.util.List;
 
+/** Traduce errores de validación y del dominio a respuestas HTTP. */
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+  /** Convierte errores de formato o validación del cuerpo en HTTP 400. */
   @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
   public ResponseEntity<ErrorApi> handleBadRequest(Exception exception) {
     List<String> errores =
@@ -28,21 +30,25 @@ public class RestExceptionHandler {
     return error(HttpStatus.BAD_REQUEST, "solicitud inválida", errores);
   }
 
+  /** Devuelve los detalles de un inventario inválido con HTTP 400. */
   @ExceptionHandler(InvalidInventoryException.class)
   public ResponseEntity<ErrorApi> handleInventarioInvalido(InvalidInventoryException exception) {
     return error(HttpStatus.BAD_REQUEST, exception.getMessage(), exception.getErrores());
   }
 
+  /** Devuelve los detalles de un comando inválido con HTTP 400. */
   @ExceptionHandler(InvalidRequestException.class)
   public ResponseEntity<ErrorApi> handleSolicitudInvalida(InvalidRequestException exception) {
     return error(HttpStatus.BAD_REQUEST, exception.getMessage(), exception.getErrores());
   }
 
+  /** Indica con HTTP 404 que aún no existe configuración del sitio. */
   @ExceptionHandler(SiteNotConfigException.class)
   public ResponseEntity<ErrorApi> handleSitioNoConfigurado(SiteNotConfigException exception) {
     return error(HttpStatus.NOT_FOUND, exception.getMessage(), null);
   }
 
+  /** Construye el formato de error común para la API. */
   private ResponseEntity<ErrorApi> error(HttpStatus status, String mensaje, List<String> errores) {
     return ResponseEntity.status(status)
         .body(new ErrorApi(Instant.now(), status.value(), mensaje, errores));

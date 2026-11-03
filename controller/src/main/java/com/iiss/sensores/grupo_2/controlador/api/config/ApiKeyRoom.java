@@ -12,13 +12,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.io.IOException;
 import java.time.Instant;
 
-/** Handler for authentification Api key */
+/** Valida el encabezado API key antes de permitir el acceso a endpoints protegidos. */
 @Component
 public class ApiKeyRoom implements HandlerInterceptor {
   private static final String API_KEY_HEADER = "X-API-KEY";
   private final String expectedApiKey;
   private final ObjectMapper objectMapper;
 
+  /** Crea el interceptor con la clave esperada y el serializador JSON. */
   @Autowired
   public ApiKeyRoom(
       @Value("${CONTROLADOR_API_KEY:development-key}") String expectedApiKey,
@@ -27,10 +28,12 @@ public class ApiKeyRoom implements HandlerInterceptor {
     this.objectMapper = objectMapper;
   }
 
+  /** Crea el interceptor para pruebas con un serializador JSON predeterminado. */
   public ApiKeyRoom(String expectedApiKey) {
     this(expectedApiKey, new ObjectMapper().findAndRegisterModules());
   }
 
+  /** Autoriza la solicitud si su API key coincide; de lo contrario, responde 401. */
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws IOException {
@@ -46,6 +49,7 @@ public class ApiKeyRoom implements HandlerInterceptor {
     return true;
   }
 
+  /** Escribe una respuesta JSON de no autorizado. */
   private void responderNoAutorizado(HttpServletResponse response) throws IOException {
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType("application/json");

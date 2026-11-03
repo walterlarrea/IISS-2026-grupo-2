@@ -23,6 +23,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/** Ejecuta flujos de extremo a extremo con los servicios reales en Docker Compose. */
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BigBangSystemIntegrationIT {
@@ -57,6 +58,7 @@ public class BigBangSystemIntegrationIT {
   private String switchesBaseUrl;
   private String mqttBrokerUrl;
 
+  /** Prepara las URLs de los servicios del entorno de integración. */
   @BeforeEach
   void setup() {
     restClient = RestClient.builder().build();
@@ -74,6 +76,7 @@ public class BigBangSystemIntegrationIT {
     mqttBrokerUrl = "tcp://" + mqttHost + ":" + mqttPort;
   }
 
+  /** Verifica el flujo completo desde configurar el sitio hasta accionar un switch. */
   @Test
   @Order(1)
   @DisplayName(
@@ -186,6 +189,7 @@ public class BigBangSystemIntegrationIT {
             });
   }
 
+  /** Verifica que la potencia contratada limite cuántos switches se encienden. */
   @Test
   @Order(2)
   @DisplayName(
@@ -364,6 +368,7 @@ public class BigBangSystemIntegrationIT {
             });
   }
 
+  /** Detiene el controlador al finalizar cada prueba. */
   @AfterEach
   void restartContainers() {
     restClient
@@ -378,6 +383,7 @@ public class BigBangSystemIntegrationIT {
         .toBodilessEntity();
   }
 
+  /** Espera el intervalo indicado usando Awaitility. */
   public void waitFor(Duration duration) {
     final Instant startTime = Instant.now();
     Awaitility.await()

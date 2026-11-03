@@ -10,10 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 
-/** Transform message to Json format */
+/** Define el formato JSON de los mensajes de temperatura de los termostatos. */
 public class ThermostatMessageObject {
   private static final Logger logger = LoggerFactory.getLogger(ThermostatMessageObject.class);
 
+  /** Contiene los campos de temperatura serializados que publica un termostato. */
   public record Temperature(
       String id,
       @JsonSerialize(using = TwoDecimalSerializer.class) double tC,
@@ -21,6 +22,7 @@ public class ThermostatMessageObject {
       @JsonSerialize(using = CustomSerializer.ThreeDecimalBigDecimalSerializer.class)
           BigDecimal ts) {}
 
+  /** Serializa un objeto a JSON y propaga un error claro si no puede hacerlo. */
   public static <Type> String validateJson(Type object) throws Exception {
     try {
       ObjectMapper mapper = new ObjectMapper();

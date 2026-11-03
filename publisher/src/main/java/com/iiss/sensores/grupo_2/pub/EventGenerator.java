@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+/** Genera mediciones de temperatura simuladas y las publica periódicamente. */
 @Component
 public class EventGenerator {
   private static final Logger logger = LoggerFactory.getLogger(EventGenerator.class);
@@ -34,10 +35,12 @@ public class EventGenerator {
   private final Random random = new Random();
   private final PublisherFactory publisherFactory;
 
+  /** Crea el generador con la fábrica que prepara los publicadores MQTT. */
   public EventGenerator(PublisherFactory publisherFactory) {
     this.publisherFactory = publisherFactory;
   }
 
+  /** Inicia publicaciones concurrentes para los topics de las habitaciones simuladas. */
   public void generate() {
     ArrayList<String> topics =
         new ArrayList<String>(
@@ -56,6 +59,7 @@ public class EventGenerator {
     }
   }
 
+  /** Produce y publica mediciones variables para un termostato hasta su interrupción. */
   private void spamEventMessage(EventPublisher publisher, String id) {
     logger.info("Starting event publisher with ID = {}", id);
 

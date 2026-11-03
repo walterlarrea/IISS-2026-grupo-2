@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Detiene los procesos que ocupan los puertos usados por los servicios.
 set -u
 
 ports=(1883 9001 8080 8081 8082 8083 8090 8091)

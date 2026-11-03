@@ -18,9 +18,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** Comprueba las reglas de decisión del Core para temperaturas, tarifas y potencia. */
 class CoreTest {
   private final ICore core = new Core();
 
+  /** Verifica que la hora punta apague los switches que estaban encendidos. */
   @Test
   void calcularComandos_apagaTodoCuandoHayHorarioPunta() throws Exception {
     Site site =
@@ -62,6 +64,7 @@ class CoreTest {
     assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room1", SwitchState.APAGADO));
   }
 
+  /** Verifica que una tarifa de días hábiles no apague switches durante el fin de semana. */
   @ParameterizedTest
   @ValueSource(strings = {"2026-10-10T18:00:00Z", "2026-10-11T18:00:00Z"})
   void calcularComandos_noApagaSwitchesEnFinDeSemanaConTarifaDeDiasHabiles(String fechaHora) {
@@ -102,6 +105,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica que se apaguen las habitaciones que alcanzaron la temperatura objetivo. */
   @Test
   void calcularComandos_apagaHabitacionesPorEncimaDeLaTemperaturaEsperada() throws Exception {
     Site site =
@@ -157,6 +161,7 @@ class CoreTest {
         new CommandSwitch("sw-sim-room2", SwitchState.APAGADO));
   }
 
+  /** Verifica que se priorice la habitación con mayor déficit cuando hay potencia. */
   @Test
   void calcularComandos_enciendeLaHabitacionConMayorDeficitSiHayPotenciaDisponible()
       throws Exception {
@@ -199,6 +204,7 @@ class CoreTest {
     assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room2", SwitchState.ENCENDIDO));
   }
 
+  /** Verifica que no se agregue consumo cuando se agotó la potencia disponible. */
   @Test
   void calcularComandos_noEnciendeNadaCuandoNoHayPotenciaDisponible() throws Exception {
     Site site =
@@ -240,6 +246,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica que no se generen comandos cuando las temperaturas no requieren cambios. */
   @Test
   void calcularComandos_noGeneraAccionCuandoLaTemperaturaEstaDentroDelRangoEsperado()
       throws Exception {
@@ -282,6 +289,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica que primero se libere potencia y luego se encienda hasta el límite contratado. */
   @Test
   void calcularComandos_apagaAntesDeEncenderYSeleccionaVariasHabitacionesHastaElLimiteDePotencia() {
     Site site =
@@ -344,6 +352,7 @@ class CoreTest {
         new CommandSwitch("sw-siguiente", SwitchState.ENCENDIDO));
   }
 
+  /** Verifica que no se repitan comandos si los switches ya tienen el estado objetivo. */
   @Test
   void calcularComandos_noEmiteComandosCuandoLosSwitchesYaTienenElEstadoObjetivo() {
     Site site =
@@ -384,6 +393,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica que el control normal se reanude al terminar la hora punta. */
   @Test
   void calcularComandos_reanudaControlNormalCuandoTerminaElHorarioPunta() {
     Site site =
@@ -424,6 +434,7 @@ class CoreTest {
     assertComandosIguales(respuesta, new CommandSwitch("sw-sim-room1", SwitchState.ENCENDIDO));
   }
 
+  /** Verifica la respuesta vacía cuando no se proporciona un sitio. */
   @Test
   void calcularComandos_devuelveUnaListaVaciaCuandoSitioEsNull() {
     DataSite config = null;
@@ -434,6 +445,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica la respuesta vacía cuando no se proporciona la lista de habitaciones. */
   @Test
   void calcularComandos_devuelveUnaListaVaciaCuandoHabitacionesEsNull() {
     Site site =
@@ -450,6 +462,7 @@ class CoreTest {
     assertComandosIguales(respuesta);
   }
 
+  /** Verifica la respuesta vacía cuando el sitio no contiene habitaciones. */
   @Test
   void calcularComandos_devuelveUnaListaVaciaCuandoHabitacionesEsUnaListaVacia() {
     Site site =
@@ -476,6 +489,7 @@ class CoreTest {
    * Verifies that Room 1 and Room 2 yield power (turn OFF) early due to thermal inertia,
    * allowing the coldest rooms (like Room 5 and Room 4) to turn ON without suffering starvation.
    */
+  /** Verifica que la banda de inercia libere potencia para evitar postergar habitaciones frías. */
   @Test
   void calcularComandos_liberaPorInerciaParaEvitarInanicionDeHabitacionesMasFrias() {
     Site site =
@@ -513,6 +527,7 @@ class CoreTest {
    * Inertia test: If a room is within the thermal inertia band but NO other room is awaiting
    * power (or there is ample power available), it remains ON until it reaches expected temperature.
    */
+  /** Verifica que la inercia no apague equipos si no compiten por potencia. */
   @Test
   void calcularComandos_noApagaPorInerciaSiNoHayCompetenciaPorPotencia() {
     Site site =
@@ -548,6 +563,7 @@ class CoreTest {
    * Cycle 3: Rooms 4 and 5 heat up into their comfort band, while Room 3 (18.5 °C) gets its turn.
    * Confirms that across the time window, ALL 5 rooms receive power and avoid starvation.
    */
+  /** Simula varios ciclos y verifica la rotación de potencia entre habitaciones. */
   @Test
   void calcularComandos_simulacionDinamicaDosHorasCincoHabitacionesRotanCorrectamente() {
     Site site = new Site("casa-5hab", "Casa 5 hab", 4.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
@@ -599,6 +615,7 @@ class CoreTest {
     );
   }
 
+  /** Compara los comandos calculados sin considerar su orden. */
   private void assertComandosIguales(CoreAnswer respuesta, CommandSwitch... esperados) {
     assertEquals(
         esperados.length,
@@ -624,6 +641,7 @@ class CoreTest {
     }
   }
 
+  /** Compara los comandos calculados respetando su orden de prioridad. */
   private void assertComandosEnOrden(CoreAnswer respuesta, CommandSwitch... esperados) {
     assertEquals(
         esperados.length,
@@ -649,6 +667,5 @@ class CoreTest {
     }
   }
 }
-
 
 

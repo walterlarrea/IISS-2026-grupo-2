@@ -18,10 +18,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Connects to a list of topics -> Receives messages from each topic -> Saves messages in MongoDB ->
- * Triggers the control process
- */
+/** Recibe mediciones MQTT, las persiste y las entrega al motor de control. */
 @Service
 public class MqttSubscriber {
   private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
@@ -32,6 +29,7 @@ public class MqttSubscriber {
   private final Set<String> subscribedTopics = new HashSet<>();
   private MqttClient client;
 
+  /** Crea el suscriptor con sus dependencias de persistencia, control y JSON. */
   public MqttSubscriber(
       TemperatureReadingRepository mongoWriter,
       TemperatureControlEngine temperatureControlEngine,
@@ -41,6 +39,7 @@ public class MqttSubscriber {
     this.objMap = objMap;
   }
 
+  /** Conecta al broker y configura las suscripciones y el procesamiento de mensajes. */
   public synchronized void connect(String broker, String clientId, Collection<String> topics) {
     Set<String> topicsToSubscribe = validateTopics(topics);
     disconnect();
@@ -51,6 +50,7 @@ public class MqttSubscriber {
 
       client.setCallback(
           new MqttCallbackExtended() {
+            /** Registra la pérdida de conexión y marca las suscripciones para restaurarlas. */
             @Override
             public void connectionLost(Throwable cause) {
               logger.error("Connection to MQTT broker was lost", cause);
@@ -59,6 +59,7 @@ public class MqttSubscriber {
               }
             }
 
+            /** Restaura los topics deseados cuando se reconecta el cliente MQTT. */
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
               if (!reconnect) {
@@ -75,6 +76,7 @@ public class MqttSubscriber {
               }
             }
 
+            /** Convierte, guarda y procesa una medición recibida desde MQTT. */
             @Override
             public void messageArrived(String topic, MqttMessage message) {
               String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
@@ -123,6 +125,7 @@ public class MqttSubscriber {
               }
             }
 
+            /** Atiende la confirmación de entrega, que no se usa en este suscriptor. */
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
               // No se utiliza en el subscriber
@@ -149,6 +152,7 @@ public class MqttSubscriber {
     }
   }
 
+  /** Reemplaza el conjunto de topics deseados y sincroniza las suscripciones activas. */
   public synchronized void updateSubscriptions(Collection<String> topics) {
     Set<String> topicsToSubscribe = validateTopics(topics);
     desiredTopics.clear();
@@ -156,6 +160,7 @@ public class MqttSubscriber {
     applySubscriptions();
   }
 
+  /** Rechaza una colección nula o con topics vacíos y devuelve sus valores únicos. */
   private Set<String> validateTopics(Collection<String> topics) {
     if (topics == null || topics.stream().anyMatch(topic -> topic == null || topic.isBlank())) {
       throw new IllegalArgumentException(
@@ -164,6 +169,7 @@ public class MqttSubscriber {
     return new HashSet<>(topics);
   }
 
+  /** Agrega y elimina suscripciones para que coincidan con los topics deseados. */
   private void applySubscriptions() {
     if (client == null || !client.isConnected()) {
       return;
@@ -195,6 +201,7 @@ public class MqttSubscriber {
     }
   }
 
+  /** Cierra el cliente MQTT actual y limpia las suscripciones registradas. */
   private void disconnect() {
     if (client == null) {
       return;
@@ -212,6 +219,7 @@ public class MqttSubscriber {
     }
   }
 
+  /** Cierra la conexión MQTT al finalizar el ciclo de vida del servicio. */
   @PreDestroy
   public synchronized void close() {
     disconnect();

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** Handles updates for Inventory and emits events to inform there's been an update */
+/** Valida, persiste y publica cambios del inventario activo del sitio. */
 @Service
 public class InventoryService {
   private static final String INVENTARIO_ACTIVO_ID = "activo";
@@ -28,6 +28,7 @@ public class InventoryService {
   private final SiteStateService siteStateService;
   private final InventoryMapper inventoryMapper;
 
+  /** Crea el servicio con acceso a datos y componentes que consumen el inventario. */
   public InventoryService(
       InventoryRepository repository,
       ApplicationEventPublisher eventPublisher,
@@ -39,10 +40,12 @@ public class InventoryService {
     this.inventoryMapper = inventoryMapper;
   }
 
+  /** Obtiene el inventario activo persistido, si existe. */
   public Optional<Inventory> obtenerActivo() {
     return repository.findById(INVENTARIO_ACTIVO_ID).map(InventoryDocument::inventory);
   }
 
+  /** Valida y reemplaza el inventario, actualizando el estado y notificando a los consumidores. */
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
   public Inventory reemplazar(Inventory inventory) {
     validar(inventory);
@@ -56,6 +59,7 @@ public class InventoryService {
     return inventory;
   }
 
+  /** Comprueba campos, identificadores, URLs y horarios del inventario. */
   private void validar(Inventory inventory) {
     List<String> errores = new ArrayList<>();
     Set<String> ids = new HashSet<>();
@@ -98,6 +102,7 @@ public class InventoryService {
     }
   }
 
+  /** Verifica que una franja comience antes de que termine. */
   private boolean esFranjaValida(Inventory.Franja franja) {
     try {
       return LocalTime.parse(franja.desde()).isBefore(LocalTime.parse(franja.hasta()));
@@ -106,6 +111,7 @@ public class InventoryService {
     }
   }
 
+  /** Verifica que el valor sea una URL absoluta HTTP o HTTPS con host. */
   private boolean esUrlValida(String valor) {
     try {
       URI uri = URI.create(valor);

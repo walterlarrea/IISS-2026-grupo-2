@@ -1,3 +1,4 @@
+# Configura y ejecuta el controlador en el perfil local conectado al simulador.
 # Detén el controlador anterior con Ctrl+C antes de ejecutar esto.
 export SPRING_PROFILES_ACTIVE=local
 export CONECTAR_CON_SIMULADOR=true

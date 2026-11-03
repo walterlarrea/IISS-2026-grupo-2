@@ -21,10 +21,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/** Prueba la serialización, configuración y publicación de mediciones MQTT. */
 class PublisherUnitTest {
 
   private final ObjectMapper mapper = new ObjectMapper();
 
+  /** Comprueba que una medición se convierta en un objeto JSON con sus campos. */
   @Test
   void validateJsonSerializesTemperaturaToJson() throws Exception {
     ThermostatMessageObject.Temperature temperature =
@@ -40,6 +42,7 @@ class PublisherUnitTest {
     assertEquals(1789351400L, root.get("ts").asLong());
   }
 
+  /** Comprueba que las temperaturas se serialicen con dos decimales. */
   @Test
   void customSerializerRoundsTemperatureValuesToTwoDecimals() throws Exception {
     ThermostatMessageObject.Temperature temperature =
@@ -53,6 +56,7 @@ class PublisherUnitTest {
     assertTrue(json.contains("\"ts\":1789351400"));
   }
 
+  /** Comprueba que la marca de tiempo se serialice como un entero. */
   @Test
   void epochTimeIsSerializedAsAnInteger() throws Exception {
     ThermostatMessageObject.Temperature temperature =
@@ -65,6 +69,7 @@ class PublisherUnitTest {
     assertFalse(json.contains("E"));
   }
 
+  /** Comprueba que la configuración devuelva valores almacenados y null para claves ausentes. */
   @Test
   void appConfigReadsConfiguredValuesFromInternalMap() throws Exception {
     AppConfig appConfig = new AppConfig();
@@ -79,6 +84,7 @@ class PublisherUnitTest {
     assertNull(appConfig.getValue("MISSING_KEY"));
   }
 
+  /** Comprueba que el publicador envíe el contenido al topic configurado. */
   @Test
   void eventPublisherPublishesPayloadToTheConfiguredTopic() throws Exception {
     MqttClient client = mock(MqttClient.class);
@@ -93,6 +99,7 @@ class PublisherUnitTest {
         new String(messageCaptor.getValue().getPayload(), StandardCharsets.UTF_8));
   }
 
+  /** Comprueba que la fábrica conecte el cliente MQTT y lo cierre correctamente. */
   @Test
   void publisherFactoryConnectsToBrokerAndBuildsPublisher() throws Exception {
     try (MockedConstruction<MqttClient> mocked =
@@ -112,6 +119,7 @@ class PublisherUnitTest {
     }
   }
 
+  /** Comprueba que el generador publique al menos un mensaje antes de interrumpirse. */
   @Test
   void eventGeneratorEmitsAtLeastOneMessageBeforeInterruption() throws Exception {
     PublisherFactory publisherFactory = mock(PublisherFactory.class);

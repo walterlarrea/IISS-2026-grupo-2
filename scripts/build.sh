@@ -1,4 +1,5 @@
 #!/bin/bash
+# Construye las imágenes Docker de los servicios del proyecto.
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

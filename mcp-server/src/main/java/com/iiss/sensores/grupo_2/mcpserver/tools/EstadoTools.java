@@ -20,12 +20,14 @@ public class EstadoTools {
 
     private final ControllerClient controllerClient;
 
+    /** Crea las herramientas de estado con el cliente HTTP del controlador. */
     public EstadoTools(ControllerClient controllerClient) {
         this.controllerClient = controllerClient;
     }
 
     // ── Consultas de estado ───────────────────────────────────────────────────
 
+    /** Consulta el estado operativo y horario del motor de control. */
     @Tool(name = "obtener_estado_controlador",
             description = """
                     Returns the current status of the Temperature Controller engine.
@@ -42,6 +44,7 @@ public class EstadoTools {
         return controllerClient.obtenerEstadoControl();
     }
 
+    /** Devuelve la temperatura y el estado de switch de las habitaciones. */
     @Tool(name = "obtener_estado_habitaciones",
             description = """
                     Returns the current temperature and switch state of all configured rooms.
@@ -59,6 +62,7 @@ public class EstadoTools {
 
     // ── Comandos al motor ─────────────────────────────────────────────────────
 
+    /** Inicia el motor con la fecha y el factor temporal indicados. */
     @Tool(name = "iniciar_controlador",
             description = """
                     Starts the Temperature Controller engine from a given reference date/time.
@@ -84,6 +88,7 @@ public class EstadoTools {
         return controllerClient.comandarControl(body);
     }
 
+    /** Detiene el motor de control. */
     @Tool(name = "detener_controlador",
             description = """
                     Stops the Temperature Controller engine.

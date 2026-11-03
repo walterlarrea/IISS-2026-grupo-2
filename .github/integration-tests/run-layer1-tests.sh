@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Ejecuta las pruebas de integración de la capa 1 del proyecto.
 set -euo pipefail
 
 if ! docker info >/dev/null 2>&1; then

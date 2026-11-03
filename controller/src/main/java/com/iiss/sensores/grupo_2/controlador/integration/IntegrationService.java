@@ -11,7 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Dynamic register with MQTT component */
+/** Registra el controlador en el simulador y configura su conexión MQTT. */
 @Service
 public class IntegrationService {
   private static final Logger logger = LoggerFactory.getLogger(IntegrationService.class);
@@ -28,6 +28,7 @@ public class IntegrationService {
   private final MqttSubscriptionService mqttSubscriptionService;
   private final AtomicBoolean initialized = new AtomicBoolean();
 
+  /** Configura la integración con simulador o el broker local según las propiedades. */
   public IntegrationService(
       RestClient.Builder restClientBuilder,
       MqttSubscriptionService mqttSubscriptionService,
@@ -69,6 +70,7 @@ public class IntegrationService {
     this.mqttSubscriptionService = mqttSubscriptionService;
   }
 
+  /** Inicia la conexión MQTT al arrancar la aplicación, usando el modo configurado. */
   @EventListener(ApplicationReadyEvent.class)
   public void onApplicationReady() {
     if (!conectarSimulador) {
@@ -85,7 +87,7 @@ public class IntegrationService {
     intentarInicializar();
   }
 
-  /** Retries registration every 5 seconds if fails to connect */
+  /** Reintenta el registro periódico mientras la integración no se haya inicializado. */
   @Scheduled(fixedDelayString = "${REGISTRATION_RETRY_MS:5000}")
   public void reintentarRegistro() {
     if (conectarSimulador && !initialized.get()) {
@@ -93,6 +95,7 @@ public class IntegrationService {
     }
   }
 
+  /** Registra el controlador, obtiene el broker del simulador y conecta MQTT. */
   private synchronized void intentarInicializar() {
     if (initialized.get()) {
       return;
@@ -125,13 +128,16 @@ public class IntegrationService {
     }
   }
 
+  /** Datos enviados al simulador para registrar el controlador. */
   private record AltaControlador(String etiqueta, String baseUrl, String apiKey) {
   }
 
+  /** Datos del controlador devueltos por el simulador al registrarlo. */
   private record RegistroControlador(
       String id, String etiqueta, String baseUrl, String registradoEn, Mqtt mqtt) {
   }
 
+  /** Dirección y puerto del broker MQTT informados por el simulador. */
   private record Mqtt(String host, int puerto) {
   }
 }

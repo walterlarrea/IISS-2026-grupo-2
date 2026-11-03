@@ -19,12 +19,14 @@ public class HabitacionTools {
 
     private final ControllerClient controllerClient;
 
+    /** Crea las herramientas de habitaciones con el cliente HTTP del controlador. */
     public HabitacionTools(ControllerClient controllerClient) {
         this.controllerClient = controllerClient;
     }
 
     // ── Consultas ─────────────────────────────────────────────────────────────
 
+    /** Lista las habitaciones registradas en el inventario activo. */
     @Tool(name = "listar_habitaciones",
             description = """
                     Returns the complete list of rooms (habitaciones) configured in the site inventory.
@@ -38,6 +40,7 @@ public class HabitacionTools {
         return controllerClient.listarHabitaciones();
     }
 
+    /** Obtiene la configuración de una habitación por su identificador. */
     @Tool(name = "obtener_habitacion",
             description = """
                     Returns the full configuration of a single room identified by its ID.
@@ -53,6 +56,7 @@ public class HabitacionTools {
 
     // ── Modificaciones ────────────────────────────────────────────────────────
 
+    /** Actualiza la temperatura objetivo de una habitación. */
     @Tool(name = "modificar_temperatura_esperada",
             description = """
                     Updates the target (expected) temperature for a specific room.
@@ -71,6 +75,7 @@ public class HabitacionTools {
                 java.util.Map.of("temperaturaEsperada", temperaturaEsperada));
     }
 
+    /** Agrega una nueva habitación con los datos proporcionados. */
     @Tool(name = "crear_habitacion",
             description = """
                     Adds a new room to the site inventory with all required fields.
