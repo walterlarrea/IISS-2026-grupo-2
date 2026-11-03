@@ -13,7 +13,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -597,6 +599,254 @@ class CoreTest {
         new CommandSwitch("sw5", SwitchState.APAGADO),
         new CommandSwitch("sw4", SwitchState.ENCENDIDO)
     );
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Prevención de starvation por espera prolongada (usa Room.lastSwitchChange)
+  //
+  // Los tiempos son deliberadamente extremos (5 minutos vs. 6 horas) para no depender del valor
+  // exacto de la espera máxima ni del factor de aging que se elija al configurar el Core.
+  // ---------------------------------------------------------------------------------------------
+
+  private static final ZonedDateTime AHORA = ZonedDateTime.parse("2026-10-07T12:00:00Z");
+  private static final ZonedDateTime HACE_5_MIN = AHORA.minusMinutes(5);
+  private static final ZonedDateTime HACE_6_HORAS = AHORA.minusHours(6);
+
+  /**
+   * Starvation por déficit bajo: con potencia para una sola habitación, la de menor déficit
+   * quedaba siempre última. Tras 6 h esperando debe pasar por delante de las que acaban de esperar.
+   */
+  @Test
+  void calcularComandos_enciendeLaHabitacionQueLlevaMuchoEsperandoAunqueTengaMenorDeficit() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 2.0, 18.0, SwitchState.APAGADO, HACE_5_MIN), // déficit 3.0
+                sala("b", 21.0, 2.0, 18.5, SwitchState.APAGADO, HACE_5_MIN), // déficit 2.5
+                sala("c", 20.0, 2.0, 19.6, SwitchState.APAGADO, HACE_6_HORAS))); // déficit 0.4
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-c", SwitchState.ENCENDIDO));
+  }
+
+  /**
+   * Habitación inalcanzable (ventana abierta, calefactor subdimensionado): lleva horas encendida
+   * con un déficit enorme y acapara toda la potencia. Debe ceder ante la que espera hace horas.
+   */
+  @Test
+  void calcularComandos_desplazaALaHabitacionEncendidaHaceHorasSiOtraLlevaMuchoEsperando() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("inalcanzable", 21.0, 2.0, 13.0, SwitchState.ENCENDIDO, HACE_6_HORAS),
+                sala("c", 20.0, 2.0, 19.6, SwitchState.APAGADO, HACE_6_HORAS)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(
+        respuesta,
+        new CommandSwitch("sw-inalcanzable", SwitchState.APAGADO),
+        new CommandSwitch("sw-c", SwitchState.ENCENDIDO));
+  }
+
+  /**
+   * Tiempo mínimo encendida (anti-flapping): una habitación recién encendida no se desplaza aunque
+   * otra lleve horas esperando.
+   */
+  @Test
+  void calcularComandos_noDesplazaAUnaHabitacionRecienEncendida() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("recien-encendida", 21.0, 2.0, 18.0, SwitchState.ENCENDIDO, AHORA),
+                sala("c", 20.0, 2.0, 19.6, SwitchState.APAGADO, HACE_6_HORAS)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta);
+  }
+
+  /**
+   * Starvation por fragmentación de potencia: una habitación de 3 kW nunca cabía porque las chicas
+   * (1.5 kW) con mayor déficit se encendían primero y ocupaban el hueco.
+   */
+  @Test
+  void calcularComandos_enciendeLaHabitacionGrandeQueLlevaMuchoEsperandoAntesQueLasChicas() {
+    DataSite config =
+        new DataSite(
+            sitio(3.0),
+            List.of(
+                sala("grande", 20.0, 3.0, 19.0, SwitchState.APAGADO, HACE_6_HORAS),
+                sala("chica1", 21.0, 1.5, 18.0, SwitchState.APAGADO, HACE_5_MIN),
+                sala("chica2", 21.0, 1.5, 19.0, SwitchState.APAGADO, HACE_5_MIN)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-grande", SwitchState.ENCENDIDO));
+  }
+
+  /**
+   * Igual que el caso anterior pero las habitaciones chicas ya están encendidas hace horas: para
+   * que la grande quepa hay que liberar potencia de ambas.
+   */
+  @Test
+  void calcularComandos_liberaPotenciaDeVariasHabitacionesParaQueEntreLaQueLlevaMuchoEsperando() {
+    DataSite config =
+        new DataSite(
+            sitio(3.0),
+            List.of(
+                sala("grande", 20.0, 3.0, 19.0, SwitchState.APAGADO, HACE_6_HORAS),
+                sala("chica1", 21.0, 1.5, 18.0, SwitchState.ENCENDIDO, HACE_6_HORAS),
+                sala("chica2", 21.0, 1.5, 19.0, SwitchState.ENCENDIDO, HACE_6_HORAS)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(
+        respuesta,
+        new CommandSwitch("sw-chica1", SwitchState.APAGADO),
+        new CommandSwitch("sw-chica2", SwitchState.APAGADO),
+        new CommandSwitch("sw-grande", SwitchState.ENCENDIDO));
+  }
+
+  /** Sin información de espera (lastSwitchChange null) el criterio sigue siendo el mayor déficit. */
+  @Test
+  void calcularComandos_priorizaPorDeficitCuandoSeDesconoceElTiempoDeEspera() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 2.0, 18.0, SwitchState.APAGADO, null), // déficit 3.0
+                sala("c", 20.0, 2.0, 19.6, SwitchState.APAGADO, null))); // déficit 0.4
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  /** Con esperas cortas y parecidas el criterio sigue siendo el mayor déficit. */
+  @Test
+  void calcularComandos_priorizaPorDeficitCuandoLasEsperasSonCortas() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 2.0, 18.0, SwitchState.APAGADO, HACE_5_MIN), // déficit 3.0
+                sala("c", 20.0, 2.0, 19.6, SwitchState.APAGADO, HACE_5_MIN))); // déficit 0.4
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  /** Una habitación que ya alcanzó su temperatura no necesita calefacción por mucho que espere. */
+  @Test
+  void calcularComandos_noEnciendeUnaHabitacionEnTemperaturaAunqueLleveMuchoApagada() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 2.0, 18.0, SwitchState.APAGADO, HACE_5_MIN),
+                sala("en-temperatura", 20.5, 2.0, 21.0, SwitchState.APAGADO, HACE_6_HORAS)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  /** El horario punta tiene precedencia sobre cualquier garantía de espera máxima. */
+  @Test
+  void calcularComandos_horarioPuntaApagaTodoAunqueHayaHabitacionesEsperandoMucho() {
+    ZonedDateTime horaPunta = ZonedDateTime.parse("2026-10-07T18:00:00Z");
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("encendida", 21.0, 2.0, 18.0, SwitchState.ENCENDIDO, horaPunta.minusHours(6)),
+                sala("esperando", 20.0, 2.0, 19.0, SwitchState.APAGADO, horaPunta.minusHours(6))));
+
+    CoreAnswer respuesta = core.calcularComandos(horaPunta, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-encendida", SwitchState.APAGADO));
+  }
+
+  /**
+   * Simulación de 12 h (ciclos de 10 min) con una sola habitación encendida a la vez (2 kW de 2 kW
+   * contratados). A y B se enfrían rápido, por lo que su déficit siempre supera al de C, que casi no
+   * pierde calor. Con prioridad solo por déficit, C nunca se enciende. Todas deben recibir potencia.
+   */
+  @Test
+  void calcularComandos_simulacionDe12HorasTodasLasHabitacionesRecibenPotencia() {
+    String[] ids = {"a", "b", "c"};
+    double[] esperada = {21.0, 21.0, 20.0};
+    double[] temperatura = {18.0, 18.2, 19.6};
+    double[] perdidaPorCiclo = {0.3, 0.3, 0.01};
+    double gananciaEncendida = 0.5;
+    SwitchState[] estado = {SwitchState.APAGADO, SwitchState.APAGADO, SwitchState.APAGADO};
+    ZonedDateTime[] ultimoCambio = {AHORA, AHORA, AHORA};
+    Set<String> encendidasAlgunaVez = new HashSet<>();
+
+    for (int ciclo = 0; ciclo < 72; ciclo++) {
+      ZonedDateTime instante = AHORA.plusMinutes(10L * ciclo);
+      List<Room> habitaciones = new ArrayList<>();
+      for (int i = 0; i < ids.length; i++) {
+        habitaciones.add(
+            sala(ids[i], esperada[i], 2.0, temperatura[i], estado[i], ultimoCambio[i]));
+      }
+
+      CoreAnswer respuesta = core.calcularComandos(instante, new DataSite(sitio(2.0), habitaciones));
+
+      for (var comando : respuesta.commands()) {
+        CommandSwitch cs = (CommandSwitch) comando;
+        for (int i = 0; i < ids.length; i++) {
+          if (cs.idSwitch().equals("sw-" + ids[i])) {
+            estado[i] = cs.estado();
+            ultimoCambio[i] = instante;
+            if (cs.estado() == SwitchState.ENCENDIDO) {
+              encendidasAlgunaVez.add(ids[i]);
+            }
+          }
+        }
+      }
+      for (int i = 0; i < ids.length; i++) {
+        temperatura[i] +=
+            (estado[i] == SwitchState.ENCENDIDO ? gananciaEncendida : 0.0) - perdidaPorCiclo[i];
+      }
+    }
+
+    assertEquals(
+        Set.of("a", "b", "c"),
+        encendidasAlgunaVez,
+        "Todas las habitaciones deben recibir potencia en 12 h; las que no lo hicieron sufrieron starvation");
+  }
+
+  private static Site sitio(double potenciaContratadaKW) {
+    return new Site(
+        "casa", "Casa", potenciaContratadaKW, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+  }
+
+  private static Room sala(
+      String id,
+      double temperaturaEsperada,
+      double potenciaKW,
+      double temperaturaActual,
+      SwitchState estado,
+      ZonedDateTime ultimoCambio) {
+    return new Room(
+        id,
+        id,
+        temperaturaEsperada,
+        potenciaKW,
+        "t-" + id,
+        "t-" + id,
+        "sw-" + id,
+        "http://switches:8081/sw-" + id,
+        temperaturaActual,
+        estado,
+        ultimoCambio);
   }
 
   private void assertComandosIguales(CoreAnswer respuesta, CommandSwitch... esperados) {
