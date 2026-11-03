@@ -32,7 +32,7 @@ class IntegrationServiceTest {
                     """
                         {
                           "etiqueta":"control-casa",
-                          "baseUrl":"http://controlador:8080",
+                          "baseUrl":"http://localhost:8080",
                           "apiKey":"controller-api-key"
                         }
                         """))
@@ -42,7 +42,7 @@ class IntegrationServiceTest {
                     {
                       "id":"control-casa",
                       "etiqueta":"control-casa",
-                      "baseUrl":"http://controlador:8080",
+                      "baseUrl":"http://localhost:8080",
                       "registradoEn":"2026-10-12T20:00:00Z",
                       "mqtt":{"host":"broker.test","puerto":1883}
                     }
