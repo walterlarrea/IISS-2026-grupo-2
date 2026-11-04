@@ -1115,6 +1115,160 @@ class CoreTest {
         "Todas las habitaciones deben recibir potencia en 12 h; las que no lo hicieron sufrieron starvation");
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // Histéresis para encender: evita el vaivén ON/OFF alrededor de la temperatura objetivo
+  // (el Core por defecto usa 0.3 °C)
+  // ---------------------------------------------------------------------------------------------
+
+  @Test
+  void calcularComandos_noEnciendeUnaHabitacionApagadaConDeficitMenorALaHisteresis() {
+    DataSite config =
+        new DataSite(
+            sitio(3.7),
+            List.of(sala("a", 21.5, 1.2, 21.3, SwitchState.APAGADO, HACE_5_MIN))); // déficit 0.2
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta);
+  }
+
+  @Test
+  void calcularComandos_enciendeUnaHabitacionApagadaCuandoElDeficitSuperaLaHisteresis() {
+    DataSite config =
+        new DataSite(
+            sitio(3.7),
+            List.of(sala("a", 21.5, 1.2, 21.0, SwitchState.APAGADO, HACE_5_MIN))); // déficit 0.5
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  @Test
+  void calcularComandos_mantieneEncendidaUnaHabitacionDentroDeLaHisteresisHastaElObjetivo() {
+    DataSite config =
+        new DataSite(
+            sitio(3.7),
+            List.of(sala("a", 21.5, 1.2, 21.3, SwitchState.ENCENDIDO, HACE_6_HORAS))); // déficit 0.2
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta);
+  }
+
+  @Test
+  void calcularComandos_apagaAlLlegarAlObjetivoYNoVuelveAEncenderHastaBajarLaHisteresis() {
+    CoreAnswer alLlegar =
+        core.calcularComandos(
+            AHORA,
+            new DataSite(
+                sitio(3.7),
+                List.of(sala("a", 21.5, 1.2, 21.5, SwitchState.ENCENDIDO, HACE_6_HORAS))));
+    CoreAnswer apenasPorDebajo =
+        core.calcularComandos(
+            AHORA,
+            new DataSite(
+                sitio(3.7),
+                List.of(sala("a", 21.5, 1.2, 21.4, SwitchState.APAGADO, AHORA))));
+    CoreAnswer bajoLaHisteresis =
+        core.calcularComandos(
+            AHORA,
+            new DataSite(
+                sitio(3.7),
+                List.of(sala("a", 21.5, 1.2, 21.1, SwitchState.APAGADO, AHORA))));
+
+    assertComandosIguales(alLlegar, new CommandSwitch("sw-a", SwitchState.APAGADO));
+    assertComandosIguales(apenasPorDebajo);
+    assertComandosIguales(bajoLaHisteresis, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  /** Una habitación en la zona muerta no necesita calefacción, por mucho que lleve esperando. */
+  @Test
+  void calcularComandos_noPromueveALaHabitacionApagadaEnLaZonaMuertaAunqueLleveMuchoEsperando() {
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 2.0, 18.0, SwitchState.APAGADO, HACE_5_MIN),
+                sala("zona-muerta", 20.0, 2.0, 19.9, SwitchState.APAGADO, HACE_6_HORAS)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  @Test
+  void calcularComandos_conHisteresisCeroEnciendeConCualquierDeficit() {
+    ICore sinHisteresis =
+        CoreFactory.getCore(
+            Core.DEFAULT_THERMAL_INERTIA_BAND_C,
+            Core.DEFAULT_MAX_WAIT,
+            Core.DEFAULT_MIN_ON_TIME,
+            0.0);
+    DataSite config =
+        new DataSite(
+            sitio(3.7),
+            List.of(sala("a", 21.5, 1.2, 21.49, SwitchState.APAGADO, HACE_5_MIN)));
+
+    CoreAnswer respuesta = sinHisteresis.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
+  }
+
+  /**
+   * Una sola habitación que se enfría 0.02 °C/min y se calienta 0.05 °C/min encendida, durante 8
+   * h. Sin histéresis el switch cambia de estado en casi cada ciclo; con la histéresis por defecto
+   * lo hace una vez cada varios minutos.
+   */
+  @Test
+  void calcularComandos_laHisteresisReduceElVaivenDelSwitchEnUnaSimulacionDe8Horas() {
+    ICore sinHisteresis =
+        CoreFactory.getCore(
+            Core.DEFAULT_THERMAL_INERTIA_BAND_C,
+            Core.DEFAULT_MAX_WAIT,
+            Core.DEFAULT_MIN_ON_TIME,
+            0.0);
+
+    int conHisteresis = contarCambiosDeSwitchEnOchoHoras(core);
+    int sinHisteresisCambios = contarCambiosDeSwitchEnOchoHoras(sinHisteresis);
+
+    assertTrue(
+        sinHisteresisCambios > 150,
+        "Sin histéresis se espera vaivén, hubo " + sinHisteresisCambios + " cambios");
+    assertTrue(
+        conHisteresis <= 50, "Con histéresis se esperan pocos cambios, hubo " + conHisteresis);
+  }
+
+  private static int contarCambiosDeSwitchEnOchoHoras(ICore core) {
+    Site sitioSinPunta = new Site("casa", "Casa", 3.7, new Fee(null));
+    double temperatura = 20.0;
+    SwitchState estado = SwitchState.APAGADO;
+    ZonedDateTime ultimoCambio = AHORA;
+    int cambios = 0;
+    for (int minuto = 0; minuto < 8 * 60; minuto++) {
+      ZonedDateTime instante = AHORA.plusMinutes(minuto);
+      if (estado == SwitchState.APAGADO && temperatura >= 21.5) {
+        ultimoCambio = instante;
+      }
+      double lectura = Math.round(temperatura * 100) / 100.0;
+      CoreAnswer respuesta =
+          core.calcularComandos(
+              instante,
+              new DataSite(
+                  sitioSinPunta, List.of(sala("a", 21.5, 1.2, lectura, estado, ultimoCambio))));
+      for (var comando : respuesta.commands()) {
+        CommandSwitch cs = (CommandSwitch) comando;
+        if (cs.estado() != estado) {
+          estado = cs.estado();
+          ultimoCambio = instante;
+          cambios++;
+        }
+      }
+      temperatura += (estado == SwitchState.ENCENDIDO ? 0.05 : 0.0) - 0.02;
+    }
+    return cambios;
+  }
+
   private static Site sitio(double potenciaContratadaKW) {
     return new Site(
         "casa",

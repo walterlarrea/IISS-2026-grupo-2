@@ -12,7 +12,7 @@ import java.time.Duration;
 @Configuration
 public class CoreConfiguration {
 
-  @Value("${controlador.inercia-termica-c:0.5}")
+  @Value("${controlador.inercia-termica-c:0.1}")
   private double inerciaTermicaC;
 
   /** Minutes a room below its target may wait OFF before being served over any other room */
@@ -23,9 +23,16 @@ public class CoreConfiguration {
   @Value("${controlador.minimo-encendida-min:10}")
   private long minimoEncendidaMin;
 
+  /** Degrees below its target an OFF room must be before it is turned ON (avoids chattering) */
+  @Value("${controlador.histeresis-encendido-c:0.3}")
+  private double histeresisEncendidoC;
+
   @Bean
   public ICore core() {
     return CoreFactory.getCore(
-        inerciaTermicaC, Duration.ofMinutes(esperaMaximaMin), Duration.ofMinutes(minimoEncendidaMin));
+        inerciaTermicaC,
+        Duration.ofMinutes(esperaMaximaMin),
+        Duration.ofMinutes(minimoEncendidaMin),
+        histeresisEncendidoC);
   }
 }

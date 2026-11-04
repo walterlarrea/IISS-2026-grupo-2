@@ -17,4 +17,9 @@ public class CoreFactory {
   public static ICore getCore(double thermalInertiaBandC, Duration maxWait, Duration minOnTime) {
     return new Core(thermalInertiaBandC, maxWait, minOnTime);
   }
+
+  public static ICore getCore(
+      double thermalInertiaBandC, Duration maxWait, Duration minOnTime, double turnOnHysteresisC) {
+    return new Core(thermalInertiaBandC, maxWait, minOnTime, turnOnHysteresisC);
+  }
 }

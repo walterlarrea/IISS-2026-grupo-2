@@ -25,13 +25,15 @@ import java.util.Set;
 class Core implements ICore {
   private static final Logger logger = LoggerFactory.getLogger(Core.class);
 
-  public static final double DEFAULT_THERMAL_INERTIA_BAND_C = 0.5;
+  public static final double DEFAULT_THERMAL_INERTIA_BAND_C = 0.1;
   public static final Duration DEFAULT_MAX_WAIT = Duration.ofMinutes(60);
   public static final Duration DEFAULT_MIN_ON_TIME = Duration.ofMinutes(10);
+  public static final double DEFAULT_TURN_ON_HYSTERESIS_C = 0.3;
 
   private final double thermalInertiaBandC;
   private final Duration maxWait;
   private final Duration minOnTime;
+  private final double turnOnHysteresisC;
 
   /** Default constructor using the default thermal inertia band, max wait and min ON time. */
   public Core() {
@@ -56,9 +58,26 @@ class Core implements ICore {
    * @param minOnTime how long a room must stay ON before it can be preempted or yield its power.
    */
   public Core(double thermalInertiaBandC, Duration maxWait, Duration minOnTime) {
+    this(thermalInertiaBandC, maxWait, minOnTime, DEFAULT_TURN_ON_HYSTERESIS_C);
+  }
+
+  /**
+   * Fully parameterized constructor.
+   *
+   * @param thermalInertiaBandC tolerance band in °C for early cutoff.
+   * @param maxWait how long a room below its expected temperature may wait with its switch OFF
+   *     before it is promoted over any other room, even preempting rooms that are already ON.
+   * @param minOnTime how long a room must stay ON before it can be preempted or yield its power.
+   * @param turnOnHysteresisC how many °C below its expected temperature a room whose switch is OFF
+   *     must be before it is considered for turning ON. Avoids switching ON and OFF around the
+   *     expected temperature. Rooms already ON keep heating until they reach it; 0 disables it.
+   */
+  public Core(
+      double thermalInertiaBandC, Duration maxWait, Duration minOnTime, double turnOnHysteresisC) {
     this.thermalInertiaBandC = thermalInertiaBandC;
     this.maxWait = maxWait;
     this.minOnTime = minOnTime;
+    this.turnOnHysteresisC = turnOnHysteresisC;
   }
 
   /**
@@ -83,7 +102,7 @@ class Core implements ICore {
       return turnOffAllForRushHour(siteData);
     }
 
-    CycleState state = new CycleState(siteData);
+    CycleState state = new CycleState(siteData, turnOnHysteresisC);
     turnOffSatisfiedRooms(state);
     serveStarvedRooms(state, dateTime);
     yieldPowerByThermalInertia(state, dateTime);
@@ -328,7 +347,10 @@ class Core implements ICore {
     final List<Room> rooms;
     final List<Room> roomsAtOrOverExpected;
 
-    /** Rooms below their expected temperature, ordered by temperature deficit DESC. */
+    /**
+     * Rooms that want heating, ordered by temperature deficit DESC: below their expected
+     * temperature and either already ON or at least the turn-on hysteresis below it.
+     */
     final List<Room> roomsBelowExpected;
 
     final List<Command> commands = new ArrayList<>();
@@ -337,7 +359,7 @@ class Core implements ICore {
     final double contractedPower;
     double utilizedPower;
 
-    CycleState(DataSite siteData) {
+    CycleState(DataSite siteData, double turnOnHysteresisC) {
       rooms = siteData.habitaciones();
       roomsAtOrOverExpected =
           rooms.stream()
@@ -346,6 +368,10 @@ class Core implements ICore {
       roomsBelowExpected =
           rooms.stream()
               .filter(room -> room.currentTemperatureC() < room.expectedTemperature())
+              .filter(
+                  room ->
+                      room.currentSwitchState() == SwitchState.ENCENDIDO
+                          || deficit(room) >= turnOnHysteresisC)
               .sorted(Comparator.comparingDouble(Core::deficit).reversed())
               .toList();
       utilizedPower =
