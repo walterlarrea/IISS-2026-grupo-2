@@ -487,7 +487,7 @@ class CoreTest {
 
     List<Room> habitaciones =
         List.of(
-            // Room 1: ON, close to target (20.8 / 21.0 -> deficit 0.2, inside inertia band)
+            // Room 1: ON, close to target (20.95 / 21.0 -> deficit 0.05, inside inertia band)
             new Room(
                 "r1",
                 "Habitacion 1",
@@ -497,9 +497,9 @@ class CoreTest {
                 "t1",
                 "sw1",
                 "http://switches/sw1",
-                20.8,
+                20.95,
                 SwitchState.ENCENDIDO),
-            // Room 2: ON, close to target (20.7 / 21.0 -> deficit 0.3, inside inertia band)
+            // Room 2: ON, close to target (20.92 / 21.0 -> deficit 0.08, inside inertia band)
             new Room(
                 "r2",
                 "Habitacion 2",
@@ -509,7 +509,7 @@ class CoreTest {
                 "t2",
                 "sw2",
                 "http://switches/sw2",
-                20.7,
+                20.92,
                 SwitchState.ENCENDIDO),
             // Room 3: OFF, deficit 1.5
             new Room(
@@ -754,7 +754,7 @@ class CoreTest {
         new CommandSwitch("sw5", SwitchState.ENCENDIDO),
         new CommandSwitch("sw1", SwitchState.ENCENDIDO));
 
-    // --- CICLO 2: Minuto 45 (r5 y r1 calentaron; r1 llega a banda de inercia 20.6 °C; r5 a 19.5
+    // --- CICLO 2: Minuto 45 (r5 y r1 calentaron; r1 llega a banda de inercia 20.95 °C; r5 a 19.5
     // °C) ---
     List<Room> habsCiclo2 =
         List.of(
@@ -767,8 +767,8 @@ class CoreTest {
                 "t1",
                 "sw1",
                 "url/1",
-                20.6,
-                SwitchState.ENCENDIDO), // deficit 0.4 (en inercia)
+                20.95,
+                SwitchState.ENCENDIDO), // deficit 0.05 (en inercia)
             new Room(
                 "r2",
                 "H2",
@@ -815,14 +815,14 @@ class CoreTest {
                 SwitchState.ENCENDIDO) // deficit 1.5
             );
     CoreAnswer ans2 = core.calcularComandos(t0.plusMinutes(45), new DataSite(site, habsCiclo2));
-    // r1 cede potencia (apaga) porque r2 tiene deficit 4.0 > 0.4 y no cabe. r2 se enciende. r5
+    // r1 cede potencia (apaga) porque r2 tiene deficit 4.0 > 0.05 y no cabe. r2 se enciende. r5
     // sigue encendido.
     assertComandosIguales(
         ans2,
         new CommandSwitch("sw1", SwitchState.APAGADO),
         new CommandSwitch("sw2", SwitchState.ENCENDIDO));
 
-    // --- CICLO 3: Minuto 90 (r5 llega a banda de inercia 20.7 °C; r2 llega a 19.8 °C) ---
+    // --- CICLO 3: Minuto 90 (r5 llega a banda de inercia 20.95 °C; r2 llega a 19.8 °C) ---
     List<Room> habsCiclo3 =
         List.of(
             new Room(
@@ -878,8 +878,8 @@ class CoreTest {
                 "t5",
                 "sw5",
                 "url/5",
-                20.7,
-                SwitchState.ENCENDIDO) // deficit 0.3 (en inercia)
+                20.95,
+                SwitchState.ENCENDIDO) // deficit 0.05 (en inercia)
             );
     CoreAnswer ans3 = core.calcularComandos(t0.plusMinutes(90), new DataSite(site, habsCiclo3));
     // r5 cede potencia (apaga) porque r4 tiene deficit 2.5 y r3 tiene deficit 2.0. r4 enciende.
