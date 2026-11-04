@@ -37,6 +37,10 @@ public class SiteStateService {
     this.tempReadings = tempReadings;
   }
 
+  public synchronized void loadSiteState(DataSite newSiteState) {
+    this.loadSiteState(newSiteState, false);
+  }
+
   /**
    * Initializes or replaces the site config state.
    *
@@ -46,13 +50,23 @@ public class SiteStateService {
    * #getSiteState} with the latest temperature reading from DB and switch status from its API.
    *
    * @param newSiteState the complete new config for the site
+   * @param fullReplace if true, replaces the entire site state, discarding any previous runtime
+   *     state; if false, only updates the config, keeping runtime state for rooms with the same
+   *     hardware
    */
-  public synchronized void loadSiteState(DataSite newSiteState) {
+  public synchronized void loadSiteState(DataSite newSiteState, boolean fullReplace) {
     if (newSiteState == null
         || newSiteState.site() == null
         || newSiteState.habitaciones() == null) {
       throw new IllegalArgumentException("The Site state cannot be empty nor null");
     }
+    if (fullReplace) {
+      this.dataSite = new DataSite(newSiteState.site(), List.copyOf(newSiteState.habitaciones()));
+      pendingHydration.clear();
+      newSiteState.habitaciones().forEach(room -> pendingHydration.add(room.id()));
+      return;
+    }
+
     Map<String, Room> currentRooms = new HashMap<>();
     if (dataSite != null) {
       dataSite.habitaciones().forEach(room -> currentRooms.put(room.id(), room));

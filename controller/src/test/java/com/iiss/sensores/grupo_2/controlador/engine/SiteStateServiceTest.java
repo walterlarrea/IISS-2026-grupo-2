@@ -255,6 +255,23 @@ class SiteStateServiceTest {
   }
 
   @Test
+  void reemplazoCompletoOlvidaElEstadoEnEjecucionYVuelveAHidratarTodas() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    Room hab1 = habitacion("hab-1", 21.0, "switch-1", "termo-1");
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(hab1)));
+    siteStateService.getSiteState(inicio);
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO, inicio);
+    clearInvocations(switchClient, tempReadingsRepository);
+
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(hab1)), true);
+    Room room = siteStateService.getSiteState().habitaciones().get(0);
+
+    verify(switchClient).consultarEstado(hab1);
+    verify(tempReadingsRepository).getLastTemperatureMeasurements(List.of("termo-1"));
+    assertNull(room.lastSwitchChange());
+  }
+
+  @Test
   void anadirHabitacionSoloConsultaElSwitchDeLaNueva() {
     siteStateService.loadSiteState(
         new DataSite(SITE, List.of(habitacion("hab-1", 21.0, "switch-1", "termo-1"))));

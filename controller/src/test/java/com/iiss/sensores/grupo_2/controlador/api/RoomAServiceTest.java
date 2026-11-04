@@ -40,7 +40,7 @@ class RoomAServiceTest {
     assertEquals(nueva, service.crear(nueva));
 
     ArgumentCaptor<Inventory> captor = ArgumentCaptor.forClass(Inventory.class);
-    verify(inventoryService).reemplazar(captor.capture());
+    verify(inventoryService).replace(captor.capture());
     assertEquals(List.of(habitacion("sala"), nueva), captor.getValue().habitaciones());
   }
 
@@ -52,7 +52,7 @@ class RoomAServiceTest {
 
     assertEquals(existente, service.crear(habitacion("sala")));
 
-    verify(inventoryService, never()).reemplazar(any());
+    verify(inventoryService, never()).replace(any());
   }
 
   @Test
@@ -80,7 +80,7 @@ class RoomAServiceTest {
     assertTrue(service.eliminar("sala"));
 
     ArgumentCaptor<Inventory> captor = ArgumentCaptor.forClass(Inventory.class);
-    verify(inventoryService).reemplazar(captor.capture());
+    verify(inventoryService).replace(captor.capture());
     assertEquals(List.of(habitacion("dormitorio")), captor.getValue().habitaciones());
   }
 
@@ -91,7 +91,7 @@ class RoomAServiceTest {
 
     assertFalse(service.eliminar("inexistente"));
 
-    verify(inventoryService, never()).reemplazar(any());
+    verify(inventoryService, never()).replace(any());
   }
 
   @Test
@@ -117,7 +117,7 @@ class RoomAServiceTest {
     assertEquals(modificada.temperaturaEsperada(), resultado.get().temperaturaEsperada());
     assertEquals(modificada.idTermostato(), resultado.get().idTermostato());
     ArgumentCaptor<Inventory> captor = ArgumentCaptor.forClass(Inventory.class);
-    verify(inventoryService).reemplazar(captor.capture());
+    verify(inventoryService).replace(captor.capture());
     assertEquals(List.of(resultado.get()), captor.getValue().habitaciones());
   }
 
@@ -128,7 +128,7 @@ class RoomAServiceTest {
 
     assertTrue(service.modificar("inexistente", habitacion("inexistente")).isEmpty());
 
-    verify(inventoryService, never()).reemplazar(any());
+    verify(inventoryService, never()).replace(any());
   }
 
   @Test
@@ -143,7 +143,7 @@ class RoomAServiceTest {
     assertEquals(23.0, resultado.temperaturaEsperada());
     assertEquals(original.idTermostato(), resultado.idTermostato());
     assertEquals(original.urlSwitch(), resultado.urlSwitch());
-    verify(inventoryService).reemplazar(any());
+    verify(inventoryService).replace(any());
   }
 
   @Test
@@ -153,7 +153,7 @@ class RoomAServiceTest {
 
     assertTrue(service.modificarParcialmente("inexistente", Map.of("nombre", "Estar")).isEmpty());
 
-    verify(inventoryService, never()).reemplazar(any());
+    verify(inventoryService, never()).replace(any());
   }
 
   @Test

@@ -43,7 +43,7 @@ class InventoryServiceTest {
   void guardaInventarioCompletoComoUnSoloDocumento() {
     Inventory inventory = inventario(List.of(habitacion("room1", "termo1", "switch1")));
 
-    inventoryService.reemplazar(inventory);
+    inventoryService.replace(inventory);
 
     verify(repository).save(new InventoryDocument("activo", inventory));
     verify(eventPublisher).publishEvent(new UpdatedInventoryEvent(inventory));
@@ -58,7 +58,7 @@ class InventoryServiceTest {
                 habitacion("room2", "termo2", "switch1")));
 
     InvalidInventoryException exception =
-        assertThrows(InvalidInventoryException.class, () -> inventoryService.reemplazar(inventory));
+        assertThrows(InvalidInventoryException.class, () -> inventoryService.replace(inventory));
 
     assertEquals(List.of("idSwitch duplicado: 'switch1'"), exception.getErrores());
     verify(repository, never()).save(org.mockito.ArgumentMatchers.any());
