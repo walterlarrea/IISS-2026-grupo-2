@@ -13,6 +13,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
@@ -103,6 +104,104 @@ class SwitchClientTest {
     assertEquals(SwitchState.ENCENDIDO, client.consultarEstado(room).estado());
     assertEquals(SwitchState.APAGADO, client.consultarEstado(room).estado());
 
+    server.verify();
+  }
+
+  private static Room room1() {
+    return new Room(
+        "room1",
+        "Room 1",
+        22.0,
+        1.5,
+        "thermostat-room1",
+        "topic-room1",
+        "sw-sim-room1",
+        "http://iiss-simulator:9090",
+        21.0,
+        SwitchState.APAGADO);
+  }
+
+  @Test
+  void whenSwitchStateIsUnknownSendsOffCommand() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "simulator-key");
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"DESCONOCIDO","aplicadoEn":"2026-10-12T00:00:00Z"}
+                        """,
+                MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andExpect(method(POST))
+        .andExpect(header("X-API-Key", "simulator-key"))
+        .andExpect(
+            content()
+                .json(
+                    """
+                        {"accion":"OFF"}
+                        """))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"OFF","cambio":true,"aplicadoEn":"2026-10-12T00:00:01Z"}
+                        """,
+                MediaType.APPLICATION_JSON));
+
+    assertEquals(SwitchState.APAGADO, client.consultarEstado(room1()).estado());
+
+    server.verify();
+  }
+
+  @Test
+  void whenOffCommandForUnknownSwitchFailsStillReportsApagado() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"DESCONOCIDO","aplicadoEn":"2026-10-12T00:00:00Z"}
+                        """,
+                MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andExpect(method(POST))
+        .andRespond(withServerError());
+
+    assertEquals(SwitchState.APAGADO, client.consultarEstado(room1()).estado());
+
+    server.verify();
+  }
+
+  @Test
+  void knownSwitchStatesDoNotSendCommands() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1"))
+        .andExpect(method(GET))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"OFF","aplicadoEn":"2026-10-12T00:00:00Z"}
+                        """,
+                MediaType.APPLICATION_JSON));
+
+    client.consultarEstado(room1());
+
+    // verify() fails if any unexpected request (e.g. a POST command) was made
     server.verify();
   }
 }

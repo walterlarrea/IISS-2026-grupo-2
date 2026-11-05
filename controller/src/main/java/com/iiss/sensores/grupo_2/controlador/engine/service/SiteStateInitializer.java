@@ -30,7 +30,7 @@ public class SiteStateInitializer {
         .obtenerActivo()
         .ifPresentOrElse(
             inventario -> {
-              siteStateService.loadSiteState(inventoryMapper.convertir(inventario));
+              siteStateService.loadSiteState(inventoryMapper.convertir(inventario), true);
               logger.info("Estado del site inicializado");
             },
             () ->

@@ -21,6 +21,7 @@ public class IntegrationService {
   private final String simulatorApiKey;
   private final String controllerLabel;
   private final String controllerBaseUrl;
+  private final String controllerPublicUrl;
   private final String controllerApiKey;
   private final String fallbackBroker;
   private final String mqttClientId;
@@ -36,6 +37,7 @@ public class IntegrationService {
       @Value("${SIMULATOR_API_KEY:}") String simulatorApiKey,
       @Value("${CONTROLADOR_ETIQUETA:controlador}") String controllerLabel,
       @Value("${CONTROLADOR_API_URL:http://localhost:8080}") String controllerBaseUrl,
+      @Value("${CONTROLADOR_PUBLIC_API_URL:http://localhost:8080}") String controllerPublicUrl,
       @Value("${CONTROLADOR_API_KEY:development-key}") String controllerApiKey,
       @Value("${MQTT_BROKER_URL:tcp://localhost:1883}") String fallbackBroker,
       @Value("${MQTT_CLIENT_ID:ControladorSubscriber}") String mqttClientId) {
@@ -44,6 +46,7 @@ public class IntegrationService {
     this.simulatorApiKey = simulatorApiKey;
     this.controllerLabel = controllerLabel;
     this.controllerBaseUrl = controllerBaseUrl;
+    this.controllerPublicUrl = controllerPublicUrl;
     this.controllerApiKey = controllerApiKey;
     this.fallbackBroker = fallbackBroker;
     this.mqttClientId = mqttClientId;
@@ -101,7 +104,7 @@ public class IntegrationService {
       RegistroControlador registro = simulatorClient
           .post()
           .uri("/controladores")
-          .body(new AltaControlador(controllerLabel, controllerBaseUrl, controllerApiKey))
+          .body(new AltaControlador(controllerLabel, controllerPublicUrl, controllerApiKey))
           .retrieve()
           .body(RegistroControlador.class);
       if (registro == null
@@ -121,7 +124,7 @@ public class IntegrationService {
           broker);
     } catch (RuntimeException exception) {
       logger.warn(
-          "No se pudo inicializar la integración con el simulador; se reintentará", exception);
+          "No se pudo inicializar la integración con el simulador; se reintentará");
     }
   }
 

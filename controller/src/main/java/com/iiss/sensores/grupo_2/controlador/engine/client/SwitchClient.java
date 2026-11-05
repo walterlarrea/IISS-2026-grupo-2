@@ -1,6 +1,8 @@
 package com.iiss.sensores.grupo_2.controlador.engine.client;
 
 import com.iiss.sensores.grupo_2.modelos.input.Room;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.time.Instant;
 /** Communicates with Api Switch, sends commands and retrieves switch state */
 @Service
 public class SwitchClient {
+  private static final Logger logger = LoggerFactory.getLogger(SwitchClient.class);
   private final RestClient restClient;
   private final String apiKey;
 
@@ -47,14 +50,33 @@ public class SwitchClient {
 
     SwitchState switchState =
         switch (response.estado()) {
-          case EstadoRespuestaSwitch.ON -> SwitchState.ENCENDIDO;
-          case EstadoRespuestaSwitch.OFF, EstadoRespuestaSwitch.DESCONOCIDO -> SwitchState.APAGADO;
-          default ->
-              throw new IllegalStateException(
-                  "La API de switches devolvió un estado no soportado: " + response.estado());
+          case ON -> SwitchState.ENCENDIDO;
+          case OFF -> SwitchState.APAGADO;
+          case DESCONOCIDO -> {
+            apagarSwitchDesconocido(room);
+            // yield devuelve el valor del bloque como resultado de la expresión switch
+            yield SwitchState.APAGADO;
+          }
         };
 
     return new SwitchStateResponse(response.idSwitch(), switchState, response.aplicadoEn());
+  }
+
+  /**
+   * Un switch en estado DESCONOCIDO se lleva a un estado conocido enviándole un comando OFF. Si el
+   * comando falla se registra el error y se asume APAGADO (el próximo ciclo volverá a decidir).
+   */
+  private void apagarSwitchDesconocido(Room room) {
+    logger.warn(
+        "Switch {} reportó estado DESCONOCIDO, se envía comando de apagado", room.idSwitch());
+    try {
+      apagar(room);
+    } catch (Exception e) {
+      logger.error(
+          "No se pudo apagar el switch {} en estado DESCONOCIDO, url {}",
+          room.idSwitch(),
+          room.urlSwitch());
+    }
   }
 
   private void comandar(Room room, EstadoAccionSwitch accion) throws URISyntaxException {

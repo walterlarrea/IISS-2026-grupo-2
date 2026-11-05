@@ -36,7 +36,7 @@ public class SiteController {
     inventoryMapper.convertir(inventory);
     // TODO: validation error -> response handling?
 
-    Inventory savedInventory = inventoryService.reemplazar(inventory);
+    Inventory savedInventory = inventoryService.replace(inventory, true);
 
     return ResponseEntity.ok(
         Map.of("site", savedInventory.sitio().id(), "rooms", savedInventory.habitaciones().size()));
