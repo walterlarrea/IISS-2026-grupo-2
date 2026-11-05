@@ -206,8 +206,8 @@ public class SiteStateService {
         logger.warn(
             "Could not get state of switch {} (room {}), will retry on next cycle",
             room.idSwitch(),
-            room.id(),
-            e);
+            room.id());
+        logger.debug("Error: ", e);
       }
     }
 

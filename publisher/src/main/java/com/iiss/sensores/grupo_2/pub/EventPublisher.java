@@ -24,7 +24,8 @@ public class EventPublisher {
 
       this.client.publish(this.topic, message);
     } catch (MqttException e) {
-      logger.error("Error publishing to topic " + this.topic + ": " + e.getMessage());
+      logger.error("Error publishing to topic " + this.topic);
+      logger.debug("Error: ", e);
     }
   }
 }

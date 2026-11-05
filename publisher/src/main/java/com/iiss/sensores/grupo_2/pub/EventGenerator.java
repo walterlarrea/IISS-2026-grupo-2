@@ -52,7 +52,7 @@ public class EventGenerator {
       }
     } catch (Exception e) {
       logger.error("Error occur while running publishers");
-      logger.error(String.valueOf(e));
+      logger.debug(String.valueOf(e));
     }
   }
 
@@ -91,11 +91,11 @@ public class EventGenerator {
         TimeUnit.MILLISECONDS.sleep(delay);
       } catch (InterruptedException e) {
         logger.error("InterruptedException");
-        logger.error(String.valueOf(e));
+        logger.debug(String.valueOf(e));
         break;
       } catch (Exception e) {
         logger.error("Exception");
-        logger.error(String.valueOf(e));
+        logger.debug(String.valueOf(e));
         throw new RuntimeException(e);
       }
     }
