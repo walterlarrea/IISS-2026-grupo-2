@@ -53,7 +53,8 @@ public class MqttSubscriber {
           new MqttCallbackExtended() {
             @Override
             public void connectionLost(Throwable cause) {
-              logger.error("Connection to MQTT broker was lost", cause);
+              logger.warn("Connection to MQTT broker was lost");
+              logger.debug("Error: ", cause);
               synchronized (MqttSubscriber.this) {
                 subscribedTopics.clear();
               }
@@ -69,8 +70,8 @@ public class MqttSubscriber {
                 try {
                   applySubscriptions();
                 } catch (RuntimeException exception) {
-                  logger.error(
-                      "No se pudieron restaurar las suscripciones MQTT tras conectar", exception);
+                  logger.error("No se pudieron restaurar las suscripciones MQTT tras conectar");
+                  logger.debug("Error: ", exception);
                 }
               }
             }
@@ -105,7 +106,8 @@ public class MqttSubscriber {
                   tempMeasurements.saveTemperature(tempMessage);
                   logger.info("Medición guardada en MongoDB");
                 } catch (Exception e) {
-                  logger.error("Error al guardar la medición en MongoDB", e);
+                  logger.error("Error al guardar la medición en MongoDB");
+                  logger.debug("Error: ", e);
                 }
 
                 try {
@@ -114,12 +116,13 @@ public class MqttSubscriber {
                   temperatureControlEngine.processTemperature(tempMessage);
 
                 } catch (Exception e) {
-                  logger.error(
-                      "Error al procesar la temperatura del termostato {}", idThermostat, e);
+                  logger.error("Error al procesar la temperatura del termostato {}", idThermostat);
+                  logger.debug("Error: ", e);
                 }
 
               } catch (Exception e) {
-                logger.error("Error al interpretar el mensaje MQTT: {}", payload, e);
+                logger.error("Error al interpretar el mensaje MQTT: {}", payload);
+                logger.debug("Error: ", e);
               }
             }
 
@@ -205,7 +208,8 @@ public class MqttSubscriber {
       }
       client.close();
     } catch (MqttException exception) {
-      logger.warn("Error al cerrar la conexión MQTT anterior", exception);
+      logger.warn("Error al cerrar la conexión MQTT");
+      logger.debug("Error: ", exception);
     } finally {
       client = null;
       subscribedTopics.clear();

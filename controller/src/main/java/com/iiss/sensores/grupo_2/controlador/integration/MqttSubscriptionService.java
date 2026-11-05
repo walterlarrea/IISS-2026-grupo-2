@@ -41,8 +41,8 @@ public class MqttSubscriptionService {
     try {
       mqttSubscriber.updateSubscriptions(obtenerTopicsDeseados());
     } catch (RuntimeException exception) {
-      logger.error(
-          "No se pudieron sincronizar los topics MQTT del Inventory actualizado", exception);
+      logger.error("No se pudieron sincronizar los topics MQTT del Inventory actualizado");
+      logger.debug("Error: ", exception);
     }
   }
 

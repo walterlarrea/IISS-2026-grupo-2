@@ -152,7 +152,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
         }
       }
     } catch (Exception e) {
-      logger.error("Error in the automatic temperature control cycle", e);
+      logger.error("Error in the automatic temperature control cycle");
+      logger.debug("Error: ", e);
     }
   }
 
@@ -186,8 +187,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     } catch (Exception e) {
       logger.error(
           "Error processing temperature change for thermostat ID {}",
-          temperatureMsg.idThermostat(),
-          e);
+          temperatureMsg.idThermostat());
+      logger.debug("Error: ", e);
     }
   }
 }

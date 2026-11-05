@@ -81,7 +81,8 @@ public class IntegrationService {
             "Integración con simulador deshabilitada; usando broker y topic configurados localmente");
         initialized.set(true);
       } catch (RuntimeException exception) {
-        logger.error("No se pudo iniciar la conexión MQTT local", exception);
+        logger.warn("No se pudo iniciar la conexión MQTT local");
+        logger.debug("Error: ", exception);
       }
       return;
     }
@@ -101,12 +102,13 @@ public class IntegrationService {
       return;
     }
     try {
-      RegistroControlador registro = simulatorClient
-          .post()
-          .uri("/controladores")
-          .body(new AltaControlador(controllerLabel, controllerPublicUrl, controllerApiKey))
-          .retrieve()
-          .body(RegistroControlador.class);
+      RegistroControlador registro =
+          simulatorClient
+              .post()
+              .uri("/controladores")
+              .body(new AltaControlador(controllerLabel, controllerPublicUrl, controllerApiKey))
+              .retrieve()
+              .body(RegistroControlador.class);
       if (registro == null
           || registro.mqtt() == null
           || registro.mqtt().host() == null
@@ -123,18 +125,14 @@ public class IntegrationService {
           controllerLabel,
           broker);
     } catch (RuntimeException exception) {
-      logger.warn(
-          "No se pudo inicializar la integración con el simulador; se reintentará");
+      logger.warn("No se pudo inicializar la integración con el simulador; se reintentará");
     }
   }
 
-  private record AltaControlador(String etiqueta, String baseUrl, String apiKey) {
-  }
+  private record AltaControlador(String etiqueta, String baseUrl, String apiKey) {}
 
   private record RegistroControlador(
-      String id, String etiqueta, String baseUrl, String registradoEn, Mqtt mqtt) {
-  }
+      String id, String etiqueta, String baseUrl, String registradoEn, Mqtt mqtt) {}
 
-  private record Mqtt(String host, int puerto) {
-  }
+  private record Mqtt(String host, int puerto) {}
 }
