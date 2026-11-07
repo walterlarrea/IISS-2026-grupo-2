@@ -28,7 +28,7 @@ public class SwitchClient {
   public SwitchClient(
       @Qualifier("switchRestClient") RestClient restClient,
       @Value("${SWITCHES_API_KEY:}") String apiKey) {
-    // ejecuta las órdenes contra el servicio de switches que esté configurado.
+    /** Ejecuta las órdenes contra el servicio de switches que esté configurado. */
     this.restClient = restClient;
     this.apiKey = apiKey;
   }
@@ -66,7 +66,7 @@ public class SwitchClient {
           case OFF -> SwitchState.APAGADO;
           case DESCONOCIDO -> {
             apagarSwitchDesconocido(room);
-            // yield devuelve el valor del bloque como resultado de la expresión switch
+            /** yield devuelve el valor del bloque como resultado de la expresión switch */
             yield SwitchState.APAGADO;
           }
         };
@@ -102,7 +102,7 @@ public class SwitchClient {
     try {
       SwitchResponse response = request.retrieve().body(SwitchResponse.class);
 
-      // Un 200 cuyo estado no coincide con la acción pedida (p. ej. un OFF perdido) es un fallo
+      /** Un 200 cuyo estado no coincide con la acción pedida (p. ej. un OFF perdido) es un fallo */
       EstadoRespuestaSwitch esperado =
           accion == EstadoAccionSwitch.ON ? EstadoRespuestaSwitch.ON : EstadoRespuestaSwitch.OFF;
       if (response != null && response.estado() != null && response.estado() != esperado) {
@@ -174,7 +174,7 @@ public class SwitchClient {
   }
 
   private String componerUrlPostSwitch(Room room) {
-    // construye la URL completa del switch a partir de la información de la habitación
+    /** Construye la URL completa del switch a partir de la información de la habitación */
     return room.urlSwitch() + "/switches/" + room.idSwitch() + "/comandos";
   }
 
