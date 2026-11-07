@@ -15,8 +15,10 @@ import com.iiss.sensores.grupo_2.controlador.shared.TemperatureEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -32,6 +34,12 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   private final Clock baseClock;
   private volatile boolean active = false;
   private CustomClock clock;
+
+  /** Period of the scheduled control cycle, see {@link ReevaluationControlService} */
+  @Value("${controlador.reevaluacion-ms:5000}")
+  private long reevaluacionMs = 5000;
+
+  private static final long CYCLE_MARGIN_MS = 1000;
 
   @Autowired
   public TemperatureControlEngine(
@@ -94,6 +102,22 @@ public class TemperatureControlEngine implements TemperatureEngineService {
         this.clock.getStartedAt());
   }
 
+  /**
+   * If the rush hour starts before the next cycle, the Core is asked as if it had already started:
+   * a switch turned ON now would stay ON into the rush hour until that next cycle. The window is
+   * the cycle period (plus a margin for the cycle's own run time) in simulated time.
+   */
+  private ZonedDateTime timeForCore(ZonedDateTime now, DataSite siteState) {
+    if (siteState.site() == null
+        || siteState.site().fee() == null
+        || siteState.site().fee().isRushHour(now)) {
+      return now;
+    }
+    ZonedDateTime nextCycle =
+        now.plus(Duration.ofMillis((reevaluacionMs + CYCLE_MARGIN_MS) * clock.getTimeFactor()));
+    return siteState.site().fee().isRushHour(nextCycle) ? nextCycle : now;
+  }
+
   /** Request decisions from Core and executes it's commands */
   public synchronized void execute() {
     if (!active) {
@@ -108,7 +132,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
 
       turnOffUncontrollableSwitches(simulatedDateTime);
 
-      CoreAnswer coreResponse = core.calcularComandos(simulatedDateTime, siteState);
+      CoreAnswer coreResponse =
+          core.calcularComandos(timeForCore(simulatedDateTime, siteState), siteState);
 
       if (coreResponse == null || coreResponse.commands() == null) {
         logger.warn("Core response is null");

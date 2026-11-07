@@ -166,6 +166,45 @@ class TemperatureControlEngineTest {
   }
 
   @Test
+  @DisplayName("Does not turn ON a switch when the rush hour starts before the next cycle")
+  void noEnciendeSiLaPuntaEmpiezaAntesDelProximoCiclo() throws Exception {
+    // 16:57 UTC-3 = 19:57 UTC; with timeFactor=60 the cycle (5 s + margin) spans ~6 simulated min
+    Instant startSimulated = Instant.parse("2026-10-07T19:57:00Z");
+    MutableClock mutableClock = new MutableClock(Instant.parse("2026-10-07T10:00:00Z"));
+
+    Room room =
+        new Room(
+            "hab-1",
+            "Living",
+            22.0,
+            1.5,
+            "termo-1",
+            "termo-1/living/temperatura",
+            "switch-1",
+            "http://localhost/switches/1",
+            18.0, // cold: outside the rush hour it would be turned ON
+            SwitchState.APAGADO);
+    Site site =
+        new Site("site-1", "Casa", 5.0, new Fee(new RushHour("17:00", "23:00", RushDays.HABILES)));
+
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
+        .thenReturn(List.of(new TemperatureMessage("0", "termo-1", 18.0, 18.0, startSimulated)));
+    when(switchClient.consultarEstado(any()))
+        .thenReturn(new SwitchStateResponse("switch-1", SwitchState.APAGADO, null));
+    SiteStateService siteStateService = new SiteStateService(switchClient, tempReadingsRepository);
+    siteStateService.loadSiteState(new DataSite(site, List.of(room)));
+
+    controller =
+        new TemperatureControlEngine(
+            switchClient, CoreFactory.getCore(), siteStateService, mutableClock);
+    controller.start(startSimulated, 60);
+
+    controller.execute();
+
+    verify(switchClient, never()).encender(any());
+  }
+
+  @Test
   @DisplayName(
       "With timeFactor=20, quickly turns OFF switches of rooms that are still below the expected temperature because rush hour has started")
   void apagaSwitchCuandoEntraEnHoraPuntaConFactorVeinte() throws Exception {
