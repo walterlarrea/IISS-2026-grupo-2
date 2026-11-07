@@ -35,6 +35,19 @@ class MqttSubscriptionServiceTest {
   }
 
   @Test
+  void sinHabitacionesNoSeSuscribeNiSiquieraAlTopicDeRespaldo() {
+    InventoryService inventoryService = mock(InventoryService.class);
+    MqttSubscriber mqttSubscriber = mock(MqttSubscriber.class);
+    when(inventoryService.obtenerActivo()).thenReturn(Optional.empty());
+    MqttSubscriptionService service =
+        new MqttSubscriptionService("#", inventoryService, mqttSubscriber);
+
+    service.conectar("tcp://broker:1883", "subscriber");
+
+    verify(mqttSubscriber).connect("tcp://broker:1883", "subscriber", Set.of());
+  }
+
+  @Test
   void actualizaTopicsAlRecibirUnInventarioActualizado() {
     InventoryService inventoryService = mock(InventoryService.class);
     MqttSubscriber mqttSubscriber = mock(MqttSubscriber.class);

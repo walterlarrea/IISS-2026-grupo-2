@@ -8,10 +8,14 @@ import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +35,21 @@ public class SiteStateService {
    * yet. Only these rooms are queried against the DB and the switches API.
    */
   private final Set<String> pendingHydration = new LinkedHashSet<>();
+
+  /** Minutes without readings after which a thermostat is considered silent (stale) */
+  @Value("${controlador.lectura-max-antiguedad-min:15}")
+  private long lecturaMaxAntiguedadMin = 15;
+
+  /** Arrival time of the latest reading of each thermostat, by thermostat ID */
+  private final Map<String, Instant> lastReadingAt = new HashMap<>();
+
+  /** Rooms removed from the config (or whose switch changed) while their switch was ON */
+  private final List<Room> orphanRooms = new ArrayList<>();
+
+  /** An orphan whose switch can't be turned OFF within this time is given up (one final error) */
+  private static final Duration ORPHAN_MAX_AGE = Duration.ofHours(1);
+
+  private final Map<String, Instant> orphanSince = new HashMap<>();
 
   public SiteStateService(SwitchClient switchClient, TemperatureReadingRepository tempReadings) {
     this.switchClient = switchClient;
@@ -60,7 +79,11 @@ public class SiteStateService {
         || newSiteState.habitaciones() == null) {
       throw new IllegalArgumentException("The Site state cannot be empty nor null");
     }
+    // A new config (e.g. a fixed switch URL) deserves an immediate retry, not waiting for a backoff
+    switchClient.resetBackoff();
     if (fullReplace) {
+      trackOrphanRooms(newSiteState.habitaciones());
+      lastReadingAt.clear();
       this.dataSite = new DataSite(newSiteState.site(), List.copyOf(newSiteState.habitaciones()));
       pendingHydration.clear();
       newSiteState.habitaciones().forEach(room -> pendingHydration.add(room.id()));
@@ -87,9 +110,84 @@ public class SiteStateService {
       }
     }
 
+    trackOrphanRooms(mergedRooms);
     this.dataSite = new DataSite(newSiteState.site(), List.copyOf(mergedRooms));
     pendingHydration.clear();
     pendingHydration.addAll(newPending);
+  }
+
+  private static String switchKey(Room room) {
+    return room.idSwitch() + "|" + room.urlSwitch();
+  }
+
+  /**
+   * Remembers the rooms of the current state whose switch is ON and no longer belongs to any room
+   * of {@code newRooms}, so the engine can turn it OFF instead of leaving it heating unattended.
+   */
+  private void trackOrphanRooms(List<Room> newRooms) {
+    if (dataSite == null) {
+      return;
+    }
+    Set<String> keptSwitches = new HashSet<>();
+    newRooms.forEach(room -> keptSwitches.add(switchKey(room)));
+    orphanRooms.removeIf(orphan -> keptSwitches.contains(switchKey(orphan)));
+    for (Room old : dataSite.habitaciones()) {
+      boolean alreadyTracked =
+          orphanRooms.stream().anyMatch(orphan -> switchKey(orphan).equals(switchKey(old)));
+      if (old.currentSwitchState() == SwitchState.ENCENDIDO
+          && !keptSwitches.contains(switchKey(old))
+          && !alreadyTracked) {
+        orphanRooms.add(old);
+        orphanSince.put(switchKey(old), Instant.now());
+      }
+    }
+    orphanSince.keySet().removeIf(key -> orphanRooms.stream().noneMatch(o -> switchKey(o).equals(key)));
+  }
+
+  /** Rooms removed from the config whose switch was ON and still has to be turned OFF */
+  public synchronized List<Room> getOrphanRooms() {
+    Instant limit = Instant.now().minus(ORPHAN_MAX_AGE);
+    orphanRooms.removeIf(
+        orphan -> {
+          Instant since = orphanSince.get(switchKey(orphan));
+          if (since != null && since.isBefore(limit)) {
+            logger.error(
+                "No se pudo apagar el switch {} de una habitación eliminada; se deja de reintentar",
+                orphan.idSwitch());
+            return true;
+          }
+          return false;
+        });
+    return List.copyOf(orphanRooms);
+  }
+
+  public synchronized void removeOrphanRoom(Room room) {
+    orphanRooms.removeIf(orphan -> switchKey(orphan).equals(switchKey(room)));
+    orphanSince.remove(switchKey(room));
+  }
+
+  /**
+   * Rooms with their switch ON whose thermostat is silent: no reading at all or none during the
+   * last {@code controlador.lectura-max-antiguedad-min} minutes. They can't be controlled safely.
+   */
+  public synchronized List<Room> getStaleOnRooms() {
+    if (dataSite == null) {
+      return List.of();
+    }
+    return dataSite.habitaciones().stream()
+        .filter(this::isHydrated)
+        .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
+        .filter(this::isStale)
+        .toList();
+  }
+
+  private boolean isStale(Room room) {
+    Instant last = lastReadingAt.get(room.idThermostat());
+    if (last == null) {
+      return room.currentTemperatureC() == null;
+    }
+    Duration maxAge = Duration.ofMinutes(lecturaMaxAntiguedadMin);
+    return Duration.between(last, Instant.now()).compareTo(maxAge) > 0;
   }
 
   private static boolean sameHardware(Room a, Room b) {
@@ -164,6 +262,7 @@ public class SiteStateService {
         dataSite.habitaciones().stream()
             .filter(this::isHydrated)
             .filter(room -> room.currentTemperatureC() != null)
+            .filter(room -> !isStale(room))
             .toList());
   }
 
@@ -179,15 +278,22 @@ public class SiteStateService {
     List<Room> pendingRooms = dataSite.habitaciones().stream().filter(r -> !isHydrated(r)).toList();
     List<String> idThermostats = pendingRooms.stream().map(Room::idThermostat).toList();
     Map<String, Double> latestTemps = new HashMap<>();
+    Instant oldestValid = Instant.now().minus(Duration.ofMinutes(lecturaMaxAntiguedadMin));
     for (TemperatureMessage reading : tempReadings.getLastTemperatureMeasurements(idThermostats)) {
-      latestTemps.putIfAbsent(reading.idThermostat(), reading.tC());
+      // Stale readings from the DB are ignored: the room has no temperature until a new one
+      if (reading.ts() != null && reading.ts().isBefore(oldestValid)) {
+        continue;
+      }
+      if (latestTemps.putIfAbsent(reading.idThermostat(), reading.tC()) == null) {
+        lastReadingAt.putIfAbsent(
+            reading.idThermostat(), reading.ts() != null ? reading.ts() : Instant.now());
+      }
     }
 
-    // TODO: Consider handling stale (old) temperature readings
     Map<String, Room> hydrated = new HashMap<>();
     for (Room room : pendingRooms) {
       try {
-        SwitchState switchState = switchClient.consultarEstado(room).estado();
+        SwitchState switchState = queryStateOrTurnOff(room);
         hydrated.put(
             room.id(),
             new Room(
@@ -203,17 +309,45 @@ public class SiteStateService {
                 switchState,
                 room.lastSwitchChange()));
       } catch (Exception e) {
-        logger.warn(
-            "Could not get state of switch {} (room {}), will retry on next cycle",
-            room.idSwitch(),
-            room.id());
-        logger.debug("Error: ", e);
+        if (e instanceof SwitchClient.SwitchInBackoffException) {
+          logger.debug("Switch {} (room {}) is in backoff, will retry later", room.idSwitch(), room.id());
+        } else {
+          logger.warn(
+              "Could not get state of switch {} (room {}), will retry on next cycle",
+              room.idSwitch(),
+              room.id());
+          logger.debug("Error: ", e);
+        }
       }
     }
 
     replaceSiteRooms(
         dataSite.habitaciones().stream().map(r -> hydrated.getOrDefault(r.id(), r)).toList());
     pendingHydration.removeAll(hydrated.keySet());
+  }
+
+  /**
+   * Queries the switch state. If it can't be known (query error, response without state, etc.) the
+   * switch is sent an OFF command just in case, and when that succeeds it is known to be OFF.
+   */
+  private SwitchState queryStateOrTurnOff(Room room) throws Exception {
+    try {
+      return switchClient.consultarEstado(room).estado();
+    } catch (Exception queryError) {
+      logger.warn(
+          "Could not get state of switch {} (room {}), sending OFF just in case",
+          room.idSwitch(),
+          room.id());
+      logger.debug("Error: ", queryError);
+      switchClient.apagar(room);
+      return SwitchState.APAGADO;
+    }
+  }
+
+  /** All rooms with their last known state, including those not hydrated or without readings */
+  public synchronized List<Room> getAllRooms() {
+    checkInitializedSiteState();
+    return dataSite.habitaciones();
   }
 
   /** A reading already received via MQTT while pending is newer than (or equal to) the DB one */
@@ -267,6 +401,7 @@ public class SiteStateService {
     if (!roomFound) {
       throw new IllegalArgumentException("No Room associated with the thermostat: " + idThermostat);
     }
+    lastReadingAt.put(idThermostat, Instant.now());
     replaceSiteRooms(habitaciones);
     return dataSite;
   }

@@ -184,6 +184,70 @@ class SwitchClientTest {
   }
 
   @Test
+  void aSwitchThatFailedIsNotCalledAgainDuringTheBackoff() throws Exception {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+
+    // Only ONE request is expected: the second attempt must not reach the switch
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andRespond(withServerError());
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        RuntimeException.class, () -> client.apagar(room1()));
+    org.junit.jupiter.api.Assertions.assertThrows(
+        SwitchClient.SwitchInBackoffException.class, () -> client.apagar(room1()));
+
+    server.verify();
+  }
+
+  @Test
+  void resetBackoffAllowsAnImmediateRetry() throws Exception {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andRespond(withServerError());
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"OFF","cambio":true}
+                        """,
+                MediaType.APPLICATION_JSON));
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        RuntimeException.class, () -> client.apagar(room1()));
+    client.resetBackoff();
+    client.apagar(room1());
+
+    server.verify();
+  }
+
+  @Test
+  void anOffAnsweredWithAnOnStateIsAFailure() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    SwitchClient client = new SwitchClient(builder.build(), "");
+
+    server
+        .expect(requestTo("http://iiss-simulator:9090/switches/sw-sim-room1/comandos"))
+        .andRespond(
+            withSuccess(
+                """
+                        {"idSwitch":"sw-sim-room1","estado":"ON","cambio":false}
+                        """,
+                MediaType.APPLICATION_JSON));
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalStateException.class, () -> client.apagar(room1()));
+  }
+
+  @Test
   void knownSwitchStatesDoNotSendCommands() {
     RestClient.Builder builder = RestClient.builder();
     MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();

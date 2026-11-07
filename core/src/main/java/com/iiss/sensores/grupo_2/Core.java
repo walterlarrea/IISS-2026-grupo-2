@@ -102,8 +102,9 @@ class Core implements ICore {
       return turnOffAllForRushHour(siteData);
     }
 
-    CycleState state = new CycleState(siteData, turnOnHysteresisC);
+    CycleState state = new CycleState(siteData, turnOnHysteresisC, dateTime);
     turnOffSatisfiedRooms(state);
+    shedOverload(state);
     serveStarvedRooms(state, dateTime);
     yieldPowerByThermalInertia(state, dateTime);
     turnOnColdRoomsByDeficit(state);
@@ -151,6 +152,34 @@ class Core implements ICore {
   }
 
   /**
+   * Phase 1b: if the switches that are ON still exceed the contracted power (e.g. at startup or
+   * after the contracted power was lowered), turn OFF rooms with the lowest deficit first until the
+   * site fits. The minimum ON time is not respected: the contracted power is a hard limit.
+   */
+  private void shedOverload(CycleState state) {
+    if (state.utilizedPower <= state.contractedPower) {
+      return;
+    }
+    List<Room> candidates =
+        state.rooms.stream()
+            .filter(room -> room.currentSwitchState() == SwitchState.ENCENDIDO)
+            .filter(room -> !state.turnedOff.contains(room.idSwitch()))
+            .sorted(Comparator.comparingDouble(Core::deficit))
+            .toList();
+    for (Room room : candidates) {
+      if (state.utilizedPower <= state.contractedPower) {
+        break;
+      }
+      state.turnOff(room);
+      logger.debug(
+          "Turning OFF switch {} to shed overload; power utilized {}/{} kW",
+          room.idSwitch(),
+          state.utilizedPower,
+          state.contractedPower);
+    }
+  }
+
+  /**
    * Phase 2, anti-starvation by waiting time: rooms below their expected temperature that have
    * waited OFF for maxWait or longer are served first (longest wait first), regardless of their
    * deficit. If there isn't enough free power, rooms already ON (past their minimum ON time) are
@@ -160,7 +189,7 @@ class Core implements ICore {
   private void serveStarvedRooms(CycleState state, ZonedDateTime now) {
     List<Room> starvedRooms =
         state.roomsBelowExpected.stream()
-            .filter(room -> isStarved(room, now))
+            .filter(room -> isStarved(state, room, now))
             // Starved rooms always have a known wait, so the oldest change is the longest wait.
             .sorted(Comparator.comparing(Room::lastSwitchChange))
             .toList();
@@ -359,7 +388,10 @@ class Core implements ICore {
     final double contractedPower;
     double utilizedPower;
 
-    CycleState(DataSite siteData, double turnOnHysteresisC) {
+    /** End of the most recent rush hour period (null if unknown), see {@link #isStarved} */
+    final ZonedDateTime lastRushEnd;
+
+    CycleState(DataSite siteData, double turnOnHysteresisC, ZonedDateTime now) {
       rooms = siteData.habitaciones();
       roomsAtOrOverExpected =
           rooms.stream()
@@ -380,6 +412,10 @@ class Core implements ICore {
               .mapToDouble(Room::powerKW)
               .sum();
       contractedPower = siteData.site() != null ? siteData.site().potenciaContratadaKW() : 0.0;
+      lastRushEnd =
+          siteData.site() != null && siteData.site().fee() != null
+              ? siteData.site().fee().lastRushHourEnd(now)
+              : null;
       logger.debug(
           "Rooms at or over the expected temperature: {}; Below the expected temperature: {}",
           roomsAtOrOverExpected.size(),
@@ -424,9 +460,17 @@ class Core implements ICore {
 
   /**
    * A room is starved when it is OFF, below its expected temperature and waited maxWait or more.
+   * Rooms forced OFF by a rush hour were not really waiting during it, so the wait is the shortest
+   * of the time since the room's situation started and the time since the last rush hour ended.
    */
-  private boolean isStarved(Room room, ZonedDateTime now) {
+  private boolean isStarved(CycleState state, Room room, ZonedDateTime now) {
     Duration elapsed = elapsedSince(room, now);
+    if (elapsed != null && state.lastRushEnd != null) {
+      Duration sinceRushEnd = Duration.between(state.lastRushEnd, now);
+      if (sinceRushEnd.compareTo(elapsed) < 0) {
+        elapsed = sinceRushEnd;
+      }
+    }
     return room.currentSwitchState() == SwitchState.APAGADO
         && elapsed != null
         && elapsed.compareTo(maxWait) >= 0;

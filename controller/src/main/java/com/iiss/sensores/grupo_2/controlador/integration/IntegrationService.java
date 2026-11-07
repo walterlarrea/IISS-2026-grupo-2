@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Dynamic register with MQTT component */
@@ -28,6 +29,8 @@ public class IntegrationService {
   private final RestClient simulatorClient;
   private final MqttSubscriptionService mqttSubscriptionService;
   private final AtomicBoolean initialized = new AtomicBoolean();
+  private int localFailures;
+  private Instant nextLocalAttempt = Instant.EPOCH;
 
   public IntegrationService(
       RestClient.Builder restClientBuilder,
@@ -92,8 +95,20 @@ public class IntegrationService {
   /** Retries registration every 5 seconds if fails to connect */
   @Scheduled(fixedDelayString = "${REGISTRATION_RETRY_MS:5000}")
   public void reintentarRegistro() {
-    if (conectarSimulador && !initialized.get()) {
+    if (initialized.get()) {
+      return;
+    }
+    if (conectarSimulador) {
       intentarInicializar();
+    } else if (!Instant.now().isBefore(nextLocalAttempt)) {
+      // Modo local: si el broker no estaba disponible al arrancar, se sigue intentando, esperando
+      // cada vez más (5 s, 10 s, ... hasta 60 s) para no ocupar el hilo de las tareas programadas
+      onApplicationReady();
+      if (!initialized.get()) {
+        localFailures++;
+        long waitSeconds = Math.min(60L, 5L << Math.min(localFailures, 4));
+        nextLocalAttempt = Instant.now().plusSeconds(waitSeconds);
+      }
     }
   }
 
