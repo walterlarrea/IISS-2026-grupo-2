@@ -50,7 +50,10 @@ public class SiteStateService {
   /** Rooms removed from the config (or whose switch changed) while their switch was ON */
   private final List<Room> orphanRooms = new ArrayList<>();
 
-  /** An orphan whose switch can't be turned OFF within this time is given up (one final error) */
+  /**
+   * An orphan whose switch can't be turned OFF within this time (of the control clock, see {@link
+   * #now()}) is given up (one final error)
+   */
   private static final Duration ORPHAN_MAX_AGE = Duration.ofHours(1);
 
   private final Map<String, Instant> orphanSince = new HashMap<>();
@@ -60,9 +63,18 @@ public class SiteStateService {
     this.tempReadings = tempReadings;
   }
 
-  /** The silence of thermostats is measured with the control clock (null: the system clock) */
-  public void setClock(CustomClock clock) {
+  /**
+   * The silence of thermostats and the age of orphan rooms are measured with the control clock
+   * (null: the system clock). The instants already recorded belong to the previous clock's
+   * timeline (e.g. real time vs a simulated date days earlier), so they are shifted to the new one
+   * keeping the time elapsed: a reading isn't seen as coming from the future, nor a fresh one as old.
+   */
+  public synchronized void setClock(CustomClock clock) {
+    Instant before = now();
     this.clock = clock;
+    Duration shift = Duration.between(before, now());
+    lastReadingAt.replaceAll((thermostat, at) -> at.plus(shift));
+    orphanSince.replaceAll((key, since) -> since.plus(shift));
   }
 
   private Instant now() {
@@ -152,7 +164,7 @@ public class SiteStateService {
           && !keptSwitches.contains(switchKey(old))
           && !alreadyTracked) {
         orphanRooms.add(old);
-        orphanSince.put(switchKey(old), Instant.now());
+        orphanSince.put(switchKey(old), now());
       }
     }
     orphanSince.keySet().removeIf(key -> orphanRooms.stream().noneMatch(o -> switchKey(o).equals(key)));
@@ -160,7 +172,7 @@ public class SiteStateService {
 
   /** Rooms removed from the config whose switch was ON and still has to be turned OFF */
   public synchronized List<Room> getOrphanRooms() {
-    Instant limit = Instant.now().minus(ORPHAN_MAX_AGE);
+    Instant limit = now().minus(ORPHAN_MAX_AGE);
     orphanRooms.removeIf(
         orphan -> {
           Instant since = orphanSince.get(switchKey(orphan));

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -414,6 +415,49 @@ class SiteStateServiceTest {
 
     siteStateService.updateRoomTemperature("termo-1", 19.2); // una lectura nueva lo pone al día
     assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+  }
+
+  /** Reloj base que el test mueve a mano */
+  private static Clock relojManual(AtomicReference<Instant> reloj) {
+    return new Clock() {
+      public ZoneId getZone() { return ZoneOffset.UTC; }
+      public Clock withZone(ZoneId zone) { return this; }
+      public Instant instant() { return reloj.get(); }
+    };
+  }
+
+  @Test
+  void elAbandonoDeUnaHabitacionHuerfanaSeMideConElRelojDelControl() {
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.parse("2026-11-08T10:00:00Z"));
+    // reloj del control acelerado x60: 1 minuto real es 1 hora del control
+    siteStateService.setClock(
+        new CustomClock(Instant.parse("2026-11-03T10:00:00Z"), 60, relojManual(reloj)));
+    DataSite actual = siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    reloj.set(Instant.parse("2026-11-08T10:00:59Z")); // 59 minutos del control
+    assertEquals(1, siteStateService.getOrphanRooms().size());
+
+    reloj.set(Instant.parse("2026-11-08T10:01:01Z")); // 61 minutos del control: se abandona
+    assertTrue(siteStateService.getOrphanRooms().isEmpty());
+  }
+
+  @Test
+  void alCambiarDeRelojSeConservaElTiempoTranscurridoDesdeLaUltimaLectura() {
+    // lectura recibida con el controlador detenido (reloj del sistema)
+    siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.updateRoomTemperature("termo-1", 19.0);
+
+    // arranca con una fecha simulada 5 días anterior: la lectura no queda "en el futuro"
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.now());
+    siteStateService.setClock(
+        new CustomClock(Instant.now().minus(Duration.ofDays(5)), 60, relojManual(reloj)));
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+
+    reloj.set(reloj.get().plusSeconds(16)); // 16 minutos del control sin lecturas
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
   }
 
   private static Room sinTemperatura() {
