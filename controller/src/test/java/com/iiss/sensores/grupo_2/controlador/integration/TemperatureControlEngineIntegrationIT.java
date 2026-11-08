@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.iiss.sensores.grupo_2.controlador.api.service.InventoryService;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
@@ -146,25 +147,23 @@ class TemperatureControlEngineIntegrationIT {
     controller.stop();
   }
 
+  /**
+   * Stateful switch: the GET answers the state left by the last command (the controller confirms
+   * every OFF with a GET), starting from {@code initialState}.
+   */
   private static void switchConfig(String idSwitch, String initialState) {
-    switchesApi.stubFor(
-        get(urlEqualTo("/switches/" + idSwitch))
-            .willReturn(
-                okJson(
-                    """
-                        {
-                          "idSwitch": "%s",
-                          "estado": "%s",
-                          "aplicadoEn": "2026-10-26T00:00:00Z"
-                        }
-                        """
-                        .formatted(idSwitch, initialState))));
+    stubGet(idSwitch, Scenario.STARTED, initialState);
+    for (String estado : List.of("ON", "OFF")) {
+      stubGet(idSwitch, estado, estado);
+    }
 
     // Like the real API, the answer carries the state that the command applied
     for (String accion : List.of("ON", "OFF")) {
       switchesApi.stubFor(
           post(urlEqualTo("/switches/" + idSwitch + "/comandos"))
+              .inScenario(idSwitch)
               .withRequestBody(matchingJsonPath("$.accion", equalTo(accion)))
+              .willSetStateTo(accion)
               .willReturn(
                   okJson(
                       """
@@ -176,6 +175,23 @@ class TemperatureControlEngineIntegrationIT {
                           """
                           .formatted(idSwitch, accion))));
     }
+  }
+
+  private static void stubGet(String idSwitch, String scenarioState, String estado) {
+    switchesApi.stubFor(
+        get(urlEqualTo("/switches/" + idSwitch))
+            .inScenario(idSwitch)
+            .whenScenarioStateIs(scenarioState)
+            .willReturn(
+                okJson(
+                    """
+                        {
+                          "idSwitch": "%s",
+                          "estado": "%s",
+                          "aplicadoEn": "2026-10-26T00:00:00Z"
+                        }
+                        """
+                        .formatted(idSwitch, estado))));
   }
 
   private static Room findRoom(DataSite data, String id) {

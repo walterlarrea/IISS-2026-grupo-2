@@ -15,6 +15,7 @@ import com.iiss.sensores.grupo_2.enums.RushDays;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.interfaces.ICore;
 import com.iiss.sensores.grupo_2.modelos.input.*;
+import com.iiss.sensores.grupo_2.modelos.output.CommandSwitch;
 import com.iiss.sensores.grupo_2.modelos.output.CoreAnswer;
 import java.time.Clock;
 import java.time.Duration;
@@ -260,5 +261,79 @@ class TemperatureControlEngineTest {
     assertEquals(
         SwitchState.APAGADO,
         siteStateService.getSiteState().habitaciones().get(0).currentSwitchState());
+  }
+
+  private SiteStateService sitioConSalaEncendidaYSalaFria() {
+    // sala-a (1.2 kW) está encendida y ya caliente; sala-b (1.5 kW) está apagada y fría.
+    // Contratada: 2.3 kW, entra una u otra pero no las dos juntas.
+    Instant ahora = Instant.now();
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
+        .thenReturn(
+            List.of(
+                new TemperatureMessage("0", "termo-a", 22.0, 22.0, ahora),
+                new TemperatureMessage("0", "termo-b", 18.0, 18.0, ahora)));
+    when(switchClient.consultarEstado(argThat(r -> r != null && r.idSwitch().equals("switch-a"))))
+        .thenReturn(new SwitchStateResponse("switch-a", SwitchState.ENCENDIDO, null));
+    when(switchClient.consultarEstado(argThat(r -> r != null && r.idSwitch().equals("switch-b"))))
+        .thenReturn(new SwitchStateResponse("switch-b", SwitchState.APAGADO, null));
+
+    SiteStateService siteStateService = new SiteStateService(switchClient, tempReadingsRepository);
+    siteStateService.loadSiteState(
+        new DataSite(
+            new Site("site-1", "Casa", 2.3, new Fee(null)),
+            List.of(
+                new Room("sala-a", "A", 21.0, 1.2, "termo-a", "termo-a/t", "switch-a",
+                    "http://localhost/switches/a", 22.0, SwitchState.ENCENDIDO),
+                new Room("sala-b", "B", 21.0, 1.5, "termo-b", "termo-b/t", "switch-b",
+                    "http://localhost/switches/b", 18.0, SwitchState.APAGADO))));
+    return siteStateService;
+  }
+
+  @Test
+  @DisplayName("If an OFF of the batch fails, the ON that counted on its power is not sent")
+  void noEnciendeSiUnApagadoDelMismoLoteFallo() throws Exception {
+    SiteStateService siteStateService = sitioConSalaEncendidaYSalaFria();
+    when(core.calcularComandos(any(), any()))
+        .thenReturn(
+            new CoreAnswer(
+                List.of(
+                    new CommandSwitch("switch-a", SwitchState.APAGADO),
+                    new CommandSwitch("switch-b", SwitchState.ENCENDIDO))));
+    doThrow(new RuntimeException("500"))
+        .when(switchClient)
+        .apagar(argThat(r -> r != null && r.idSwitch().equals("switch-a")));
+
+    controller = new TemperatureControlEngine(switchClient, core, siteStateService);
+    controller.start(Instant.now(), 1);
+    controller.execute();
+
+    verify(switchClient, never()).encender(any());
+    // el OFF que falló deja la sala encendida en el estado conocido
+    assertEquals(
+        SwitchState.ENCENDIDO,
+        siteStateService.getAllRooms().stream()
+            .filter(r -> r.id().equals("sala-a"))
+            .findFirst()
+            .orElseThrow()
+            .currentSwitchState());
+  }
+
+  @Test
+  @DisplayName("If the OFF of the batch works, the ON that counted on its power is sent")
+  void enciendeSiElApagadoDelMismoLoteFunciono() throws Exception {
+    SiteStateService siteStateService = sitioConSalaEncendidaYSalaFria();
+    when(core.calcularComandos(any(), any()))
+        .thenReturn(
+            new CoreAnswer(
+                List.of(
+                    new CommandSwitch("switch-a", SwitchState.APAGADO),
+                    new CommandSwitch("switch-b", SwitchState.ENCENDIDO))));
+
+    controller = new TemperatureControlEngine(switchClient, core, siteStateService);
+    controller.start(Instant.now(), 1);
+    controller.execute();
+
+    verify(switchClient).apagar(argThat(r -> r != null && r.idSwitch().equals("switch-a")));
+    verify(switchClient).encender(argThat(r -> r != null && r.idSwitch().equals("switch-b")));
   }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchStateResponse;
+import com.iiss.sensores.grupo_2.controlador.engine.utils.CustomClock;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 
 import java.net.URI;
@@ -46,14 +47,7 @@ public class SwitchClient {
     checkBackoff(backoffKey, room);
     SwitchResponse response;
     try {
-      var request = restClient.get().uri(URI.create(componerUrlGetSwitch(room)));
-      if (!apiKey.isBlank()) {
-        request.header("X-API-Key", apiKey);
-      }
-      response = request.retrieve().body(SwitchResponse.class);
-      if (response == null || response.estado() == null) {
-        throw new IllegalStateException("La API de switches devolvió una respuesta sin estado");
-      }
+      response = leerEstado(room);
     } catch (RuntimeException e) {
       registerFailure(backoffKey);
       throw e;
@@ -72,6 +66,41 @@ public class SwitchClient {
         };
 
     return new SwitchStateResponse(response.idSwitch(), switchState, response.aplicadoEn());
+  }
+
+  /** GET del estado del switch, sin backoff ni efectos secundarios */
+  private SwitchResponse leerEstado(Room room) {
+    var request = restClient.get().uri(URI.create(componerUrlGetSwitch(room)));
+    if (!apiKey.isBlank()) {
+      request.header("X-API-Key", apiKey);
+    }
+    SwitchResponse response = request.retrieve().body(SwitchResponse.class);
+    if (response == null || response.estado() == null) {
+      throw new IllegalStateException("La API de switches devolvió una respuesta sin estado");
+    }
+    return response;
+  }
+
+  /**
+   * Un switch puede contestar OK a un OFF sin apagarse. Como un OFF dado por hecho puede hacer
+   * pasar la potencia contratada, se confirma con un GET: si el switch sigue en ON el OFF es un
+   * fallo (la habitación sigue contando como encendida y se reintenta). Si el GET no se puede hacer
+   * (p. ej. un switch que no se deja consultar) se confía en la respuesta del comando.
+   */
+  private void confirmarApagado(Room room) {
+    SwitchResponse actual;
+    try {
+      actual = leerEstado(room);
+    } catch (RuntimeException e) {
+      logger.warn(
+          "No se pudo confirmar el OFF del switch {}, se toma la respuesta del comando",
+          room.idSwitch());
+      return;
+    }
+    if (actual.estado() == EstadoRespuestaSwitch.ON) {
+      throw new IllegalStateException(
+          "El switch " + room.idSwitch() + " aceptó el OFF pero sigue en ON");
+    }
   }
 
   /**
@@ -114,6 +143,9 @@ public class SwitchClient {
                 + " al comando "
                 + accion);
       }
+      if (accion == EstadoAccionSwitch.OFF) {
+        confirmarApagado(room);
+      }
     } catch (RuntimeException e) {
       registerFailure(backoffKey);
       throw e;
@@ -126,12 +158,33 @@ public class SwitchClient {
    * BACKOFF_MAX), so an unreachable or misbehaving switch can't be retried in a tight loop nor slow
    * down every control cycle. Queries and commands are tracked apart, and a change of the room's
    * switch ID or URL starts over. A success clears the failures.
+   *
+   * <p>The periods are in the control (simulated) time: with an accelerated clock a backoff in real
+   * time would leave a switch without retries for many simulated minutes after it recovered. The
+   * cap keeps a recovered switch retried within a couple of minutes.
    */
-  private static final Duration BACKOFF_BASE = Duration.ofSeconds(5);
+  private static final Duration BACKOFF_BASE = Duration.ofSeconds(30);
 
-  private static final Duration BACKOFF_MAX = Duration.ofMinutes(5);
+  private static final Duration BACKOFF_MAX = Duration.ofMinutes(2);
 
   private final Map<String, Failure> failures = new ConcurrentHashMap<>();
+
+  /** Control clock, set by the engine while it runs; null while stopped (system clock) */
+  private volatile CustomClock clock;
+
+  /**
+   * Sets the clock that measures the backoff. Failures are forgotten: they were timed with the
+   * previous clock, and a new simulated start may be earlier than the pending retries.
+   */
+  public void setClock(CustomClock clock) {
+    this.clock = clock;
+    failures.clear();
+  }
+
+  private Instant now() {
+    CustomClock current = clock;
+    return current == null ? Instant.now() : current.getTime();
+  }
 
   private record Failure(int count, Instant nextAttemptAt) {}
 
@@ -153,7 +206,7 @@ public class SwitchClient {
 
   private void checkBackoff(String key, Room room) {
     Failure failure = failures.get(key);
-    if (failure != null && Instant.now().isBefore(failure.nextAttemptAt())) {
+    if (failure != null && now().isBefore(failure.nextAttemptAt())) {
       throw new SwitchInBackoffException(
           "El switch " + room.idSwitch() + " falló recientemente, se reintentará más tarde");
     }
@@ -162,14 +215,14 @@ public class SwitchClient {
   private void registerFailure(String key) {
     failures.merge(
         key,
-        new Failure(1, Instant.now().plus(BACKOFF_BASE)),
+        new Failure(1, now().plus(BACKOFF_BASE)),
         (previous, ignored) -> {
           int count = previous.count() + 1;
           Duration wait = BACKOFF_BASE.multipliedBy(1L << Math.min(count - 1, 10));
           if (wait.compareTo(BACKOFF_MAX) > 0) {
             wait = BACKOFF_MAX;
           }
-          return new Failure(count, Instant.now().plus(wait));
+          return new Failure(count, now().plus(wait));
         });
   }
 
