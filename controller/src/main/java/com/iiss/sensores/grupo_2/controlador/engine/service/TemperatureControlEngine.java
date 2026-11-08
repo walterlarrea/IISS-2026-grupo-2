@@ -68,6 +68,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     this.active = true;
 
     this.clock = new CustomClock(setDateTime, timeFactor, this.baseClock);
+    siteStateService.setClock(this.clock);
 
     logger.info("Temperature Control Engine was INITIATED");
     logger.info("Simulated date: {}, time factor: {}", setDateTime, timeFactor);
@@ -80,6 +81,7 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     }
     active = false;
     this.clock = null;
+    siteStateService.setClock(null);
 
     logger.info("Temperature Control Engine was STOPPED");
   }

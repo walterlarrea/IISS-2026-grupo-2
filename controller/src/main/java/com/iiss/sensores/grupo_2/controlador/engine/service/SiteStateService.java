@@ -1,6 +1,7 @@
 package com.iiss.sensores.grupo_2.controlador.engine.service;
 
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
+import com.iiss.sensores.grupo_2.controlador.engine.utils.CustomClock;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.modelos.input.DataSite;
 import com.iiss.sensores.grupo_2.modelos.input.Room;
@@ -40,8 +41,11 @@ public class SiteStateService {
   @Value("${controlador.lectura-max-antiguedad-min:15}")
   private long lecturaMaxAntiguedadMin = 15;
 
-  /** Arrival time of the latest reading of each thermostat, by thermostat ID */
+  /** Arrival time of the latest reading of each thermostat, by thermostat ID (see {@link #now()}) */
   private final Map<String, Instant> lastReadingAt = new HashMap<>();
+
+  /** Control clock, set by the engine while it runs; null while stopped */
+  private volatile CustomClock clock;
 
   /** Rooms removed from the config (or whose switch changed) while their switch was ON */
   private final List<Room> orphanRooms = new ArrayList<>();
@@ -54,6 +58,16 @@ public class SiteStateService {
   public SiteStateService(SwitchClient switchClient, TemperatureReadingRepository tempReadings) {
     this.switchClient = switchClient;
     this.tempReadings = tempReadings;
+  }
+
+  /** The silence of thermostats is measured with the control clock (null: the system clock) */
+  public void setClock(CustomClock clock) {
+    this.clock = clock;
+  }
+
+  private Instant now() {
+    CustomClock current = clock;
+    return current == null ? Instant.now() : current.getTime();
   }
 
   public synchronized void loadSiteState(DataSite newSiteState) {
@@ -187,7 +201,7 @@ public class SiteStateService {
       return room.currentTemperatureC() == null;
     }
     Duration maxAge = Duration.ofMinutes(lecturaMaxAntiguedadMin);
-    return Duration.between(last, Instant.now()).compareTo(maxAge) > 0;
+    return Duration.between(last, now()).compareTo(maxAge) > 0;
   }
 
   private static boolean sameHardware(Room a, Room b) {
@@ -401,7 +415,7 @@ public class SiteStateService {
     if (!roomFound) {
       throw new IllegalArgumentException("No Room associated with the thermostat: " + idThermostat);
     }
-    lastReadingAt.put(idThermostat, Instant.now());
+    lastReadingAt.put(idThermostat, now());
     replaceSiteRooms(habitaciones);
     return dataSite;
   }

@@ -4,6 +4,7 @@ import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchStateResponse;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
+import com.iiss.sensores.grupo_2.controlador.engine.utils.CustomClock;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.modelos.input.DataSite;
@@ -13,10 +14,14 @@ import com.iiss.sensores.grupo_2.modelos.input.Site;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -384,6 +389,31 @@ class SiteStateServiceTest {
     siteStateService.getSiteState();
 
     assertEquals(1, siteStateService.getStaleOnRooms().size());
+  }
+
+  @Test
+  void elSilencioDeUnTermostatoSeMideConElRelojDelControl() {
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.parse("2026-11-03T10:00:00Z"));
+    Clock base =
+        new Clock() {
+          public ZoneId getZone() { return ZoneOffset.UTC; }
+          public Clock withZone(ZoneId zone) { return this; }
+          public Instant instant() { return reloj.get(); }
+        };
+    // reloj del control acelerado x60: 15 segundos reales son 15 minutos del control
+    siteStateService.setClock(new CustomClock(Instant.parse("2026-11-03T10:00:00Z"), 60, base));
+    siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.updateRoomTemperature("termo-1", 19.0);
+
+    reloj.set(Instant.parse("2026-11-03T10:00:14Z")); // 14 minutos del control sin lecturas
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+
+    reloj.set(Instant.parse("2026-11-03T10:00:16Z")); // 16 minutos del control sin lecturas
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
+
+    siteStateService.updateRoomTemperature("termo-1", 19.2); // una lectura nueva lo pone al día
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
   }
 
   private static Room sinTemperatura() {
