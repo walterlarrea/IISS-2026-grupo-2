@@ -41,6 +41,9 @@ public class TemperatureControlEngine implements TemperatureEngineService {
 
   private static final long CYCLE_MARGIN_MS = 1000;
 
+  /** Slack (kW) so that a floating-point rounding doesn't make an exact fit look like an excess */
+  private static final double POWER_ROUNDING_KW = 1e-9;
+
   @Autowired
   public TemperatureControlEngine(
       SwitchClient switchClient, ICore core, SiteStateService siteStateService) {
@@ -68,6 +71,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     this.active = true;
 
     this.clock = new CustomClock(setDateTime, timeFactor, this.baseClock);
+    siteStateService.setClock(this.clock);
+    switchClient.setClock(this.clock);
 
     logger.info("Temperature Control Engine was INITIATED");
     logger.info("Simulated date: {}, time factor: {}", setDateTime, timeFactor);
@@ -80,6 +85,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
     }
     active = false;
     this.clock = null;
+    siteStateService.setClock(null);
+    switchClient.setClock(null);
 
     logger.info("Temperature Control Engine was STOPPED");
   }
@@ -159,6 +166,13 @@ public class TemperatureControlEngine implements TemperatureEngineService {
 
         try {
           if (commandSwitch.estado() == SwitchState.ENCENDIDO) {
+            if (!fitsInContractedPower(room, siteState)) {
+              logger.warn(
+                  "Switch {} not turned ON: with the switches known to be ON it would exceed the"
+                      + " contracted power",
+                  commandSwitch.idSwitch());
+              continue;
+            }
             switchClient.encender(room);
             logger.info("Turned ON the switch with ID = {}", commandSwitch.idSwitch());
           } else if (commandSwitch.estado() == SwitchState.APAGADO) {
@@ -188,6 +202,26 @@ public class TemperatureControlEngine implements TemperatureEngineService {
       logger.error("Error in the automatic temperature control cycle");
       logger.debug("Error: ", e);
     }
+  }
+
+  /**
+   * The Core plans a cycle as a batch ("OFF these, then ON those") assuming every OFF works. When
+   * an OFF failed, that room is still ON (its state is only updated on success), so the ON commands
+   * that counted on its power would exceed the contracted power: they are skipped, and the Core
+   * plans them again in a later cycle.
+   */
+  private boolean fitsInContractedPower(Room room, DataSite siteState) {
+    double contractedKW = siteState.site().potenciaContratadaKW();
+    return powerOfOtherRoomsOn(room) + room.powerKW() <= contractedKW + POWER_ROUNDING_KW;
+  }
+
+  /** Power of the rooms, other than this one, whose switch is known to be ON */
+  private double powerOfOtherRoomsOn(Room room) {
+    return siteStateService.getAllRooms().stream()
+        .filter(other -> !other.id().equals(room.id()))
+        .filter(other -> other.currentSwitchState() == SwitchState.ENCENDIDO)
+        .mapToDouble(Room::powerKW)
+        .sum();
   }
 
   /**

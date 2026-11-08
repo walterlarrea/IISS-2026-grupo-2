@@ -1,5 +1,21 @@
 [//]: # 'Agrega las nuevas entradas al principio e incrementa la versión junto con el módulo; por ejemplo: 0.1.0, 0.1.1, 0.1.2, etc.'
 
+# 08/11/2026
+
+## Corregido
+
+- El controlador ya no enciende un switch si, sumando las habitaciones realmente encendidas, supera la potencia contratada. Un OFF fallido deja la habitación contando como encendida, así un error del switch no hace pasar la contratada (escenarios 5.1 F06/F09 y 5.2b F05).
+- Cada OFF que responde OK se confirma con `GET /switches/{id}`: si el switch sigue en ON se trata como fallo y se reintenta. Si el GET no se puede hacer, se toma la respuesta del comando (escenario 5.2 F05).
+- La antigüedad de la última lectura de cada termostato (`controlador.lectura-max-antiguedad-min`, 15 min por defecto) se mide con el reloj del control en lugar del reloj del sistema: con el reloj acelerado, un termostato que dejaba de publicar tardaba 15 minutos reales (15 horas simuladas con factor 60) en hacer apagar su switch (escenario 3 F03).
+- El plazo para dejar de reintentar el apagado del switch de una habitación eliminada (1 h) también se mide con el reloj del control: con factor 60 eran 60 horas simuladas de reintentos.
+- Al iniciar o detener el controlador, las marcas de tiempo ya registradas (última lectura de cada termostato y habitaciones eliminadas pendientes de apagar) se trasladan al nuevo reloj conservando el tiempo transcurrido: una fecha simulada anterior a la real ya no hace ver las lecturas como "del futuro" (que nunca vencían).
+- El backoff de reintentos a switches se mide en tiempo simulado (30 s que se duplican hasta un tope de 2 min) en lugar de tiempo real: con el reloj acelerado un switch recuperado tardaba hasta 10 minutos simulados en volver a comandarse (escenarios 5.1 y 5.2b).
+
+## Cambiado
+
+- `TemperatureControlEngineIntegrationIT` simula un switch con estado (el GET devuelve lo que dejó el último comando).
+- Documentación de arquitectura (`docs/arquitectura/4mas1.md`) actualizada con el chequeo de potencia, la confirmación de OFF, el backoff y el apagado de switches de termostatos sin lecturas.
+
 # [2.1.1] 17/09/2026
 
 ## Cambiado
