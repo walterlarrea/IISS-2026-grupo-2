@@ -83,6 +83,12 @@ public class MqttSubscriber {
               logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
               try {
+                // A missing tC would be read as 0.0 °C (primitive double), so it is rejected here
+                if (!objMap.readTree(payload).hasNonNull("tC")) {
+                  logger.warn("Mensaje MQTT sin temperatura (tC), se descarta: {}", payload);
+                  return;
+                }
+
                 ThermostatMessageObject.Temperature parsedThermostatMessage =
                     objMap.readValue(payload, ThermostatMessageObject.Temperature.class);
 
@@ -101,6 +107,15 @@ public class MqttSubscriber {
 
                 logger.info(
                     "Temperature received: {} °C. Thermostat: {}", tempMessage.tC(), idThermostat);
+
+                // Implausible values are not stored either, they would be reloaded as "last reading"
+                if (!TemperatureControlEngine.isPlausibleTemperature(tempMessage.tC())) {
+                  logger.warn(
+                      "Temperatura implausible ({} °C) del termostato {}, se descarta",
+                      tempMessage.tC(),
+                      idThermostat);
+                  return;
+                }
 
                 try {
                   tempMeasurements.saveTemperature(tempMessage);
@@ -135,6 +150,8 @@ public class MqttSubscriber {
       MqttConnectOptions connOpts = new MqttConnectOptions();
       connOpts.setCleanSession(true);
       connOpts.setAutomaticReconnect(true);
+      // Default is 30 s: a broker that doesn't answer must not hold the scheduler thread that long
+      connOpts.setConnectionTimeout(5);
 
       logger.info("Connecting to broker: {}", broker);
       client.connect(connOpts);

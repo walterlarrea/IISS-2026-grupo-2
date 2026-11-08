@@ -15,10 +15,13 @@ import com.iiss.sensores.grupo_2.controlador.shared.TemperatureEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /** Handles time & simulated time, uses the Core to calculate action commands and executes them */
@@ -31,6 +34,12 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   private final Clock baseClock;
   private volatile boolean active = false;
   private CustomClock clock;
+
+  /** Period of the scheduled control cycle, see {@link ReevaluationControlService} */
+  @Value("${controlador.reevaluacion-ms:5000}")
+  private long reevaluacionMs = 5000;
+
+  private static final long CYCLE_MARGIN_MS = 1000;
 
   @Autowired
   public TemperatureControlEngine(
@@ -65,7 +74,10 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   }
 
   @Override
-  public void stop() {
+  public synchronized void stop() {
+    if (active) {
+      turnOffAllSwitches();
+    }
     active = false;
     this.clock = null;
 
@@ -90,6 +102,22 @@ public class TemperatureControlEngine implements TemperatureEngineService {
         this.clock.getStartedAt());
   }
 
+  /**
+   * If the rush hour starts before the next cycle, the Core is asked as if it had already started:
+   * a switch turned ON now would stay ON into the rush hour until that next cycle. The window is
+   * the cycle period (plus a margin for the cycle's own run time) in simulated time.
+   */
+  private ZonedDateTime timeForCore(ZonedDateTime now, DataSite siteState) {
+    if (siteState.site() == null
+        || siteState.site().fee() == null
+        || siteState.site().fee().isRushHour(now)) {
+      return now;
+    }
+    ZonedDateTime nextCycle =
+        now.plus(Duration.ofMillis((reevaluacionMs + CYCLE_MARGIN_MS) * clock.getTimeFactor()));
+    return siteState.site().fee().isRushHour(nextCycle) ? nextCycle : now;
+  }
+
   /** Request decisions from Core and executes it's commands */
   public synchronized void execute() {
     if (!active) {
@@ -102,7 +130,10 @@ public class TemperatureControlEngine implements TemperatureEngineService {
 
       DataSite siteState = siteStateService.getSiteState(simulatedDateTime);
 
-      CoreAnswer coreResponse = core.calcularComandos(simulatedDateTime, siteState);
+      turnOffUncontrollableSwitches(simulatedDateTime);
+
+      CoreAnswer coreResponse =
+          core.calcularComandos(timeForCore(simulatedDateTime, siteState), siteState);
 
       if (coreResponse == null || coreResponse.commands() == null) {
         logger.warn("Core response is null");
@@ -144,6 +175,8 @@ public class TemperatureControlEngine implements TemperatureEngineService {
           logger.info(
               "Switch {} state updated to {}", commandSwitch.idSwitch(), commandSwitch.estado());
 
+        } catch (SwitchClient.SwitchInBackoffException e) {
+          logger.debug("Switch {} failed recently, command postponed", commandSwitch.idSwitch());
         } catch (Exception e) {
           logger.error(
               "Error executing a command to the switch {}, with url {}",
@@ -158,21 +191,89 @@ public class TemperatureControlEngine implements TemperatureEngineService {
   }
 
   /**
+   * Best effort when the controller is stopped: sends OFF once to every switch not known to be OFF.
+   * A switch that fails (or is in backoff) is skipped, never retried, so stopping can't hang.
+   */
+  private void turnOffAllSwitches() {
+    ZonedDateTime now = clock.getTimeZoned();
+    List<Room> rooms;
+    try {
+      rooms = siteStateService.getAllRooms();
+    } catch (IllegalStateException e) {
+      return; // site not initialized: nothing to turn off
+    }
+    for (Room room : rooms) {
+      if (room.currentSwitchState() == SwitchState.APAGADO) {
+        continue;
+      }
+      try {
+        switchClient.apagar(room);
+        siteStateService.updateSwitchState(room.idSwitch(), SwitchState.APAGADO, now);
+        logger.info("Turned OFF the switch {} because the controller was stopped", room.idSwitch());
+      } catch (Exception e) {
+        logger.warn("Could not turn OFF the switch {} when stopping", room.idSwitch());
+      }
+    }
+  }
+
+  /**
+   * Turns OFF the switches the controller can no longer manage: rooms removed from the config and
+   * rooms whose thermostat stopped publishing. A switch is dropped from the pending list only when
+   * the OFF succeeded, otherwise it is retried on the next cycle.
+   */
+  private void turnOffUncontrollableSwitches(ZonedDateTime simulatedDateTime) {
+    for (Room orphan : siteStateService.getOrphanRooms()) {
+      try {
+        switchClient.apagar(orphan);
+        siteStateService.removeOrphanRoom(orphan);
+        logger.info("Turned OFF the switch {} of a room removed from the site", orphan.idSwitch());
+      } catch (SwitchClient.SwitchInBackoffException e) {
+        logger.debug("Switch {} failed recently, OFF postponed", orphan.idSwitch());
+      } catch (Exception e) {
+        logger.error(
+            "Error turning OFF the switch {} of a removed room, with url {}",
+            orphan.idSwitch(),
+            orphan.urlSwitch());
+      }
+    }
+    for (Room stale : siteStateService.getStaleOnRooms()) {
+      try {
+        switchClient.apagar(stale);
+        siteStateService.updateSwitchState(stale.idSwitch(), SwitchState.APAGADO, simulatedDateTime);
+        logger.warn(
+            "Turned OFF the switch {}: thermostat {} sent no readings recently",
+            stale.idSwitch(),
+            stale.idThermostat());
+      } catch (SwitchClient.SwitchInBackoffException e) {
+        logger.debug("Switch {} failed recently, OFF postponed", stale.idSwitch());
+      } catch (Exception e) {
+        logger.error(
+            "Error turning OFF the switch {} of a room without recent readings, with url {}",
+            stale.idSwitch(),
+            stale.urlSwitch());
+      }
+    }
+  }
+
+  /** Readings outside this range (°C) are sensor faults, not a real room temperature */
+  private static final double MIN_PLAUSIBLE_C = -10.0;
+
+  private static final double MAX_PLAUSIBLE_C = 50.0;
+
+  /** @return true when the temperature is a finite value within a plausible range for a room */
+  public static boolean isPlausibleTemperature(double tC) {
+    return Double.isFinite(tC) && tC >= MIN_PLAUSIBLE_C && tC <= MAX_PLAUSIBLE_C;
+  }
+
+  /**
    * Processes a temperature reading message. Updates the site state and executes a control cycle.
    *
    * @param temperatureMsg Parsed temperature reading from MQTT
    */
   public void processTemperature(TemperatureMessage temperatureMsg) {
-    if (!active) {
-      logger.debug(
-          "Controller is stopped, ignores temperature sent by thermostat with ID {}",
-          temperatureMsg.idThermostat());
-      return;
-    }
-
     if (temperatureMsg.idThermostat() == null
         || temperatureMsg.idThermostat().isBlank()
-        || !Double.isFinite(temperatureMsg.tC())) {
+        || !isPlausibleTemperature(temperatureMsg.tC())) {
       logger.warn(
           "Invalid reading data. Thermostat ID: {}, temperature Cº: {}",
           temperatureMsg.idThermostat(),
@@ -180,10 +281,26 @@ public class TemperatureControlEngine implements TemperatureEngineService {
       return;
     }
 
+    if (!active) {
+      logger.debug(
+          "Controller is stopped, only keeps the temperature sent by thermostat with ID {}",
+          temperatureMsg.idThermostat());
+      // The in-memory state is kept up to date so it is not outdated when the controller starts
+      try {
+        siteStateService.updateRoomTemperature(temperatureMsg.idThermostat(), temperatureMsg.tC());
+      } catch (RuntimeException e) {
+        logger.debug("Reading not kept while stopped: ", e);
+      }
+      return;
+    }
+
     try {
       siteStateService.updateRoomTemperature(temperatureMsg.idThermostat(), temperatureMsg.tC());
       execute();
 
+    } catch (IllegalArgumentException e) {
+      logger.warn(
+          "Reading from unknown thermostat ID {} was ignored", temperatureMsg.idThermostat());
     } catch (Exception e) {
       logger.error(
           "Error processing temperature change for thermostat ID {}",

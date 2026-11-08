@@ -40,7 +40,7 @@ class SiteStateServiceTest {
         .thenReturn(new SwitchStateResponse("switch-1", SwitchState.APAGADO, null));
     List<TemperatureMessage> tempReadings = new ArrayList<>();
     tempReadings.add(
-        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()));
     when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
 
     siteStateService = new SiteStateService(switchClient, tempReadingsRepository);
@@ -159,9 +159,9 @@ class SiteStateServiceTest {
 
     List<TemperatureMessage> tempReadings = new ArrayList<>();
     tempReadings.add(
-        new TemperatureMessage("0", "termo-2", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-2", 19.0, 24.0, Instant.now()));
     tempReadings.add(
-        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()));
     when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
 
     when(switchClient.consultarEstado(any()))
@@ -304,7 +304,7 @@ class SiteStateServiceTest {
   }
 
   @Test
-  void unSwitchQueFallaNoImpideHidratarElRestoYSeReintenta() {
+  void unSwitchQueFallaNoImpideHidratarElRestoYSeReintenta() throws Exception {
     Room ok = habitacion("hab-1", 21.0, "switch-1", "termo-1");
     Room caida = habitacion("hab-2", 20.0, "switch-2", "termo-2");
     when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
@@ -313,6 +313,9 @@ class SiteStateServiceTest {
                 new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()),
                 new TemperatureMessage("0", "termo-2", 18.0, 24.0, Instant.now())));
     when(switchClient.consultarEstado(caida)).thenThrow(new IllegalStateException("timeout"));
+    org.mockito.Mockito.doThrow(new IllegalStateException("timeout"))
+        .when(switchClient)
+        .apagar(caida);
     siteStateService.loadSiteState(new DataSite(SITE, List.of(ok, caida)));
 
     List<Room> primerCiclo = siteStateService.getSiteState().habitaciones();
@@ -322,5 +325,78 @@ class SiteStateServiceTest {
     siteStateService.getSiteState();
     verify(switchClient, never()).consultarEstado(ok);
     verify(switchClient).consultarEstado(caida);
+  }
+
+  @Test
+  void unSwitchQueNoSeDejaConsultarRecibeUnApagadoPorLasDudas() throws Exception {
+    Room sinConsulta = habitacion("hab-1", 21.0, "switch-1", "termo-1");
+    when(switchClient.consultarEstado(sinConsulta)).thenThrow(new IllegalStateException("sin estado"));
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(sinConsulta)));
+
+    Room room = siteStateService.getSiteState().habitaciones().get(0);
+
+    verify(switchClient).apagar(sinConsulta);
+    assertEquals(SwitchState.APAGADO, room.currentSwitchState());
+  }
+
+  @Test
+  void unaHabitacionEliminadaConSwitchEncendidoQuedaPendienteDeApagado() {
+    DataSite actual = siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    assertEquals(1, siteStateService.getOrphanRooms().size());
+    assertEquals("switch-1", siteStateService.getOrphanRooms().get(0).idSwitch());
+  }
+
+  @Test
+  void unaHabitacionEliminadaConSwitchApagadoNoQuedaPendiente() {
+    DataSite actual = siteStateService.getSiteState();
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    assertTrue(siteStateService.getOrphanRooms().isEmpty());
+  }
+
+  @Test
+  void unaLecturaViejaDeLaBaseNoSeUsaAlHidratar() {
+    DataSite actual = siteStateService.getSiteState();
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
+        .thenReturn(
+            List.of(
+                new TemperatureMessage(
+                    "0", "termo-1", 19.0, 24.0, Instant.now().minusSeconds(3600))));
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of(sinTemperatura())), true);
+
+    assertTrue(siteStateService.getSiteState().habitaciones().isEmpty());
+  }
+
+  @Test
+  void unaHabitacionEncendidaSinLecturaRecienteSeInformaComoSilenciosa() {
+    DataSite actual = siteStateService.getSiteState();
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(List.of());
+    when(switchClient.consultarEstado(any()))
+        .thenReturn(new SwitchStateResponse("switch-1", SwitchState.ENCENDIDO, null));
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of(sinTemperatura())), true);
+    siteStateService.getSiteState();
+
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
+  }
+
+  private static Room sinTemperatura() {
+    return new Room(
+        "hab-1",
+        "Living",
+        21.0,
+        1.5,
+        "termo-1",
+        "termo-1/living/temperatura",
+        "switch-1",
+        "http://localhost/switches/1",
+        null,
+        null);
   }
 }

@@ -1215,6 +1215,39 @@ class CoreTest {
     assertComandosIguales(respuesta, new CommandSwitch("sw-a", SwitchState.ENCENDIDO));
   }
 
+  @Test
+  void calcularComandos_trasLaPuntaLaEsperaSeCuentaDesdeElFinDeLaPunta() {
+    // La punta terminó a las 23:00; a las 23:30 la sala "a" lleva 3 h apagada pero solo 30 min
+    // sin punta: no debe quitarle el turno a "b", encendida hace 30 min
+    ZonedDateTime ahora = ZonedDateTime.parse("2026-10-07T23:30:00Z");
+    DataSite config =
+        new DataSite(
+            sitio(1.0),
+            List.of(
+                sala("a", 21.0, 1.0, 19.0, SwitchState.APAGADO, ahora.minusHours(3)),
+                sala("b", 21.0, 1.0, 20.5, SwitchState.ENCENDIDO, ahora.minusMinutes(30))));
+
+    CoreAnswer respuesta = core.calcularComandos(ahora, config);
+
+    assertTrue(respuesta.commands().isEmpty());
+  }
+
+  @Test
+  void calcularComandos_siLasEncendidasSuperanLaPotenciaContratadaApagaLasDeMenorDeficit() {
+    // 3 kW encendidos con 2.0 kW contratados: apaga la menos fría aunque lleve 5 min encendida
+    DataSite config =
+        new DataSite(
+            sitio(2.0),
+            List.of(
+                sala("a", 21.0, 1.0, 20.0, SwitchState.ENCENDIDO, HACE_5_MIN),
+                sala("b", 21.0, 1.0, 20.9, SwitchState.ENCENDIDO, HACE_5_MIN),
+                sala("c", 21.0, 1.0, 20.5, SwitchState.ENCENDIDO, HACE_5_MIN)));
+
+    CoreAnswer respuesta = core.calcularComandos(AHORA, config);
+
+    assertComandosIguales(respuesta, new CommandSwitch("sw-b", SwitchState.APAGADO));
+  }
+
   /**
    * Una sola habitación que se enfría 0.02 °C/min y se calienta 0.05 °C/min encendida, durante 8
    * h. Sin histéresis el switch cambia de estado en casi cada ciclo; con la histéresis por defecto

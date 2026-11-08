@@ -106,15 +106,15 @@ class TemperatureControlEngineIntegrationIT {
         .thenReturn(
             List.of(
                 new TemperatureMessage(
-                    "reading1", "ht-sim-room1", 18.5, 65.3, Instant.parse("2026-10-26T11:00:00Z")),
+                    "reading1", "ht-sim-room1", 18.5, 65.3, Instant.now()),
                 new TemperatureMessage(
-                    "reading2", "ht-sim-room2", 19.0, 66.2, Instant.parse("2026-10-26T11:00:00Z")),
+                    "reading2", "ht-sim-room2", 19.0, 66.2, Instant.now()),
                 new TemperatureMessage(
                     "reading3",
                     "ht-sim-room3",
                     23.0,
                     73.4,
-                    Instant.parse("2026-10-26T11:00:00Z"))));
+                    Instant.now())));
 
     // Out of rush hour.
     controller.start(Instant.parse("2026-10-26T12:00:00Z"), 1);
@@ -160,18 +160,22 @@ class TemperatureControlEngineIntegrationIT {
                         """
                         .formatted(idSwitch, initialState))));
 
-    switchesApi.stubFor(
-        post(urlEqualTo("/switches/" + idSwitch + "/comandos"))
-            .willReturn(
-                okJson(
-                    """
-                        {
-                          "idSwitch": "%s",
-                          "estado": "%s",
-                          "aplicadoEn": "2026-10-26T00:00:00Z"
-                        }
-                        """
-                        .formatted(idSwitch, initialState.equals("ON") ? "ON" : "OFF"))));
+    // Like the real API, the answer carries the state that the command applied
+    for (String accion : List.of("ON", "OFF")) {
+      switchesApi.stubFor(
+          post(urlEqualTo("/switches/" + idSwitch + "/comandos"))
+              .withRequestBody(matchingJsonPath("$.accion", equalTo(accion)))
+              .willReturn(
+                  okJson(
+                      """
+                          {
+                            "idSwitch": "%s",
+                            "estado": "%s",
+                            "aplicadoEn": "2026-10-26T00:00:00Z"
+                          }
+                          """
+                          .formatted(idSwitch, accion))));
+    }
   }
 
   private static Room findRoom(DataSite data, String id) {
