@@ -40,8 +40,10 @@ graph TD
 
     subgraph Engine ["Módulo Controlador / Engine (Spring Boot)"]
         EngineCtrl["EngineController (REST)"]
+        EngineSvc["TemperatureEngineService (interface)"]
         SiteCtrl["SiteController / RoomController"]
         IntService["IntegrationService"]
+        InvSvc["InventoryService"]
         MqttSub["MqttSubscriber (Paho MQTT)"]
         MqttSync["MqttSubscriptionService"]
         Reeval["ReevaluationControlService"]
@@ -49,9 +51,12 @@ graph TD
         SiteState["SiteStateService (Enriquecedor de Estado)"]
         SwitchCli["SwitchClient (REST Client)"]
         MongoRepo["TemperatureReadingRepository"]
-        EngineCtrl --> TempAuto
-        SiteCtrl --> SiteState
+        EngineCtrl --> EngineSvc
+        EngineSvc --> TempAuto
+        SiteCtrl --> InvSvc
+        InvSvc --> SiteState
         IntService --> MqttSync
+        MqttSync --> MqttSub
         MqttSub --> MongoRepo
         MqttSub --> TempAuto
         Reeval --> TempAuto
@@ -86,14 +91,16 @@ graph TD
           switches hasta el límite de `potenciaContratadaKW`.
 
 2. **Engine / Controlador (`com.iiss.sensores.grupo_2.controlador`):**
-    - **`TemperatureControlEngine`:** Orquesta el ciclo de control. Administra el estado (`INICIAR` / `DETENER`), el factor de
-      aceleración de tiempo y la conversión a zona horaria local (`America/Montevideo`). Invoca a `ICore` y despacha los
-      comandos resultantes vía `SwitchClient`.
+    - **`TemperatureControlEngine`:** Implementa `TemperatureEngineService` y orquesta el ciclo de control. Administra el
+      estado (`INICIAR` / `DETENER`), el factor de aceleración de tiempo y la conversión a zona horaria local
+      (`America/Montevideo`). Invoca a `ICore` y despacha los comandos resultantes vía `SwitchClient`.
     - **`SiteStateService`:** Mantiene el estado en memoria, enriqueciendo las habitaciones con las últimas lecturas
-      térmicas obtenidas desde MongoDB o memoria.
-    - **`IntegrationService` y `MqttSubscriptionService`:** Registra automáticamente el controlador en el simulador al
-      iniciar (`ApplicationReadyEvent`), obtiene la configuración del sitio y suscribe dinámicamente a los tópicos MQTT
-      correspondientes.
+      térmicas obtenidas desde MongoDB o memoria, y realiza hidratación diferida de habitaciones pendientes.
+    - **`InventoryService`:** Guarda el inventario activo y notifica cambios de configuración mediante `UpdatedInventoryEvent`.
+      `SiteStateService.loadSiteState(...)` reacciona a esos cambios y repuebla el estado de runtime apropiadamente.
+    - **`IntegrationService` y `MqttSubscriptionService`:** `IntegrationService` registra automáticamente el controlador en
+      el simulador al iniciar (`ApplicationReadyEvent`) y, a partir del inventario activo, `MqttSubscriptionService`
+      configura los topics MQTT a escuchar y los re-suscribe cuando cambia el sitio.
     - **`MqttSubscriber`:** Cliente Eclipse Paho con reconexión automática (`AutomaticReconnect = true`) y
       sincronización ante desconexiones.
     - **`ReevaluationControlService`:** Tarea programada (`@Scheduled`) que reevalúa periódicamente el estado aunque no
@@ -167,18 +174,25 @@ sequenceDiagram
     participant App as Controlador (IntegrationService)
     participant Sim as Simulador de Cátedra
     participant InvService as InventoryService
+    participant MqttSync as MqttSubscriptionService
     participant MqttSub as MqttSubscriber
+    participant SiteState as SiteStateService
     Note over App: ApplicationReadyEvent
     loop Reintento cada 5 seg si no responde
         App ->> Sim: POST /controladores (etiqueta, baseUrl)
         Sim -->> App: 201 Created (idControlador, brokerMqtt, secret)
     end
 
-    App ->> Sim: GET /sitio
-    Sim -->> App: 200 OK (inventario, tarifa, habitaciones)
-    App ->> InvService: guardar / reemplazar inventario
-    App ->> MqttSub: connect(brokerUrl, clientId, topics)
+    App ->> MqttSync: conectar(brokerUrl, clientId)
+    MqttSync ->> InvService: obtener inventario activo
+    InvService -->> MqttSync: habitaciones / topics
+    MqttSync ->> MqttSub: connect(brokerUrl, clientId, topics)
     MqttSub -->> App: Conexión establecida y suscripción activa
+
+    InvService -->> SiteState: replace(inventory, true/false)
+    SiteState -->> InvService: estado runtime actualizado
+    InvService ->> MqttSync: UpdatedInventoryEvent
+    MqttSync ->> MqttSub: updateSubscriptions(topics)
 ```
 
 ---
@@ -205,9 +219,9 @@ graph TD
 ### Distribución de Paquetes (`controlador`):
 
 - `com.iiss.sensores.grupo_2.controlador.api`: Controladores REST (`EngineController`, `SiteController`,
-  `RoomController`), entidades MongoDB y servicios de inventario.
+  `RoomController`), entidades del inventario y servicios como `InventoryService` y `RoomService`.
 - `com.iiss.sensores.grupo_2.controlador.engine.service`: `TemperatureControlEngine`, `SiteStateService`,
-  `ReevaluationControlService`.
+  `ReevaluationControlService`, `InventoryMapper` y soporte de estado del motor.
 - `com.iiss.sensores.grupo_2.controlador.engine.mqtt`: `MqttSubscriber` con manejo de callbacks de conexión y
   reconexión.
 - `com.iiss.sensores.grupo_2.controlador.engine.client`: `SwitchClient` y configuración de `RestClient` HTTP con
