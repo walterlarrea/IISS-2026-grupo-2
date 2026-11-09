@@ -7,7 +7,7 @@ de temperatura EcoWarm.
 
 ### Directorios principales
 
-**engine/** contiene la lógica de integración y ejecución del controlador, la recepción de mediciones y las API
+**controller/** _(o engine)_ contiene la lógica de integración y ejecución del controlador, la recepción de mediciones y las API
 relacionadas con la gestión del sistema.
 
 **core/** contiene la lógica central del control de temperatura y las reglas de negocio, separadas de las tecnologías
@@ -24,60 +24,57 @@ externas.
 **scripts/** contiene scripts para construir, iniciar y detener los servicios, probar las API y enviar o recibir
 mensajes MQTT.
 
-El proyecto utiliza **Spring Boot** para las aplicaciones Java, **MQTT** para la comunicación entre componentes, *
-*MongoDB** para persistir los datos y **Docker Compose** para ejecutar los servicios.
+El proyecto utiliza **Spring Boot** para las aplicaciones Java, **MQTT** para la comunicación entre componentes, **MongoDB** para persistir los datos y **Docker Compose** para ejecutar los servicios.
 
 El archivo **pom.xml** raíz agrega los módulos Maven del proyecto, mientras que cada módulo dispone de su propia
 configuración.
 
 ## 2. SCRIPTS y CONF
 
-1. docker --help, en consola para ver sus respectivos commands.
-2. Para ejecutar los scripts .sh en la consola. Ej: **./up.sh** o **bash up.sh** o **sh up.sh**
-3. Para ejecutar el script build. sh, se puede usar: build.sh local (para .env.local) o build.sh dev (para .env.dev). Si
-   no se escribe nada posterior al .sh, tomará a dev por defecto.
+1. Ejecuta `docker --help` en la consola para consultar los comandos disponibles.
+2. Desde la raíz del proyecto, ejecuta los scripts `.sh` con Bash. Por ejemplo: `bash scripts/up.sh`.
+3. Para construir las imágenes con un entorno específico, usa `bash scripts/build.sh local` (para `.env.local`) o `bash scripts/build.sh dev` (para `.env.dev`). Si no se indica un entorno, se usa `dev` por defecto.
 
 **#!/bin/bash --> se tiene que ejecutar usando Bash**
 
 - **Scripts docker**
-    - **up.sh** sirve para levantar Docker compose y crear la imagen antes de iniciar los contenedores.
-    - **down.sh** sirve para detener y eliminar los contenedores.
-    - **stop.sh** sirve para detener pero sin eliminar los contenedores.
-    - **build.sh** sirve para crear la imagen en Docker.
-    - **receive-temp.sh** se suscribe a un tópico MQTT y muestra en la consola todos los mensajes que lleguen de dicho
-      tópico.
-    - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
-    - **test-validacion.sh**  para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
-    - **run-controlador-local.sh** para cambiarlo a local.
-    - **kill-ports.sh** busca procesos en esos puertos y lo mata (Bash).
-    - **kill-ports.ps1** busca procesos en esos puertos y lo mata (PowerShell).
-- **Simulación**
-    - **build-sim.sh** sirve para crear la imagen del simulador en Docker.
-    - **up-sim.sh** sirve para levantar el simulador en Docker.
-- **curl-ejemplos**
+  - **up.sh** sirve para levantar Docker compose y crear la imagen antes de iniciar los contenedores.
+  - **down.sh** sirve para detener y eliminar los contenedores.
+  - **stop.sh** sirve para detener pero sin eliminar los contenedores.
+  - **build.sh** sirve para crear la imagen en Docker.
+  - **receive-temp.sh** se suscribe a un tópico MQTT y muestra en la consola todos los mensajes que lleguen de dicho
+    tópico.
+  - **send-temp.sh** publica los mensajes en un tópico MQTT y estos le llegan a quien esté suscripto.
+  - **test-validacion.sh** para crear datos de prueba (validos e invalidos) a traves de la API de habitaciones
+  - **run-controlador-local.sh** para cambiarlo a local.
+  - **kill-ports.sh** busca procesos en esos puertos y lo mata (Bash).
+  - **kill-ports.ps1** busca procesos en esos puertos y lo mata (PowerShell).
+- **Simulación** (`scripts/simulacion/`)
+  - **build-sim.sh** sirve para crear la imagen del simulador en Docker.
+  - **up-sim.sh** sirve para levantar el simulador en Docker.
+- **curl-ejemplos** (`scripts/curl-ejemplos/`)
+  - **curl-ctrl**
+    - **ctrln-start.sh** inicia el controlador. Modificar el factor tiempo a gusto.
+    - **ctrln-status.sh** obtiene el estado del controlador.
+    - **ctrln-stop.sh** detiene el controlador.
 
-    - **curl-ctrl**
-        - **ctrln-start.sh** inicia el controlador. Modificar el factor tiempo a gusto.
-        - **ctrln-status.sh** obtiene el estado del controlador.
-        - **ctrln-stop.sh** detiene el controlador.
+  - **curl-rooms**
+    - **rooms-create0.sh** crea la habitación nº0.
+    - **rooms-create1.sh** crea la habitación nº1.
+    - **rooms-delete.sh** elimina una habitación por su ID.
+    - **rooms-find.sh** busca la habitación por ID de termostato.
+    - **rooms-list.sh** lista todas las habitaciones.
+    - **rooms-patch.sh** modificar la temperatura esperada de la habitación por su ID.
+    - **rooms-validar.sh** validar todas las habitaciones de la coleccion (detecta inválidas o duplicadas).
 
-    - **curl-rooms**
-        - **rooms-create0.sh** crea la habitación nº0.
-        - **rooms-create1.sh** crea la habitación nº1.
-        - **rooms-delete.sh** elimina una habitación por su ID.
-        - **rooms-find.sh** busca la habitación por ID de termostato.
-        - **rooms-list.sh** lista todas las habitaciones.
-        - **rooms-patch.sh** modificar la temperatura esperada de la habitación por su ID.
-        - **rooms-validar.sh** validar todas las habitaciones de la coleccion (detecta inválidas o duplicadas).
+  - **curl-site**
+    - **site-replace.sh** reemplaza el inventory.
+    - **site-status.sh** obtiene el inventory del site.
 
-    - **curl-site**
-        - **site-replace.sh** reemplaza el inventory.
-        - **site-status.sh** obtiene el inventory del site.
-
-    - **curl-switch**
-        - **switch-off.sh** apaga el switch.
-        - **switch-on.sh** enciende el switch.
-        - **switch-status-sw0.sh** consulta el estado actual del switch 0.
+  - **curl-switch**
+    - **switch-off.sh** apaga el switch.
+    - **switch-on.sh** enciende el switch.
+    - **switch-status-sw0.sh** consulta el estado actual del switch 0.
 
 ## 3. EJECUCIÓN
 
@@ -87,9 +84,7 @@ configuración.
 2. Asegurarse de que este en JDK-25.
 3. Ejecutar el programa desde Compose.
 4. El programa se conectará al broker MQTT.
-5. Una vez conectado se suscribirá al tópico : "#".
-    - El '#' es para que reciba todos los mensajes que llegan a los tópicos del broker. Como último recurso si no hay
-      habitaciones.
+5. Una vez conectado, se suscribirá a los tópicos MQTT configurados para las habitaciones del inventario activo. Si no hay habitaciones configuradas, no se suscribirá a ningún tópico.
 6. Cualquier mensaje recibido lo mostrará en la consola.
 
 ### Integración con el simulador EcoWarm
@@ -113,7 +108,7 @@ java -jar ecowarm-run.jar --host host.docker.internal
 
 **clientId**: JavaSubscriber **(local, si es dev: JavaSubscriberDev)**
 
-**topic**: "#"
+**topics**: los configurados para las habitaciones del inventario activo.
 
 ## 4. MÓDULO: PUBLISHER
 
@@ -121,12 +116,12 @@ java -jar ecowarm-run.jar --host host.docker.internal
 Este manda mensajes al broker cada 3 segundos, con una id del dispositivo que lo envía, su temperatura y la fecha de
 envío como Epoch en milisegundos. Está desarrollada utilizando Spring Boot.
 
-## 5. MÓDULO: ENGINE
+## 5. MÓDULO: CONTROLLER (API + ENGINE)
 
 **Se juntaron los módulos subscriber y rooms-api en uno solo.**
 
-El módulo engine integra los componentes necesarios para ejecutar el sistema de control automático de temperatura. Actúa
-como intermediario entre las mediciones recibidas, la configuración del site, la lógica de control del core y los
+El módulo controller integra los componentes necesarios para ejecutar el sistema de control automático de temperatura.
+Actúa como intermediario entre las mediciones recibidas, la configuración del site, la lógica de control del core y los
 dispositivos que se deben accionar.
 
 Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST para comunicarse con los demás componentes.
@@ -134,22 +129,22 @@ Está desarrollado en Java con Spring Boot y utiliza MQTT, MongoDB y API REST pa
 ### Endpoints principales
 
 - **EngineController**
-    - GET /control: consulta y devuelve el estado actual del controlador.
-    - POST /control/comandos: permite iniciar o detener el controlador.
+  - GET /control: consulta y devuelve el estado actual del controlador.
+  - POST /control/comandos: permite iniciar o detener el controlador.
 
 - **RoomController**
-    - GET /habitaciones: obtiene todas las habitaciones.
-    - GET /habitaciones/{id}: obtiene una habitación por su id.
-    - GET /habitaciones/termostato/{idTermostato}: obtiene la habitación asociada a un termostato.
-    - GET /habitaciones/validar: valida las habitaciones registradas.
-    - POST /habitaciones: crea una nueva habitación.
-    - PUT /habitaciones/{id}: modifica una habitación existente.
-    - PATCH /habitaciones/{id}: modifica parcialmente una habitación.
-    - DELETE /habitaciones/{id}: elimina una habitación.
+  - GET /habitaciones: obtiene todas las habitaciones.
+  - GET /habitaciones/{id}: obtiene una habitación por su id.
+  - GET /habitaciones/termostato/{idTermostato}: obtiene la habitación asociada a un termostato.
+  - GET /habitaciones/validar: valida las habitaciones registradas.
+  - POST /habitaciones: crea una nueva habitación.
+  - PUT /habitaciones/{id}: modifica una habitación existente.
+  - PATCH /habitaciones/{id}: modifica parcialmente una habitación.
+  - DELETE /habitaciones/{id}: elimina una habitación.
 
 - **SiteController**
-    - GET /sitio: consulta la configuración actual del site.
-    - PUT /sitio: reemplaza y actualiza el estado del site.
+  - GET /sitio: consulta la configuración actual del site.
+  - PUT /sitio: reemplaza y actualiza el estado del site.
 
 ## 6. MÓDULO: CORE
 
@@ -179,8 +174,8 @@ El módulo es utilizado por el controlador automático de temperatura para activ
 según la temperatura actual de una habitación.
 
 - **Endpoints principales**
-    - GET /switches/{id}: obtiene el estado actual de un switch.
-    - POST /switches/{id}: actualiza el estado del switch, permitiendo encenderlo o apagarlo.
+  - GET /switches/{id}: obtiene el estado actual de un switch.
+  - POST /switches/{id}/comandos: actualiza el estado del switch, permitiendo encenderlo o apagarlo.
 
 ## 8. SWAGGER/OPENAPI
 
@@ -224,11 +219,12 @@ mvn -B verify
 
 ## 11. MONGO DB
 
-Se creo una base de datos llamada **Sensores**, dentro de esta se encuentran dos colecciones:
+Se creó una base de datos llamada **Sensores**. Entre sus colecciones se encuentran:
 
-- inventory: contiene sitios y sus datos. Cada site contiene una lista de habitaciones con sus respectivos datos.
-- Mediciones: recibe los datos del mensaje: id, temperatura en Celsius, temperatura en Fahrenheit y marca de tiempo
-  Epoch en milisegundos.
+- **inventario_controlador**: contiene el inventario activo del sitio y sus habitaciones.
+- **habitaciones**: contiene los documentos de las habitaciones.
+- **Mediciones**: recibe las mediciones de temperatura. El nombre puede configurarse mediante
+  `MONGODB_COLLECTION_MEDICIONES`.
 
 ## 12. JIRA
 
@@ -241,7 +237,7 @@ Acá se encuentra la organización y seguimiento del proyecto.
 Para ejecutar el MCP Server:
 
 ```bash
-docker-compose -f docker-compose-test.yml run --rm mcp-server
+docker compose --env-file .env.dev -f docker/docker-compose.yml up -d --build mcp-server
 ```
 
 Config para Claude
@@ -251,11 +247,7 @@ Config para Claude
   "mcpServers": {
     "controlador-sitio": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "http://localhost:8081/mcp"
-      ]
+      "args": ["-y", "mcp-remote", "http://localhost:8081/mcp"]
     }
   }
 }
