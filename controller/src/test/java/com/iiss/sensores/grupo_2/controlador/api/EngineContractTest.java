@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -78,7 +79,7 @@ class EngineContractTest {
                   }]
                 }
                 """;
-    when(inventoryService.reemplazar(any(Inventory.class)))
+    when(inventoryService.replace(any(Inventory.class), eq(true)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(switchClient.consultarEstado(any()))
         .thenReturn(new SwitchStateResponse("switch1", SwitchState.APAGADO, null));

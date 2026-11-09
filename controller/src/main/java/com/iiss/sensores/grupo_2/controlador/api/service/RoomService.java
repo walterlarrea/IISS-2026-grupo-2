@@ -53,7 +53,7 @@ public class RoomService implements RoomProvider {
 
     List<Inventory.Habitacion> habitaciones = new ArrayList<>(inventory.habitaciones());
     habitaciones.add(habitacion);
-    inventoryService.reemplazar(
+    inventoryService.replace(
         new Inventory(inventory.schemaVersion(), inventory.sitio(), habitaciones));
     return habitacion;
   }
@@ -80,7 +80,7 @@ public class RoomService implements RoomProvider {
                 habitacion.idSwitch(),
                 habitacion.urlSwitch());
         habitaciones.set(i, actualizada);
-        inventoryService.reemplazar(
+        inventoryService.replace(
             new Inventory(inventory.schemaVersion(), inventory.sitio(), habitaciones));
         return Optional.of(actualizada);
       }
@@ -100,7 +100,7 @@ public class RoomService implements RoomProvider {
     if (!habitaciones.removeIf(habitacion -> habitacion.id().equals(id))) {
       return false;
     }
-    inventoryService.reemplazar(
+    inventoryService.replace(
         new Inventory(inventory.schemaVersion(), inventory.sitio(), habitaciones));
     return true;
   }
@@ -160,7 +160,7 @@ public class RoomService implements RoomProvider {
                   ? (String) cambios.get(urlSwitchKey)
                   : existente.urlSwitch());
       habitaciones.set(i, actualizada);
-      inventoryService.reemplazar(
+      inventoryService.replace(
           new Inventory(inventory.schemaVersion(), inventory.sitio(), habitaciones));
       return Optional.of(actualizada);
     }

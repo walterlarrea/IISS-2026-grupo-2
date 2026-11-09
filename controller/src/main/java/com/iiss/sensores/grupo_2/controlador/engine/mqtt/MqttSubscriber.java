@@ -53,7 +53,8 @@ public class MqttSubscriber {
           new MqttCallbackExtended() {
             @Override
             public void connectionLost(Throwable cause) {
-              logger.error("Connection to MQTT broker was lost", cause);
+              logger.warn("Connection to MQTT broker was lost");
+              logger.debug("Error: ", cause);
               synchronized (MqttSubscriber.this) {
                 subscribedTopics.clear();
               }
@@ -69,8 +70,8 @@ public class MqttSubscriber {
                 try {
                   applySubscriptions();
                 } catch (RuntimeException exception) {
-                  logger.error(
-                      "No se pudieron restaurar las suscripciones MQTT tras conectar", exception);
+                  logger.error("No se pudieron restaurar las suscripciones MQTT tras conectar");
+                  logger.debug("Error: ", exception);
                 }
               }
             }
@@ -82,6 +83,12 @@ public class MqttSubscriber {
               logger.info("Mensaje MQTT recibido. Topic: {} | Payload: {}", topic, payload);
 
               try {
+                // A missing tC would be read as 0.0 °C (primitive double), so it is rejected here
+                if (!objMap.readTree(payload).hasNonNull("tC")) {
+                  logger.warn("Mensaje MQTT sin temperatura (tC), se descarta: {}", payload);
+                  return;
+                }
+
                 ThermostatMessageObject.Temperature parsedThermostatMessage =
                     objMap.readValue(payload, ThermostatMessageObject.Temperature.class);
 
@@ -101,11 +108,21 @@ public class MqttSubscriber {
                 logger.info(
                     "Temperature received: {} °C. Thermostat: {}", tempMessage.tC(), idThermostat);
 
+                // Implausible values are not stored either, they would be reloaded as "last reading"
+                if (!TemperatureControlEngine.isPlausibleTemperature(tempMessage.tC())) {
+                  logger.warn(
+                      "Temperatura implausible ({} °C) del termostato {}, se descarta",
+                      tempMessage.tC(),
+                      idThermostat);
+                  return;
+                }
+
                 try {
                   tempMeasurements.saveTemperature(tempMessage);
                   logger.info("Medición guardada en MongoDB");
                 } catch (Exception e) {
-                  logger.error("Error al guardar la medición en MongoDB", e);
+                  logger.error("Error al guardar la medición en MongoDB");
+                  logger.debug("Error: ", e);
                 }
 
                 try {
@@ -114,12 +131,13 @@ public class MqttSubscriber {
                   temperatureControlEngine.processTemperature(tempMessage);
 
                 } catch (Exception e) {
-                  logger.error(
-                      "Error al procesar la temperatura del termostato {}", idThermostat, e);
+                  logger.error("Error al procesar la temperatura del termostato {}", idThermostat);
+                  logger.debug("Error: ", e);
                 }
 
               } catch (Exception e) {
-                logger.error("Error al interpretar el mensaje MQTT: {}", payload, e);
+                logger.error("Error al interpretar el mensaje MQTT: {}", payload);
+                logger.debug("Error: ", e);
               }
             }
 
@@ -132,6 +150,8 @@ public class MqttSubscriber {
       MqttConnectOptions connOpts = new MqttConnectOptions();
       connOpts.setCleanSession(true);
       connOpts.setAutomaticReconnect(true);
+      // Default is 30 s: a broker that doesn't answer must not hold the scheduler thread that long
+      connOpts.setConnectionTimeout(5);
 
       logger.info("Connecting to broker: {}", broker);
       client.connect(connOpts);
@@ -205,7 +225,8 @@ public class MqttSubscriber {
       }
       client.close();
     } catch (MqttException exception) {
-      logger.warn("Error al cerrar la conexión MQTT anterior", exception);
+      logger.warn("Error al cerrar la conexión MQTT");
+      logger.debug("Error: ", exception);
     } finally {
       client = null;
       subscribedTopics.clear();

@@ -41,8 +41,8 @@ public class MqttSubscriptionService {
     try {
       mqttSubscriber.updateSubscriptions(obtenerTopicsDeseados());
     } catch (RuntimeException exception) {
-      logger.error(
-          "No se pudieron sincronizar los topics MQTT del Inventory actualizado", exception);
+      logger.error("No se pudieron sincronizar los topics MQTT del Inventory actualizado");
+      logger.debug("Error: ", exception);
     }
   }
 
@@ -52,11 +52,7 @@ public class MqttSubscriptionService {
             .flatMap(java.util.Collection::stream)
             .map(Inventory.Habitacion::topicTermostato)
             .collect(Collectors.toCollection(LinkedHashSet::new));
-    // Agregar el topic de fallback solo si la lista de topics deseados está vacía, para evitar
-    // suscribirse a un topic innecesario.
-    if (topics.isEmpty() && fallbackTopic != null) {
-      topics.add(fallbackTopic);
-    }
+    // Sin habitaciones no hay nada que escuchar: no se suscribe a ningún topic (ni al de respaldo)
     return topics;
   }
 }

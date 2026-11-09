@@ -26,7 +26,8 @@ public class ThermostatMessageObject {
       ObjectMapper mapper = new ObjectMapper();
       return mapper.writeValueAsString(object);
     } catch (JsonProcessingException e) {
-      logger.error("Failed to validate JSON object of type {}", object.getClass().getName(), e);
+      logger.error("Failed to validate JSON object of type {}", object.getClass().getName());
+      logger.debug("Error: ", e);
       throw new Exception("Failed to validate JSON object", e);
     }
   }

@@ -32,21 +32,21 @@ class IntegrationServiceTest {
                     """
                         {
                           "etiqueta":"control-casa",
-                          "baseUrl":"http://controlador:8080",
+                          "baseUrl":"http://localhost:8080",
                           "apiKey":"controller-api-key"
                         }
                         """))
         .andRespond(
             withSuccess(
                 """
-                        {
-                          "id":"control-casa",
-                          "etiqueta":"control-casa",
-                          "baseUrl":"http://controlador:8080",
-                          "registradoEn":"2026-10-12T20:00:00Z",
-                          "mqtt":{"host":"broker.test","puerto":1883}
-                        }
-                        """,
+                    {
+                      "id":"control-casa",
+                      "etiqueta":"control-casa",
+                      "baseUrl":"http://localhost:8080",
+                      "registradoEn":"2026-10-12T20:00:00Z",
+                      "mqtt":{"host":"broker.test","puerto":1883}
+                    }
+                    """,
                 MediaType.APPLICATION_JSON));
 
     IntegrationService service =
@@ -58,6 +58,7 @@ class IntegrationServiceTest {
             "simulator-api-key",
             "control-casa",
             "http://controlador:8080",
+            "http://localhost:8080",
             "controller-api-key",
             "tcp://localhost:1883",
             "controlador-test");

@@ -4,6 +4,7 @@ import com.iiss.sensores.grupo_2.controlador.engine.client.SwitchClient;
 import com.iiss.sensores.grupo_2.controlador.engine.model.SwitchStateResponse;
 import com.iiss.sensores.grupo_2.controlador.engine.persistence.TemperatureReadingRepository;
 import com.iiss.sensores.grupo_2.controlador.engine.service.SiteStateService;
+import com.iiss.sensores.grupo_2.controlador.engine.utils.CustomClock;
 import com.iiss.sensores.grupo_2.dto.TemperatureMessage;
 import com.iiss.sensores.grupo_2.enums.SwitchState;
 import com.iiss.sensores.grupo_2.modelos.input.DataSite;
@@ -13,9 +14,15 @@ import com.iiss.sensores.grupo_2.modelos.input.Site;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -39,7 +46,7 @@ class SiteStateServiceTest {
         .thenReturn(new SwitchStateResponse("switch-1", SwitchState.APAGADO, null));
     List<TemperatureMessage> tempReadings = new ArrayList<>();
     tempReadings.add(
-        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()));
     when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
 
     siteStateService = new SiteStateService(switchClient, tempReadingsRepository);
@@ -90,14 +97,77 @@ class SiteStateServiceTest {
   }
 
   @Test
+  void sellaConLaHoraActualLasHabitacionesSinInicioDeSituacionConocido() {
+    ZonedDateTime ahora = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+
+    Room room = siteStateService.getSiteState(ahora).habitaciones().get(0);
+
+    assertEquals(ahora, room.lastSwitchChange());
+  }
+
+  @Test
+  void noPisaElInicioDeSituacionDeUnaHabitacionQueSigueEsperando() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    Room room = siteStateService.getSiteState(inicio.plusHours(2)).habitaciones().get(0);
+
+    assertEquals(inicio, room.lastSwitchChange());
+  }
+
+  @Test
+  void reiniciaElRelojDeEsperaDeUnaHabitacionApagadaQueYaAlcanzoSuTemperatura() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+    siteStateService.updateRoomTemperature("termo-1", 21.5);
+
+    Room room = siteStateService.getSiteState(inicio.plusHours(2)).habitaciones().get(0);
+
+    assertEquals(inicio.plusHours(2), room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarEstadoSwitchRegistraElMomentoDelCambio() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    ZonedDateTime cambio = inicio.plusMinutes(30);
+    siteStateService.getSiteState(inicio);
+
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO, cambio);
+
+    Room room = siteStateService.getSiteState(cambio.plusMinutes(5)).habitaciones().get(0);
+    assertEquals(cambio, room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarEstadoSwitchSinCambioRealConservaElMomentoAnterior() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    siteStateService.updateSwitchState("switch-1", SwitchState.APAGADO, inicio.plusMinutes(30));
+
+    Room room = siteStateService.getSiteState(inicio.plusMinutes(35)).habitaciones().get(0);
+    assertEquals(inicio, room.lastSwitchChange());
+  }
+
+  @Test
+  void actualizarTemperaturaConservaElInicioDeSituacion() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.getSiteState(inicio);
+
+    DataSite actualizado = siteStateService.updateRoomTemperature("termo-1", 18.5);
+
+    assertEquals(inicio, actualizado.habitaciones().get(0).lastSwitchChange());
+  }
+
+  @Test
   void cargarEstadoConsultaYMapeaElEstadoDeCadaSwitch() {
     clearInvocations(switchClient);
 
     List<TemperatureMessage> tempReadings = new ArrayList<>();
     tempReadings.add(
-        new TemperatureMessage("0", "termo-2", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-2", 19.0, 24.0, Instant.now()));
     tempReadings.add(
-        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.parse("2026-10-24T21:09:53Z")));
+        new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()));
     when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(tempReadings);
 
     when(switchClient.consultarEstado(any()))
@@ -150,5 +220,257 @@ class SiteStateServiceTest {
     siteStateService.getSiteState();
 
     verify(switchClient, times(1)).consultarEstado(any());
+  }
+
+  private static final Site SITE = new Site("site-1", "Casa", 5.0, new Fee(null));
+
+  private static Room habitacion(
+      String id, double temperaturaEsperada, String idSwitch, String idTermostato) {
+    return new Room(
+        id,
+        "Hab " + id,
+        temperaturaEsperada,
+        1.0,
+        idTermostato,
+        "casa/" + id + "/temperatura",
+        idSwitch,
+        "http://localhost/switches",
+        Double.NaN,
+        SwitchState.APAGADO);
+  }
+
+  @Test
+  void recargarSoloConfiguracionNoConsultaSwitchesYConservaElEstadoEnEjecucion() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    siteStateService.loadSiteState(
+        new DataSite(SITE, List.of(habitacion("hab-1", 21.0, "switch-1", "termo-1"))));
+    siteStateService.getSiteState(inicio);
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO, inicio);
+    clearInvocations(switchClient, tempReadingsRepository);
+
+    siteStateService.loadSiteState(
+        new DataSite(SITE, List.of(habitacion("hab-1", 23.0, "switch-1", "termo-1"))));
+    Room room = siteStateService.getSiteState(inicio.plusHours(1)).habitaciones().get(0);
+
+    verify(switchClient, never()).consultarEstado(any());
+    verify(tempReadingsRepository, never()).getLastTemperatureMeasurements(any());
+    assertEquals(23.0, room.expectedTemperature());
+    assertEquals(19.0, room.currentTemperatureC());
+    assertEquals(SwitchState.ENCENDIDO, room.currentSwitchState());
+    assertEquals(inicio, room.lastSwitchChange());
+  }
+
+  @Test
+  void reemplazoCompletoOlvidaElEstadoEnEjecucionYVuelveAHidratarTodas() {
+    ZonedDateTime inicio = ZonedDateTime.parse("2026-10-24T21:00:00Z");
+    Room hab1 = habitacion("hab-1", 21.0, "switch-1", "termo-1");
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(hab1)));
+    siteStateService.getSiteState(inicio);
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO, inicio);
+    clearInvocations(switchClient, tempReadingsRepository);
+
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(hab1)), true);
+    Room room = siteStateService.getSiteState().habitaciones().get(0);
+
+    verify(switchClient).consultarEstado(hab1);
+    verify(tempReadingsRepository).getLastTemperatureMeasurements(List.of("termo-1"));
+    assertNull(room.lastSwitchChange());
+  }
+
+  @Test
+  void anadirHabitacionSoloConsultaElSwitchDeLaNueva() {
+    siteStateService.loadSiteState(
+        new DataSite(SITE, List.of(habitacion("hab-1", 21.0, "switch-1", "termo-1"))));
+    siteStateService.getSiteState();
+    clearInvocations(switchClient, tempReadingsRepository);
+
+    Room nueva = habitacion("hab-2", 20.0, "switch-2", "termo-2");
+    siteStateService.loadSiteState(
+        new DataSite(SITE, List.of(habitacion("hab-1", 21.0, "switch-1", "termo-1"), nueva)));
+    siteStateService.getSiteState();
+
+    verify(switchClient, times(1)).consultarEstado(any());
+    verify(switchClient).consultarEstado(nueva);
+    verify(tempReadingsRepository).getLastTemperatureMeasurements(List.of("termo-2"));
+  }
+
+  @Test
+  void cambiarElSwitchDeUnaHabitacionLaVuelveAHidratar() {
+    siteStateService.loadSiteState(
+        new DataSite(SITE, List.of(habitacion("hab-1", 21.0, "switch-1", "termo-1"))));
+    siteStateService.getSiteState(ZonedDateTime.parse("2026-10-24T21:00:00Z"));
+    clearInvocations(switchClient);
+
+    Room cambiada = habitacion("hab-1", 21.0, "switch-9", "termo-1");
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(cambiada)));
+    Room room = siteStateService.getSiteState().habitaciones().get(0);
+
+    verify(switchClient).consultarEstado(cambiada);
+    assertNull(room.lastSwitchChange());
+  }
+
+  @Test
+  void unSwitchQueFallaNoImpideHidratarElRestoYSeReintenta() throws Exception {
+    Room ok = habitacion("hab-1", 21.0, "switch-1", "termo-1");
+    Room caida = habitacion("hab-2", 20.0, "switch-2", "termo-2");
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
+        .thenReturn(
+            List.of(
+                new TemperatureMessage("0", "termo-1", 19.0, 24.0, Instant.now()),
+                new TemperatureMessage("0", "termo-2", 18.0, 24.0, Instant.now())));
+    when(switchClient.consultarEstado(caida)).thenThrow(new IllegalStateException("timeout"));
+    org.mockito.Mockito.doThrow(new IllegalStateException("timeout"))
+        .when(switchClient)
+        .apagar(caida);
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(ok, caida)));
+
+    List<Room> primerCiclo = siteStateService.getSiteState().habitaciones();
+    assertEquals(List.of("hab-1"), primerCiclo.stream().map(Room::id).toList());
+
+    clearInvocations(switchClient);
+    siteStateService.getSiteState();
+    verify(switchClient, never()).consultarEstado(ok);
+    verify(switchClient).consultarEstado(caida);
+  }
+
+  @Test
+  void unSwitchQueNoSeDejaConsultarRecibeUnApagadoPorLasDudas() throws Exception {
+    Room sinConsulta = habitacion("hab-1", 21.0, "switch-1", "termo-1");
+    when(switchClient.consultarEstado(sinConsulta)).thenThrow(new IllegalStateException("sin estado"));
+    siteStateService.loadSiteState(new DataSite(SITE, List.of(sinConsulta)));
+
+    Room room = siteStateService.getSiteState().habitaciones().get(0);
+
+    verify(switchClient).apagar(sinConsulta);
+    assertEquals(SwitchState.APAGADO, room.currentSwitchState());
+  }
+
+  @Test
+  void unaHabitacionEliminadaConSwitchEncendidoQuedaPendienteDeApagado() {
+    DataSite actual = siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    assertEquals(1, siteStateService.getOrphanRooms().size());
+    assertEquals("switch-1", siteStateService.getOrphanRooms().get(0).idSwitch());
+  }
+
+  @Test
+  void unaHabitacionEliminadaConSwitchApagadoNoQuedaPendiente() {
+    DataSite actual = siteStateService.getSiteState();
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    assertTrue(siteStateService.getOrphanRooms().isEmpty());
+  }
+
+  @Test
+  void unaLecturaViejaDeLaBaseNoSeUsaAlHidratar() {
+    DataSite actual = siteStateService.getSiteState();
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any()))
+        .thenReturn(
+            List.of(
+                new TemperatureMessage(
+                    "0", "termo-1", 19.0, 24.0, Instant.now().minusSeconds(3600))));
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of(sinTemperatura())), true);
+
+    assertTrue(siteStateService.getSiteState().habitaciones().isEmpty());
+  }
+
+  @Test
+  void unaHabitacionEncendidaSinLecturaRecienteSeInformaComoSilenciosa() {
+    DataSite actual = siteStateService.getSiteState();
+    when(tempReadingsRepository.getLastTemperatureMeasurements(any())).thenReturn(List.of());
+    when(switchClient.consultarEstado(any()))
+        .thenReturn(new SwitchStateResponse("switch-1", SwitchState.ENCENDIDO, null));
+
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of(sinTemperatura())), true);
+    siteStateService.getSiteState();
+
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
+  }
+
+  @Test
+  void elSilencioDeUnTermostatoSeMideConElRelojDelControl() {
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.parse("2026-11-03T10:00:00Z"));
+    Clock base =
+        new Clock() {
+          public ZoneId getZone() { return ZoneOffset.UTC; }
+          public Clock withZone(ZoneId zone) { return this; }
+          public Instant instant() { return reloj.get(); }
+        };
+    // reloj del control acelerado x60: 15 segundos reales son 15 minutos del control
+    siteStateService.setClock(new CustomClock(Instant.parse("2026-11-03T10:00:00Z"), 60, base));
+    siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.updateRoomTemperature("termo-1", 19.0);
+
+    reloj.set(Instant.parse("2026-11-03T10:00:14Z")); // 14 minutos del control sin lecturas
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+
+    reloj.set(Instant.parse("2026-11-03T10:00:16Z")); // 16 minutos del control sin lecturas
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
+
+    siteStateService.updateRoomTemperature("termo-1", 19.2); // una lectura nueva lo pone al día
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+  }
+
+  /** Reloj base que el test mueve a mano */
+  private static Clock relojManual(AtomicReference<Instant> reloj) {
+    return new Clock() {
+      public ZoneId getZone() { return ZoneOffset.UTC; }
+      public Clock withZone(ZoneId zone) { return this; }
+      public Instant instant() { return reloj.get(); }
+    };
+  }
+
+  @Test
+  void elAbandonoDeUnaHabitacionHuerfanaSeMideConElRelojDelControl() {
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.parse("2026-11-08T10:00:00Z"));
+    // reloj del control acelerado x60: 1 minuto real es 1 hora del control
+    siteStateService.setClock(
+        new CustomClock(Instant.parse("2026-11-03T10:00:00Z"), 60, relojManual(reloj)));
+    DataSite actual = siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.loadSiteState(new DataSite(actual.site(), List.of()));
+
+    reloj.set(Instant.parse("2026-11-08T10:00:59Z")); // 59 minutos del control
+    assertEquals(1, siteStateService.getOrphanRooms().size());
+
+    reloj.set(Instant.parse("2026-11-08T10:01:01Z")); // 61 minutos del control: se abandona
+    assertTrue(siteStateService.getOrphanRooms().isEmpty());
+  }
+
+  @Test
+  void alCambiarDeRelojSeConservaElTiempoTranscurridoDesdeLaUltimaLectura() {
+    // lectura recibida con el controlador detenido (reloj del sistema)
+    siteStateService.getSiteState();
+    siteStateService.updateSwitchState("switch-1", SwitchState.ENCENDIDO);
+    siteStateService.updateRoomTemperature("termo-1", 19.0);
+
+    // arranca con una fecha simulada 5 días anterior: la lectura no queda "en el futuro"
+    AtomicReference<Instant> reloj = new AtomicReference<>(Instant.now());
+    siteStateService.setClock(
+        new CustomClock(Instant.now().minus(Duration.ofDays(5)), 60, relojManual(reloj)));
+    assertTrue(siteStateService.getStaleOnRooms().isEmpty());
+
+    reloj.set(reloj.get().plusSeconds(16)); // 16 minutos del control sin lecturas
+    assertEquals(1, siteStateService.getStaleOnRooms().size());
+  }
+
+  private static Room sinTemperatura() {
+    return new Room(
+        "hab-1",
+        "Living",
+        21.0,
+        1.5,
+        "termo-1",
+        "termo-1/living/temperatura",
+        "switch-1",
+        "http://localhost/switches/1",
+        null,
+        null);
   }
 }

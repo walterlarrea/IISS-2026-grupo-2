@@ -9,9 +9,10 @@
         <module name="switches-api" />
         <module name="core-controlador" />
         <module name="core" />
-        <module name="publisher" />
         <module name="controller" />
         <module name="common" />
+        <module name="publisher" />
+        <module name="mcp-server" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -26,6 +27,7 @@
       <module name="controller" options="-parameters -parameters" />
       <module name="core" options="-parameters -parameters" />
       <module name="iot_este" options="-parameters" />
+      <module name="mcp-server" options="-parameters -parameters" />
       <module name="publisher" options="-parameters -parameters" />
       <module name="sensores-parent" options="-parameters" />
       <module name="switches-api" options="-parameters -parameters" />

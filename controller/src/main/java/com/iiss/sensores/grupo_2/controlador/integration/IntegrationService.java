@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Dynamic register with MQTT component */
@@ -21,12 +22,15 @@ public class IntegrationService {
   private final String simulatorApiKey;
   private final String controllerLabel;
   private final String controllerBaseUrl;
+  private final String controllerPublicUrl;
   private final String controllerApiKey;
   private final String fallbackBroker;
   private final String mqttClientId;
   private final RestClient simulatorClient;
   private final MqttSubscriptionService mqttSubscriptionService;
   private final AtomicBoolean initialized = new AtomicBoolean();
+  private int localFailures;
+  private Instant nextLocalAttempt = Instant.EPOCH;
 
   public IntegrationService(
       RestClient.Builder restClientBuilder,
@@ -36,6 +40,7 @@ public class IntegrationService {
       @Value("${SIMULATOR_API_KEY:}") String simulatorApiKey,
       @Value("${CONTROLADOR_ETIQUETA:controlador}") String controllerLabel,
       @Value("${CONTROLADOR_API_URL:http://localhost:8080}") String controllerBaseUrl,
+      @Value("${CONTROLADOR_PUBLIC_API_URL:http://localhost:8080}") String controllerPublicUrl,
       @Value("${CONTROLADOR_API_KEY:development-key}") String controllerApiKey,
       @Value("${MQTT_BROKER_URL:tcp://localhost:1883}") String fallbackBroker,
       @Value("${MQTT_CLIENT_ID:ControladorSubscriber}") String mqttClientId) {
@@ -44,6 +49,7 @@ public class IntegrationService {
     this.simulatorApiKey = simulatorApiKey;
     this.controllerLabel = controllerLabel;
     this.controllerBaseUrl = controllerBaseUrl;
+    this.controllerPublicUrl = controllerPublicUrl;
     this.controllerApiKey = controllerApiKey;
     this.fallbackBroker = fallbackBroker;
     this.mqttClientId = mqttClientId;
@@ -78,7 +84,8 @@ public class IntegrationService {
             "Integración con simulador deshabilitada; usando broker y topic configurados localmente");
         initialized.set(true);
       } catch (RuntimeException exception) {
-        logger.error("No se pudo iniciar la conexión MQTT local", exception);
+        logger.warn("No se pudo iniciar la conexión MQTT local");
+        logger.debug("Error: ", exception);
       }
       return;
     }
@@ -88,8 +95,20 @@ public class IntegrationService {
   /** Retries registration every 5 seconds if fails to connect */
   @Scheduled(fixedDelayString = "${REGISTRATION_RETRY_MS:5000}")
   public void reintentarRegistro() {
-    if (conectarSimulador && !initialized.get()) {
+    if (initialized.get()) {
+      return;
+    }
+    if (conectarSimulador) {
       intentarInicializar();
+    } else if (!Instant.now().isBefore(nextLocalAttempt)) {
+      // Modo local: si el broker no estaba disponible al arrancar, se sigue intentando, esperando
+      // cada vez más (5 s, 10 s, ... hasta 60 s) para no ocupar el hilo de las tareas programadas
+      onApplicationReady();
+      if (!initialized.get()) {
+        localFailures++;
+        long waitSeconds = Math.min(60L, 5L << Math.min(localFailures, 4));
+        nextLocalAttempt = Instant.now().plusSeconds(waitSeconds);
+      }
     }
   }
 
@@ -102,7 +121,7 @@ public class IntegrationService {
           simulatorClient
               .post()
               .uri("/controladores")
-              .body(new AltaControlador(controllerLabel, controllerBaseUrl, controllerApiKey))
+              .body(new AltaControlador(controllerLabel, controllerPublicUrl, controllerApiKey))
               .retrieve()
               .body(RegistroControlador.class);
       if (registro == null
@@ -121,8 +140,7 @@ public class IntegrationService {
           controllerLabel,
           broker);
     } catch (RuntimeException exception) {
-      logger.warn(
-          "No se pudo inicializar la integración con el simulador; se reintentará", exception);
+      logger.warn("No se pudo inicializar la integración con el simulador; se reintentará");
     }
   }
 

@@ -43,20 +43,24 @@ public class InventoryService {
     return repository.findById(INVENTARIO_ACTIVO_ID).map(InventoryDocument::inventory);
   }
 
+  public Inventory replace(Inventory inventory) {
+    return this.replace(inventory, false);
+  }
+
   @CacheEvict(value = "habitaciones_termostato", allEntries = true)
-  public Inventory reemplazar(Inventory inventory) {
-    validar(inventory);
+  public Inventory replace(Inventory inventory, boolean fullReplace) {
+    validate(inventory);
 
     repository.save(new InventoryDocument(INVENTARIO_ACTIVO_ID, inventory));
 
-    siteStateService.loadSiteState(inventoryMapper.convertir(inventory));
+    siteStateService.loadSiteState(inventoryMapper.convertir(inventory), fullReplace);
 
     eventPublisher.publishEvent(new UpdatedInventoryEvent(inventory));
 
     return inventory;
   }
 
-  private void validar(Inventory inventory) {
+  private void validate(Inventory inventory) {
     List<String> errores = new ArrayList<>();
     Set<String> ids = new HashSet<>();
     Set<String> termostatos = new HashSet<>();
