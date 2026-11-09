@@ -45,7 +45,7 @@ graph TD
         MqttSub["MqttSubscriber (Paho MQTT)"]
         MqttSync["MqttSubscriptionService"]
         Reeval["ReevaluationControlService"]
-        TempAuto["ControllerTempAuto"]
+        TempAuto["TemperatureControlEngine"]
         SiteState["SiteStateService (Enriquecedor de Estado)"]
         SwitchCli["SwitchClient (REST Client)"]
         MongoRepo["TemperatureReadingRepository"]
@@ -86,7 +86,7 @@ graph TD
           switches hasta el límite de `potenciaContratadaKW`.
 
 2. **Engine / Controlador (`com.iiss.sensores.grupo_2.controlador`):**
-    - **`ControllerTempAuto`:** Orquesta el ciclo de control. Administra el estado (`INICIAR` / `DETENER`), el factor de
+    - **`TemperatureControlEngine`:** Orquesta el ciclo de control. Administra el estado (`INICIAR` / `DETENER`), el factor de
       aceleración de tiempo y la conversión a zona horaria local (`America/Montevideo`). Invoca a `ICore` y despacha los
       comandos resultantes vía `SwitchClient`.
     - **`SiteStateService`:** Mantiene el estado en memoria, enriqueciendo las habitaciones con las últimas lecturas
@@ -114,7 +114,7 @@ sequenceDiagram
     participant Broker as MQTT Broker
     participant MqttSub as MqttSubscriber
     participant Repo as Mongo Temp Repo
-    participant Engine as ControllerTempAuto
+    participant Engine as TemperatureControlEngine
     participant State as SiteStateService
     participant Core as Core (ICore)
     participant Switch as Switch REST API
@@ -206,7 +206,7 @@ graph TD
 
 - `com.iiss.sensores.grupo_2.controlador.api`: Controladores REST (`EngineController`, `SiteController`,
   `RoomController`), entidades MongoDB y servicios de inventario.
-- `com.iiss.sensores.grupo_2.controlador.engine.service`: `ControllerTempAuto`, `SiteStateService`,
+- `com.iiss.sensores.grupo_2.controlador.engine.service`: `TemperatureControlEngine`, `SiteStateService`,
   `ReevaluationControlService`.
 - `com.iiss.sensores.grupo_2.controlador.engine.mqtt`: `MqttSubscriber` con manejo de callbacks de conexión y
   reconexión.
@@ -310,7 +310,7 @@ T -- No --> P
    reconexión automática de Paho. Al restablecerse la red, re-suscribe de inmediato sin requerir reinicio del
    contenedor.
 3. **Falla en Switches REST:**  
-   Si una habitación reporta fallo de red o error 5xx al intentar conmutar su switch, `ControllerTempAuto` aísla la
+   Si una habitación reporta fallo de red o error 5xx al intentar conmutar su switch, `TemperatureControlEngine` aísla la
    excepción y prosigue aplicando los comandos del resto de los ambientes.
    - El estado del switch se actualiza solo cuando el comando tuvo éxito: un OFF fallido (F09) deja la habitación
      contando como encendida, y el motor no envía un ON que con ella supere la potencia contratada.
