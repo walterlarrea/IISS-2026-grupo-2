@@ -1,22 +1,31 @@
-# Arquitectura 4+1 — EcoWarm (Iteración 5)
+# Arquitectura 4+1 — EcoWarm (Iteración 6)
 
 **Proyecto:** EcoWarm — Sistema de control de temperatura domótico  
 **Grupo:** Grupo 2  
-**Iteración:** 5 (Calidad, tiempo acelerado, resiliencia y cobertura)
+**Iteración:** 6 (Validación y transferencia)
+
+Documentos relacionados: [decisiones de arquitectura (ADR)](decisiones.md) ·
+[limitaciones conocidas y roadmap](roadmap.md).
 
 ---
 
 ## 1. Introducción y Contexto
 
 El sistema EcoWarm tiene como propósito gestionar de forma automatizada y eficiente la climatización de un sitio (hogar
-inteligente). Para la **Iteración 5**, la arquitectura evoluciona garantizando características clave de calidad y
-resiliencia:
+inteligente). La arquitectura garantiza las siguientes características de calidad y resiliencia:
 
 - Integración real y bidireccional entre el **Core de decisión** y el **Engine de control**.
-- Soporte para **tiempo acelerado y virtualizado** (simulaciones con factor de aceleración $X$).
+- Soporte para **tiempo acelerado y virtualizado** (simulaciones con factor de aceleración $X$). Todos los plazos del controlador se miden con ese reloj.
 - Resiliencia y tolerancia a fallos: reconexión automática ante caídas de MQTT broker, indisponibilidad de la API REST
   de switches y control de límites de potencia contratada.
 - Registro y actualización dinámica del inventario del sitio ante cambios durante la ejecución.
+
+En la **Iteración 6** se aplicaron los resultados de las pruebas con el simulador:
+
+- **Histéresis de encendido**, **anti-starvation** con tiempo mínimo encendida y **cesión de potencia por inercia térmica** en el Core.
+- Chequeo de potencia contra los switches *realmente* encendidos, confirmación de los OFF con un GET y backoff de reintentos en tiempo simulado (escenarios F05, F06, F09).
+- Apagado de habitaciones sin lecturas recientes (F03) y de habitaciones eliminadas, medido con el reloj del control.
+- Servidor **MCP** para que asistentes de IA operen el controlador vía su API REST.
 
 ---
 
@@ -87,8 +96,10 @@ graph TD
         - *Tarifa Punta (`RushHour`):* Si el horario evaluado (en UTC-3) cae en franja punta de día hábil, emite orden
           de `APAGADO` para todos los switches activos.
         - *Liberación de potencia:* Apaga switches en habitaciones que alcanzaron o superaron la temperatura objetivo.
-        - *Priorización por déficit:* Ordena habitaciones por mayor diferencia $(T_{esperada} - T_{actual})$ y enciende
-          switches hasta el límite de `potenciaContratadaKW`.
+        - *Recorte de exceso:* Si lo encendido supera la contratada, apaga primero las de menor déficit (límite duro).
+        - *Anti-starvation:* Una habitación apagada que espera más de `espera-maxima-min` (60) pasa primero, desalojando habitaciones encendidas que ya cumplieron `minimo-encendida-min` (10), solo si así entra.
+        - *Cesión por inercia térmica:* Habitaciones encendidas a menos de `inercia-termica-c` (0,1 °C) de su objetivo ceden el switch a una más fría que no entra.
+        - *Priorización por déficit:* Ordena habitaciones por mayor diferencia $(T_{esperada} - T_ {actual})$ y enciende switches hasta el límite de `potenciaContratadaKW`. Una habitación apagada solo se considera si está `histeresis-encendido-c` (0,3 °C) por debajo del objetivo.
 
 2. **Engine / Controlador (`com.iiss.sensores.grupo_2.controlador`):**
     - **`TemperatureControlEngine`:** Implementa `TemperatureEngineService` y orquesta el ciclo de control. Administra el
@@ -209,11 +220,13 @@ graph TD
         Controlador["controller (controlador)<br/>(Spring Boot 3, API REST, Engine, Mongo, MQTT)"]
         SwitchesApi["switches-api<br/>(Stub local de switches para pruebas)"]
         Publisher["publisher<br/>(Generador de eventos MQTT para pruebas locales)"]
+        Mcp["mcp-server<br/>(Spring AI MCP, herramientas sobre la API REST)"]
     end
 
     Controlador --> Core
     Controlador --> Common
     Publisher --> Common
+    Mcp -. HTTP .-> Controlador
 ```
 
 ### Distribución de Paquetes (`controlador`):
@@ -231,12 +244,16 @@ graph TD
 ### Pruebas Automatizadas:
 
 - **Unitarias TDD (`core`):** `CoreTest`, `RushHourTest` (cobertura superior al 85% requerida por la cátedra).
+- **Unitarias del controlador:** `TemperatureControlEngineTest`, `SiteStateServiceTest`, `SwitchClientTest`,
+  `CustomClockTest`, etc. cubren los escenarios de falla y el reloj acelerado.
 - **Integración (`controller/src/test/.../integration`):**
-    - `ControlTempIntegrationIT`: Control bajo carga suficiente vs limitación efectiva de potencia.
+    - `TemperatureControlEngineIntegrationIT`: Control con potencia suficiente contra un switch simulado con estado
+      (WireMock: el GET devuelve lo que dejó el último comando).
     - `MqttResilienceIT`: Prueba de caída de broker Mosquitto en contenedor Testcontainers y reconexión transparente.
     - `SwitchClientRestFailureIT`: Validación ante timeouts o caídas del servicio REST de switches sin romper el loop de
       control.
-    - `BigBangSystemIntegrationIT`: Prueba end-to-end con ciclo completo de arranque, simulación y parada.
+    - `BigBangSystemIntegrationIT`: Prueba end-to-end con ciclo completo de arranque, simulación y parada, con potencia suficiente e insuficiente.
+    - `TemperatureReadingRepositoryIT`: Persistencia y consulta de lecturas en MongoDB real.
 
 ---
 
@@ -262,6 +279,10 @@ graph TB
         subgraph C_Switches ["Contenedor: switches-api (opcional / stub)"]
             SwitchStub["Switches Mock :8090"]
         end
+
+        subgraph C_Mcp ["Contenedor: mcp-server"]
+            McpSrv["MCP Server :8081"]
+        end
     end
 
     subgraph Externo ["Entorno de Cátedra / Evaluación"]
@@ -272,6 +293,7 @@ graph TB
     C_Controlador -.->|tcp://mosquitto:1883| C_Broker
     C_Controlador -.->|http://switches - api:8090| C_Switches
     C_Controlador ===|HTTP / MQTT| SimuladorExt
+    C_Mcp -->|http://controller:8080| C_Controlador
 ```
 
 - En modo standalone local, `mosquitto` y `switches-api` brindan soporte a las pruebas manuales.
@@ -280,7 +302,7 @@ graph TB
 
 ---
 
-## 6. Escenarios (+1) — Casos de Calidad y Resiliencia (Iteración 5)
+## 6. Escenarios (+1) — Casos de Calidad y Resiliencia
 
 La vista de escenarios concreta cómo responde el sistema ante los casos de calidad exigidos:
 
@@ -294,7 +316,10 @@ E --> V[Apagar switches no controlables: habitaciones eliminadas<br/>y termostat
 V --> F[Core: calcularComandos]
 F --> G{¿Horario Punta en UTC-3?}
 G -- Sí --> H[Generar comandos OFF para todos los switches]
-G -- No --> I[Priorizar habitaciones con déficit térmico]
+G -- No --> W[Apagar satisfechas y recortar exceso de potencia]
+W --> X[Anti-starvation: servir habitaciones que esperan más de 60 min]
+X --> Y[Inercia: habitaciones casi en objetivo ceden potencia a otras más frías]
+Y --> I[Priorizar habitaciones con déficit térmico ≥ histéresis o ya encendidas]
 I --> J{¿Supera potencia contratada?}
 J -- Sí --> K[Encender solo las de mayor déficit hasta el límite]
 J -- No --> L[Encender todas las que requieran calor]

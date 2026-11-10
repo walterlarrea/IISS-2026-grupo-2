@@ -1,48 +1,42 @@
 # Resumen de pruebas de integración
 
-## Pruebas de capa 1
+Estado al cierre de la Iteración 6. Todas las pruebas de integración están en
+`controller/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/` y terminan en `IT`
+(las descubre Maven Failsafe).
 
-- `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/BigBangSystemIntegrationIT.java`
-  - Prueba end-to-end del controlador, API de switches y broker MQTT.
-- `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/MqttResilienceIT.java`
-  - Comprueba recuperación de suscripción tras caída/reinicio de Mosquitto.
-  - Comprueba pérdida de mensajes publicados mientras el suscriptor está desconectado y entrega de mensajes posteriores.
-- `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/SwitchClientRestFailureIT.java`
-  - Comprueba que `SwitchClient` propaga fallos de conexión y HTTP 503 desde una API local real.
-  - Comprueba que, si el comando REST falla dentro de `ControllerTempAuto`, se conserva el último estado local conocido.
-- `controlador/src/test/java/com/iiss/sensores/grupo_2/controlador/integration/TemperatureReadingRepositoryIT.java`
-  - Usa MongoDB real para guardar y recuperar las últimas lecturas por `idThermostat`.
-- `controlador/src/test/resources/mosquitto.conf`
-  - Configuración anónima y logs necesarios para el broker de prueba.
+## Pruebas
 
-## Cobertura y dependencias
+| Clase | Prueba | Qué valida | Infraestructura |
+|---|---|---|---|
+| `BigBangSystemIntegrationIT` | `fullSystemEndToEndFlowIT` | Flujo end-to-end: sitio, lecturas MQTT, decisión y comandos a switches. | Testcontainers (MQTT, MongoDB) |
+| | `notEnoughPowerToTurnOnAllSwitchesIT` | Con potencia insuficiente solo se encienden las habitaciones que entran en la contratada. | Testcontainers |
+| `MqttResilienceIT` | `subscriberReconnectsAndReceivesMessagesAfterBrokerRestart` | Reconexión y re-suscripción tras caída/reinicio de Mosquitto. | Testcontainers (Mosquitto) |
+| | `messagesPublishedWhileSubscriberIsOfflineAreLostButNewMessagesArrive` | Los mensajes publicados con el suscriptor desconectado se pierden; los posteriores llegan. | Testcontainers (Mosquitto) |
+| `SwitchClientRestFailureIT` | `reportsConnectionFailureWhenRemoteSwitchApiIsOffline` | `SwitchClient` propaga fallos de conexión. | Servidor HTTP local |
+| | `reportsServiceUnavailableWhenRemoteSwitchApiFails` | `SwitchClient` propaga HTTP 503. | Servidor HTTP local |
+| | `keepsLastKnownSwitchStateWhenControllerCommandCannotReachSwitch` | Si el comando falla dentro de `TemperatureControlEngine`, se conserva el último estado conocido. | Servidor HTTP local |
+| `TemperatureControlEngineIntegrationIT` | `controlTemperatureWhenEnoughPower` | Ciclo de control con potencia suficiente contra un switch simulado con estado (el GET de confirmación devuelve lo que dejó el último comando). | WireMock |
+| `TemperatureReadingRepositoryIT` | `savesAndReturnsLatestTemperatureForEachThermostat` | Guarda y recupera la última lectura por `idThermostat` en MongoDB real. | Testcontainers (MongoDB) |
 
-Se comprueba además la persistencia real en MongoDB y el orden temporal por termostato.
-Las siete pruebas de integración se descubren mediante Maven Failsafe por el sufijo
-`IT`. Usan Testcontainers para MQTT y MongoDB o un servidor HTTP local para REST; Docker
-debe estar activo para ejecutarlas.
+`controller/src/test/resources/mosquitto.conf` tiene la configuración anónima del broker de prueba.
 
-## Resultado
+Los escenarios de falla de la Iteración 6 (F03 termostato sin lecturas, F05 OFF que no apaga, F06/F09 OFF fallido y
+potencia contratada, backoff en tiempo simulado) se cubren con pruebas unitarias del controlador
+(`TemperatureControlEngineTest`, `SiteStateServiceTest`, `SwitchClientTest`, `CustomClockTest`). Ampliarlos a
+pruebas de integración figura en el [roadmap](../../docs/arquitectura/roadmap.md) (P7).
 
-Validación con la convención Failsafe:
+## Ejecución
 
-- Surefire: `mvn -pl controlador test` ejecutó 55 pruebas unitarias, todas pasaron.
-- Failsafe: `mvn -pl controlador failsafe:integration-test failsafe:verify` ejecutó
-  7 pruebas de integración, todas pasaron.
-- `mvn -pl controlador verify` ejecutó las 55 pruebas unitarias y las 7 de integración,
-  todas pasaron en una sola ejecución con Docker activo.
-- Se corrigió el classpath de Failsafe para que use `target/classes`; el reempaquetado
-  ejecutable de Spring Boot hacía que tomara el JAR repaquetado y no encontrara las
-  clases de producción al descubrir los IT.
+Docker debe estar activo.
 
-## Runner
+- Todo el proyecto (unitarias + integración): `mvn -B verify`
+- Solo el controlador: `mvn -pl controller -am verify`
+- Solo integración: `mvn -pl controller -am -DskipTests install` y luego
+  `mvn -pl controller failsafe:integration-test failsafe:verify`
 
-- Windows: `powershell .github/integration-tests/run-layer1-tests.ps1`
-- Unix: `bash .github/integration-tests/run-layer1-tests.sh`
-- Comando Maven para todas las pruebas del controlador: `mvn -pl controlador verify`.
+## Notas técnicas
 
-## Cambios de producción
-
-`TemperatureReadingRepository` usa `idThermostat` de forma consistente para guardar,
-indexar, filtrar y agrupar las lecturas; convierte `Instant` a BSON Date al guardar y
-reconstruye el `Instant` al leer.
+- El classpath de Failsafe usa `target/classes`: el reempaquetado ejecutable de Spring Boot hacía que tomara el JAR
+  repaquetado y no encontrara las clases de producción.
+- `TemperatureReadingRepository` usa `idThermostat` de forma consistente para guardar, indexar, filtrar y agrupar las
+  lecturas; convierte `Instant` a BSON Date al guardar y lo reconstruye al leer.

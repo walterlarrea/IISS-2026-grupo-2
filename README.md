@@ -1,4 +1,58 @@
-# PROYECTO DE SENSORES VERSION 5.
+# EcoWarm — Controlador de temperatura (Grupo 2) · Versión 6
+
+Controlador automático de calefacción por habitación (losa radiante) que recibe lecturas de termostatos por MQTT,
+decide qué switches encender respetando la potencia contratada y la tarifa punta, y los comanda por REST.
+Este README es el punto de entrada para el equipo que continúa el desarrollo (estado al tag `version6`).
+
+## 0. PARA EL EQUIPO RECEPTOR
+
+### Requisitos
+- JDK 25 y Maven 3.9+.
+- Docker con Docker Compose (también necesario para los tests de integración, que usan Testcontainers).
+- Bash para los scripts (en Windows: Git Bash).
+
+### Primeros pasos
+```bash
+mvn -B verify
+```
+```bash
+bash scripts/build.sh dev
+```
+```bash
+bash scripts/up.sh
+```
+Luego abrir Swagger en <http://localhost:8080/swagger-ui.html>, cargar un sitio con `PUT /sitio`
+(`scripts/curl-ejemplos/curl-site/site-replace.sh`) e iniciar el control con `POST /control/comandos`
+(`scripts/curl-ejemplos/curl-ctrl/ctrln-start.sh`). Todas las llamadas llevan el header `X-API-Key`.
+
+### Documentación
+| Documento | Contenido |
+|---|---|
+| [docs/arquitectura/4mas1.md](docs/arquitectura/4mas1.md) | Arquitectura 4+1 (vistas lógica, procesos, desarrollo, física y escenarios). |
+| [docs/arquitectura/decisiones.md](docs/arquitectura/decisiones.md) | Decisiones de arquitectura (ADR) y su porqué. |
+| [docs/arquitectura/roadmap.md](docs/arquitectura/roadmap.md) | Limitaciones conocidas, problemas conocidos y roadmap. |
+| [CHANGELOG.md](CHANGELOG.md) | Cambios por versión. |
+| [docs/api/](docs/api/) | Contratos OpenAPI del controlador y del simulador (interop-v2). |
+| [docs/calidad/estandares-codificacion.md](docs/calidad/estandares-codificacion.md) | Estándares de código. |
+| [docs/metodologia.md](docs/metodologia.md), [docs/vision.md](docs/vision.md), [docs/producto/](docs/producto/) | Metodología, visión, escenarios e historias del producto. |
+| [docs/mcp/rest-vs-mcp.md](docs/mcp/rest-vs-mcp.md) | Comparación REST vs MCP. |
+| [.github/integration-tests/](.github/integration-tests/) | Plan y resumen de las pruebas de integración. |
+
+### Configuración del algoritmo de control
+Variables de entorno (en `.env.dev` / `.env.local`, pasadas por `docker/docker-compose.yml`):
+
+| Variable | Default | Efecto |
+|---|---|---|
+| `CONTROLADOR_HISTERESIS_ENCENDIDO_C` | `0.3` | °C bajo el objetivo para encender una habitación apagada. `0` la desactiva. |
+| `CONTROLADOR_INERCIA_TERMICA_C` | `0.1` | Banda en la que una habitación encendida cede potencia a otra más fría. |
+| `CONTROLADOR_ESPERA_MAXIMA_MIN` | `60` | Minutos de espera tras los cuales una habitación pasa primero (anti-starvation). |
+| `CONTROLADOR_MINIMO_ENCENDIDA_MIN` | `10` | Minutos que una habitación recién encendida no puede ser desalojada. |
+| `REGISTRATION_RETRY_MS` | `5000` | Período de reevaluación del control y de reintento de registro en el simulador. |
+| `CONECTAR_CON_SIMULADOR` | `true` | Registra el controlador en el simulador al iniciar. |
+| `SIMULATOR_API_URL` / `SIMULATOR_API_KEY` | — | URL y clave del simulador. |
+
+La antigüedad máxima de lecturas (`controlador.lectura-max-antiguedad-min`, 15 min) se configura como propiedad
+de Spring. Todos los plazos se miden con el reloj del control (acelerado por `factorTiempo`).
 
 ## 1. ESTRUCTURA
 
@@ -18,6 +72,10 @@ externas.
 **switches-api/** expone la API REST para consultar y modificar el estado de los switches.
 
 **common/** reúne funcionalidades compartidas que pueden utilizar los distintos módulos.
+
+**mcp-server/** servidor MCP (Spring AI) que expone herramientas sobre la API REST del controlador para asistentes de IA.
+
+> Los módulos Maven están en la raíz del repositorio (equivalen a `/modulos/` del enunciado).
 
 **docker/** contiene la configuración necesaria para construir y ejecutar los servicios mediante Docker Compose.
 
@@ -193,11 +251,11 @@ datos.
 mvn clean test
 ```
 
-**controlador**
+**controller**
 
-- **controlador/api**
-- **controlador/engine**
-- **controlador/integration**
+- **controller/api**
+- **controller/engine**
+- **controller/integration**
 
 **core**
 
@@ -216,6 +274,9 @@ Todos los test que terminan en IT son las pruebas de integración.
 ```bash
 mvn -B verify
 ```
+
+Requiere Docker activo. Detalle de cada prueba en
+[.github/integration-tests/integration-test-summary.md](.github/integration-tests/integration-test-summary.md).
 
 ## 11. MONGO DB
 
