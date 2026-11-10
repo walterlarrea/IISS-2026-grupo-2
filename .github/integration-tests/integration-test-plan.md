@@ -2,7 +2,7 @@
 
 ## Alcance y cobertura existente
 
-El módulo `controlador` ya tiene pruebas unitarias de `MqttSubscriber`/suscripciones y de
+El módulo `controller` ya tiene pruebas unitarias de `MqttSubscriber`/suscripciones y de
 `SwitchClient`, pero esas pruebas no ejercitan un broker MQTT ni una comunicación HTTP
 real. Estas pruebas cubren los límites de red mediante Mosquitto y un servidor HTTP local,
 y comprueban el efecto de un fallo REST en el ciclo real de `ControllerTempAuto`.
@@ -36,9 +36,9 @@ se aíslan en los escenarios MQTT para concentrarse en la comunicación con el b
 - Las pruebas de integración usan el sufijo `IT` y Maven Failsafe; las pruebas unitarias
   permanecen bajo Surefire. Desde la raíz, instalar primero las dependencias sin
   ejecutar pruebas y después ejecutar solo las pruebas de integración:
-  `mvn -pl controlador -am -DskipTests install` y
-  `mvn -pl controlador failsafe:integration-test failsafe:verify`.
-- Para ejecutar las pruebas unitarias: `mvn -pl controlador test`.
-- Para ejecutar las pruebas unitarias y de integración juntas: `mvn -pl controlador verify`.
+  `mvn -pl controller -am -DskipTests install` y
+  `mvn -pl controller failsafe:integration-test failsafe:verify`.
+- Para ejecutar las pruebas unitarias: `mvn -pl controller test`.
+- Para ejecutar las pruebas unitarias y de integración juntas: `mvn -pl controller verify`.
   Failsafe usa `target/classes` explícitamente para que el reempaquetado del JAR de
   Spring Boot no quite las clases del controlador de su classpath.
